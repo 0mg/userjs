@@ -10,109 +10,90 @@ window.addEventListener("DOMContentLoaded", function() {
   // Enable reply to myself easy
 
   (function() {
-    if (document.body.id === "show") {
-      var me = document.
-      getElementsByName("session-user-screen_name")[0].content;
-      if (document.getElementsByName("page-user-screen_name")[0].
-      content === me) {
-        var li = document.createElement("li"),
-        span = document.createElement("span"),
-        a = document.createElement("a");
-        a.appendChild(document.createTextNode(ja? "返信": "Reply"));
-        a.href = "/?status=@" + me + "%20&in_reply_to_status_id=" +
-        /\/status(?:es)?\/(.+)/.exec(document.documentURI)[1] +
-        "&in_reply_to=" + me;
-        span.className = "reply-icon icon";
-        li.className = "reply";
-        li.appendChild(span);
-        li.appendChild(a);
-        $(".actions-hover")[0].appendChild(li);
-      }
-    }
+    if (document.body.id !== "show") return;
+    var myname =
+    document.getElementsByName("session-user-screen_name")[0].content;
+    if (document.getElementsByName("page-user-screen_name")[0].content !==
+    myname) return;
+    var li = document.createElement("li"),
+    span = document.createElement("span"),
+    a = document.createElement("a");
+    a.appendChild(document.createTextNode(ja? "返信": "Reply"));
+    a.href = "/?status=@" + myname + "%20&in_reply_to_status_id=" +
+    location.href.split("/").slice(-1) + "&in_reply_to=" + myname;
+    span.className = "reply-icon icon";
+    li.className = "reply";
+    li.appendChild(span);
+    li.appendChild(a);
+    document.evaluate('.//ul[@class="actions-hover"]', document, null, 9,
+    null).singleNodeValue.appendChild(li);
   })();
 
   // Enable reply like mention
 
-  (function() { // form のイベントリスナを除去
-    var E = document.getElementById("status_update_form");
-    if (E) {
-      var e = E.cloneNode(false);
-      while (E.hasChildNodes()) e.appendChild(E.firstChild);
-      E.parentNode.replaceChild(e, E);
+  (function() { // TweetBox.removeEventListener
+    var FORM = document.getElementById("status_update_form");
+    if (FORM) {
+      var form = FORM.cloneNode(false);
+      while (FORM.hasChildNodes()) form.appendChild(FORM.lastChild);
+      FORM.parentNode.replaceChild(form, FORM);
     }
   })();
 
   // Enable switch reply to mention
 
   (function() {
-    if (document.getElementById("status_update_form")) {
-      function enableSwitch() {
-        replySwitch.disabled = false;
-        replySwitch.checked = true;
-      };
-      function watchStatus() {
-        // 投稿欄内の文字を検索し返信かどうかを調べる
-        var has_mention = RegExp(
-          "(\\W@|^@)" + document.getElementById("in_reply_to").value +
-          "(?!\\w)"
-        ).test(document.getElementById("status").value);
-        if (has_mention) { // @ユーザー名 が含まれているなら
-          if (status_id.value !== "") { // ステータス ID があるなら
-            replySwitch.disabled = false;
-            replySwitch.checked = true;
-          } else if (status_id_buffer !== "") {
-            // ステータス ID がバッファにあるなら
-            replySwitch.disabled = false;
-            replySwitch.checked = false;
-          }
-        } else { // @ユーザー名 が含まれていないなら
-          replySwitch.checked = false;
-          replySwitch.disabled = true;
-        }
-      };
-      // 要素に分かりやすい名前をつける
-      var status_id_buffer = "";
-      var status_id = document.getElementById("in_reply_to_status_id");
-      // 返信 ON/OFF を切り替えるスイッチを作成する
-      var label = document.createElement("label");
-      var replySwitch = document.createElement("input");
-      replySwitch.type = "checkbox";
-      replySwitch.disabled = true;
-      replySwitch.id = "ReplySwitch";
-      replySwitch.style.marginRight = "1ex";
-      label.appendChild(replySwitch);
-      label.appendChild(document.
-      createTextNode(ja ? "返信" : "Reply"));
-      // 実際の Document に追加
-      document.getElementById("update_notifications").
-      insertBefore(label,
-      document.getElementById("update_notifications").firstChild);
-      // ステータス ID 要素のイベントリスナ
-      status_id.addEventListener("DOMAttrModified", function() {
-        if (status_id.value !== "") {
-          // 返信ボタンが押され、 meta 要素にステータス ID が入った時
-          enableSwitch();
-        }
-      }, false);
+    if (!document.getElementById("status_update_form")) return;
 
-      // スイッチのイベントリスナ
-      replySwitch.addEventListener("change", function() {
-        if (replySwitch.checked) { // チェックを入れた時
-          status_id.value = status_id_buffer;
-        } else { // チェックを外した時
-          status_id_buffer = status_id.value;
-          status_id.value = "";
+    var status_id_box = document.getElementById("in_reply_to_status_id");
+    status_id_box.buffer = "";
+
+    // Make checkbox for switch reply to mention
+    var label = document.createElement("label");
+    var replySwitcher = document.createElement("input");
+    replySwitcher.type = "checkbox";
+    replySwitcher.id = "ReplySwitcher";
+    replySwitcher.style.marginRight = "1ex";
+    replySwitcher.disabled = true;
+    label.appendChild(replySwitcher);
+    label.appendChild(document.createTextNode(ja ? "返信" : "Reply"));
+    document.getElementById("update_notifications").insertBefore(label,
+    document.getElementById("update_notifications").firstChild);
+
+    function enableReplySwitcher() {
+      replySwitcher.disabled = false;
+      replySwitcher.checked = true;
+    };
+
+    status_id_box.addEventListener("DOMAttrModified", function() {
+      if (status_id_box.value) enableReplySwitcher();
+    }, false);
+
+    replySwitcher.addEventListener("change", function() {
+      if (replySwitcher.disabled) return;
+      if (replySwitcher.checked) { // when oncheck
+        status_id_box.value = status_id_box.buffer;
+      } else { // when offchecked
+        status_id_box.buffer = status_id_box.value;
+        status_id_box.value = "";
+      }
+    }, false);
+
+    document.getElementById("status").addEventListener("keyup", function() {
+      if (RegExp("(\\W@|^@)" + document.getElementById("in_reply_to").value +
+      "(?!\\w)").test(document.getElementById("status").value)) {
+        // if form contains @username
+        if (status_id_box.value) enableReplySwitcher();
+        else if (status_id_box.buffer) {
+          replySwitcher.disabled = false;
+          replySwitcher.checked = false;
         }
-      }, false);
+      } else {
+        replySwitcher.checked = false;
+        replySwitcher.disabled = true;
+      }
+    }, false);
 
-      // 投稿欄のイベントリスナ
-      document.getElementById("status").
-      addEventListener("keyup", function(v) {
-        watchStatus();
-      }, false);
-
-      // ページ初期状態時フォームが返信投稿状態になっているなら
-      if (status_id.value !== "") enableSwitch();
-    }
+    if (status_id_box.value !== "") enableReplySwitcher();
   })();
-}, true);
+}, false);

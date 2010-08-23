@@ -4,4 +4,4 @@
 
 window.addEventListener("DOMContentLoaded", function() {
   document.links[0].onclick = null;
-}, true);
+}, false);

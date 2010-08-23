@@ -18,10 +18,10 @@ javascript: (function/**/f(s) {
 if (window.name) {
     opera.addEventListener("BeforeScript", function(v) {
         v.preventDefault();
-    }, true);
+    }, false);
     opera.addEventListener("BeforeExternalScript", function(v) {
         v.preventDefault();
-    }, true);
+    }, false);
     if (location.pathname === "/share") {
         addEventListener("DOMContentLoaded", function() {
             var tweet = window.name.slice(0, 140);
@@ -33,6 +33,6 @@ if (window.name) {
             if (!confirm(tweet + "\n\nこの文をツイートします")) return close();
             document.getElementById("status").value = tweet;
             document.getElementById("update-form").submit();
-        }, true);
+        }, false);
     } else if (location.pathname === "/share/complete") close();
 }

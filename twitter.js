@@ -60,4 +60,4 @@ window.addEventListener("DOMContentLoaded", function() {
     href.nodeValue = "http://mobile.twitter.com/statuses/" +
     href.nodeValue.split("/").slice(-1);
   })();
-}, true);
+}, false);

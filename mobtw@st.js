@@ -9,4 +9,4 @@ window.addEventListener("DOMContentLoaded", function() {
   var href = document.evaluate('.//a[@class="status_link"]/@href',
   document, null, 9, null).singleNodeValue;
   href.nodeValue = "/@" + href.nodeValue.slice(1);
-}, true);
+}, false);

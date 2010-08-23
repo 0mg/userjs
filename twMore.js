@@ -20,4 +20,4 @@ window.addEventListener("DOMContentLoaded", function() {
     }
     more.parentNode.replaceChild(a, more);
   }
-}, true);
+}, false);
