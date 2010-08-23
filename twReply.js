@@ -70,7 +70,6 @@ window.addEventListener("DOMContentLoaded", function() {
     }, false);
 
     replySwitcher.addEventListener("change", function() {
-      if (replySwitcher.disabled) return;
       if (replySwitcher.checked) { // when oncheck
         status_id_box.value = status_id_box.buffer;
       } else { // when offchecked
