@@ -4,6 +4,8 @@
 // ==/UserScript==
 
 window.addEventListener("DOMContentLoaded", function() {
-  for (var tar, get = document.evaluate('.//@target[.="_blank"]', document,
-  null, 5, null); tar = get.iterateNext();) tar.nodeValue = "_top";
+  var target =
+  document.evaluate('.//@target[.="_blank"]', document, null, 7, null);
+  for (var i = 0; i < target.snapshotLength; ++i)
+    target.snapshotItem(i).nodeValue = "_top";
 }, false);
