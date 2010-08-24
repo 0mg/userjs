@@ -35,7 +35,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var FORM = document.getElementById("status_update_form");
     if (FORM) {
       var form = FORM.cloneNode(false);
-      while (FORM.hasChildNodes()) form.appendChild(FORM.lastChild);
+      while (FORM.hasChildNodes()) form.appendChild(FORM.firstChild);
       FORM.parentNode.replaceChild(form, FORM);
     }
   })();
