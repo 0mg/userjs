@@ -26,7 +26,7 @@ if (window.name) {
     var tweet = window.name.slice(0, 140);
     if (!document.getElementById("status")) {
       document.documentElement.style.display = "block";
-      resizeTo(innerWidth, 320);
+      window.resizeTo(innerWidth, 320);
       return;
     }
     if (!confirm(tweet + "\n\nこの文をツイートします")) return exit();
