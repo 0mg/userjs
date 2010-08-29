@@ -9,17 +9,13 @@ window.addEventListener("DOMContentLoaded", function() {
   // Resize Profile Icon to Original Size
 
   (function() {
-    var pi = document.getElementById("profile-image");
-    if (pi) {
-      pi.addEventListener("mouseover", function() {
-        var img = document.createElement("img");
-        var pie = pi.src.split(".");
-        pie[pie.length - 2] =
-        pie[pie.length - 2].replace(/_bigger$/, "");
-        img.src = pie.join(".");
-        pi.parentNode.replaceChild(img, pi);
-      }, false);
-    }
+    if (document.body.id !== "profile") return;
+    var icon = document.getElementById("profile-image");
+    icon && icon.addEventListener("mouseover", function() {
+      var img = document.createElement("img");
+      img.src = icon.src.replace(/(\w+)_bigger(?=\.\w+$)/, "$1");
+      icon.parentNode.replaceChild(img, icon);
+    }, false);
   })();
 
   // Disable New Tweets Notification
