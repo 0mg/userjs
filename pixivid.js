@@ -11,7 +11,7 @@ window.addEventListener("DOMContentLoaded", function() {
   var ul = contents.getElementsByTagName("ul")[0];
   if (!ul) return;
   var key = "/profile/";
-  if (icon.src.indexOf(key) !== -1) return;
+  if (icon.src.indexOf(key) === -1) return;
   var id = icon.src.split(key)[1].split("/")[0];
   var li = document.createElement("li");
   var a = document.createElement("a");

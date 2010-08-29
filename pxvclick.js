@@ -1,7 +1,9 @@
 // ==UserScript==
-// @include http://www.pixiv.net/member_illust.php?*
+// @include http://www.pixiv.net/member_illust.php?mode=big*
 // ==/UserScript==
 
 window.addEventListener("DOMContentLoaded", function() {
-  document.links[0].onclick = null;
+  var a = document.links[0];
+  a.onclick = null;
+  a.href = a.firstChild.src;
 }, false);
