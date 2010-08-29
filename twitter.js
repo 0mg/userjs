@@ -13,7 +13,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var icon = document.getElementById("profile-image");
     icon && icon.addEventListener("mouseover", function() {
       var img = document.createElement("img");
-      img.src = icon.src.replace(/(\w+)_bigger(?=\.\w+$)/, "$1");
+      img.src = icon.src.replace(/_bigger(?=\.\w+$)/, "");
       icon.parentNode.replaceChild(img, icon);
     }, false);
   })();
