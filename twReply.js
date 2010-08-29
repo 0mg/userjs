@@ -20,7 +20,7 @@ window.addEventListener("DOMContentLoaded", function() {
     a = document.createElement("a");
     a.appendChild(document.createTextNode(ja ? "返信" : "Reply"));
     a.href = "/?status=@" + myname + "%20&in_reply_to_status_id=" +
-    location.href.split("/").slice(-1) + "&in_reply_to=" + myname;
+    location.href.split("/").pop() + "&in_reply_to=" + myname;
     span.className = "reply-icon icon";
     li.className = "reply";
     li.appendChild(span);
