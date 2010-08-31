@@ -24,7 +24,7 @@ window.addEventListener("DOMContentLoaded", function() {
     window.page && page.timelineRefresher && page.timelineRefresher.stop();
   })();
 
-  // Show My Lists in My List
+  // Show My Lists in List
 
   (function() {
     if (document.body.id !== "list_show") return;
