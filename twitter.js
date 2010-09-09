@@ -6,6 +6,8 @@
 
 window.addEventListener("DOMContentLoaded", function() {
 
+  if (!document.body) return;
+
   // Resize Profile Icon to Original Size
 
   (function() {
@@ -27,7 +29,8 @@ window.addEventListener("DOMContentLoaded", function() {
   // Show My Lists in List
 
   (function() {
-    if (document.body.id !== "list_show") return;
+    if (!document.getElementById("side") ||
+    !document.getElementById("list_menu")) return;
     var myname =
     document.getElementsByName("session-loggedin")[0].content === "y" &&
     document.getElementsByName("session-user-screen_name")[0].content;
@@ -38,6 +41,7 @@ window.addEventListener("DOMContentLoaded", function() {
     getElementsByTagName("label"), function(l) {
       var listname = l.firstChild.nodeValue;
       var li = document.createElement("li");
+      li.style.paddingLeft = "16px";
       var a = document.createElement("a");
       a.href = "/" + myname + "/" + listname;
       a.appendChild(document.createTextNode(listname));
@@ -55,5 +59,23 @@ window.addEventListener("DOMContentLoaded", function() {
     document.getElementById("permalink"), null, 9, null).singleNodeValue;
     href.nodeValue = "http://mobile.twitter.com/statuses/" +
     href.nodeValue.split("/").slice(-1);
+  })();
+
+  // Link to @ on top bar
+
+  (function() {
+    var ul = document.evaluate('.//ul[starts-with(@class,"top-navigation")]',
+    document, null, 9, null).singleNodeValue;
+    var myname =
+    document.getElementsByName("session-loggedin")[0].content === "y" &&
+    document.getElementsByName("session-user-screen_name")[0].content;
+    if (ul && myname) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "http://mobile.twitter.com/replies";
+      a.appendChild(document.createTextNode("@" + myname));
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
   })();
 }, false);

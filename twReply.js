@@ -5,6 +5,9 @@
 // ==/UserScript==
 
 window.addEventListener("DOMContentLoaded", function() {
+
+  if (!document.body) return;
+
   var ja = document.documentElement.lang === "ja";
 
   // Enable reply to myself easy

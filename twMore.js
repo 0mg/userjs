@@ -5,6 +5,9 @@
 // ==/UserScript==
 
 window.addEventListener("DOMContentLoaded", function() {
+
+  if (!document.body) return;
+
   if (document.body.id === "home" ||
   document.body.id === "profile" ||
   document.body.id === "list_show" ||

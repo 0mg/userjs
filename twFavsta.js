@@ -5,6 +5,9 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
+
+  if (!document.body) return;
+
   var ul = document.getElementById("primary_nav");
   var name = document.getElementsByName("page-user-screen_name")[0];
   if (ul && name) {
