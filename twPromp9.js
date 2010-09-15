@@ -24,6 +24,7 @@ if (window.name) {
   }, false);
   window.addEventListener("DOMContentLoaded", function() {
     var tweet = window.name.slice(0, 140);
+    //tweet = tweet.split("").reverse().join("");
     if (!document.getElementById("status")) {
       document.documentElement.style.display = "block";
       window.resizeTo(innerWidth, 320);
