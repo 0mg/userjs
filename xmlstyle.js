@@ -118,11 +118,11 @@ addEventListener("DOMContentLoaded", function() {
 
   var nsuri = "http://www.w3.org/1999/xhtml";
 
-  var root = document.createElement("root");
+  var root = ce("root");
   var title = document.createElementNS(nsuri, "title");
   var style = document.createElementNS(nsuri, "style");
-  var original = document.createElement("original");
-  var arrenge = document.createElement("arrenge");
+  var original = ce("original");
+  var arrenge = ce("arrenge");
 
   original.root = document.documentElement;
   original.appendChild(original.root);
@@ -141,7 +141,7 @@ addEventListener("DOMContentLoaded", function() {
   arrenge.appendChild(arrenge.root);
   root.appendChild(arrenge);
 
-  style.appendChild(document.createTextNode("\
+  style.appendChild(ct("\
     original {\
       display: none;\
     }\
@@ -187,9 +187,7 @@ addEventListener("DOMContentLoaded", function() {
   "));
   root.appendChild(style);
 
-  title.appendChild(document.createTextNode(
-    decodeURI(document.documentURI).split("/").pop()
-  ));
+  title.appendChild(ct(decodeURI(document.documentURI).split("/").pop()));
   root.appendChild(title);
 
   document.appendChild(root);
