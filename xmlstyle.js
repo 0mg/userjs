@@ -41,14 +41,14 @@ addEventListener("DOMContentLoaded", function() {
       S.appendChild(ct(" "));
 
       var Attribute = ce("Attribute");
-      Attribute.Name = ce("Name");
+      Attribute.AttName = ce("AttName");
       Attribute.Eq = ce("Eq");
       Attribute.AttValue = ce("AttValue");
       Attribute.AttValue.AttValueStart = ce("AttValueStart");
       Attribute.AttValue.AttValueValue = ce("AttValueValue");
       Attribute.AttValue.AttValueEnd = ce("AttValueEnd");
 
-      Attribute.Name.appendChild(ct(attr.nodeName));
+      Attribute.AttName.appendChild(ct(attr.nodeName));
       Attribute.Eq.appendChild(ct("="));
       Attribute.AttValue.AttValueStart.appendChild(ct('"'));
       Attribute.AttValue.AttValueValue.appendChild(ct(attr.nodeValue));
@@ -58,7 +58,7 @@ addEventListener("DOMContentLoaded", function() {
       Attribute.AttValue.appendChild(Attribute.AttValue.AttValueValue);
       Attribute.AttValue.appendChild(Attribute.AttValue.AttValueEnd);
 
-      Attribute.appendChild(Attribute.Name);
+      Attribute.appendChild(Attribute.AttName);
       Attribute.appendChild(Attribute.Eq);
       Attribute.appendChild(Attribute.AttValue);
 
@@ -69,44 +69,44 @@ addEventListener("DOMContentLoaded", function() {
     if (node.hasChildNodes()) {
       var STag = ce("STag");
       STag.STagStart = ce("STagStart");
-      STag.Name = ce("Name");
+      STag.STagName = ce("STagName");
       STag.STagEnd = ce("STagEnd");
 
       var ETag = ce("ETag");
       ETag.ETagStart = ce("ETagStart");
-      ETag.Name = ce("Name");
+      ETag.ETagName = ce("ETagName");
       ETag.ETagEnd = ce("ETagEnd");
 
       var content = ce("content");
 
       STag.STagStart.appendChild(ct("<"));
-      STag.Name.appendChild(ct(tagname));
+      STag.STagName.appendChild(ct(tagname));
       STag.STagEnd.appendChild(ct(">"));
 
       ETag.ETagStart.appendChild(ct("</"));
-      ETag.Name.appendChild(ct(tagname));
+      ETag.ETagName.appendChild(ct(tagname));
       ETag.ETagEnd.appendChild(ct(">"));
 
       element.appendChild(STag.STagStart);
-      element.appendChild(STag.Name);
+      element.appendChild(STag.STagName);
       element.appendChild(Attributes);
       element.appendChild(STag.STagEnd);
       element.appendChild(content);
       element.appendChild(ETag.ETagStart);
-      element.appendChild(ETag.Name);
+      element.appendChild(ETag.ETagName);
       element.appendChild(ETag.ETagEnd);
     } else {
       var EmptyElemTag = ce("EmptyElemTag");
       EmptyElemTag.EmptyElemTagStart = ce("EmptyElemTagStart");
-      EmptyElemTag.Name = ce("Name");
+      EmptyElemTag.EmptyElemTagName = ce("EmptyElemTagName");
       EmptyElemTag.EmptyElemTagEnd = ce("EmptyElemTagEnd");
 
       EmptyElemTag.EmptyElemTagStart.appendChild(ct("<"));
-      EmptyElemTag.Name.appendChild(ct(tagname));
+      EmptyElemTag.EmptyElemTagName.appendChild(ct(tagname));
       EmptyElemTag.EmptyElemTagEnd.appendChild(ct("/>"));
 
       EmptyElemTag.appendChild(EmptyElemTag.EmptyElemTagStart);
-      EmptyElemTag.appendChild(EmptyElemTag.Name);
+      EmptyElemTag.appendChild(EmptyElemTag.EmptyElemTagName);
       EmptyElemTag.appendChild(Attributes);
       EmptyElemTag.appendChild(EmptyElemTag.EmptyElemTagEnd);
 
@@ -150,37 +150,39 @@ addEventListener("DOMContentLoaded", function() {
     }\
     :root {\
       display: block;\
-      margin: 2ex 2ex 2ex 0;\
+      margin: 2ex;\
       background-color: black;\
       color: silver;\
     }\
-    element, CharData, Comment, CommentValue {\
+    element, content, CharData, Comment, CommentValue {\
       display: block;\
-      padding-left: 2ex;\
+    }\
+    content, CommentValue {\
+      margin-left: 2ex;\
     }\
     STagStart, STagEnd, ETagStart, ETagEnd, CommentStart, CommentEnd,\
     EmptyElemTagStart, EmptyElemTagEnd {\
-      color: blue;\
+      color: #0066cc;\
     }\
-    Attribute > Name {\
-      color: #884488;\
+    AttName {\
+      color: #996699;\
     }\
     Eq, AttValueStart, AttValueEnd {\
-      color: #444;\
+      color: #666666;\
     }\
     AttValueValue {\
-      color: #558866;\
+      color: #00cc66;\
     }\
-    STagStart + Name,\
-    ETagStart + Name,\
-    EmptyElemTagStart + Name {\
-      color: blue;\
+    STagName,\
+    ETagName,\
+    EmptyElemTagName {\
+      color: #0066cc;\
       font-weight: bold;\
     }\
     CharData {\
     }\
     CommentValue {\
-      color: #555;\
+      color: #666666;\
     }\
   "));
   root.appendChild(style);
