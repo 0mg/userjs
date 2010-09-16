@@ -3,13 +3,15 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
-  if (document.documentElement instanceof HTMLHtmlElement) return;
+  for (var i = 0, e = document.getElementsByTagName("*"); i < e.length; ++i) {
+    if (e[i] instanceof HTMLElement) return;
+  }
   if (document.styleSheets.length) return;
 
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
 
-  function getXML(node) {
+  function getXML(node) {a=node;
 
     if (node.nodeType === 3) {
       var CharData = ce("CharData");
@@ -37,6 +39,9 @@ addEventListener("DOMContentLoaded", function() {
 
     for (var i = 0; i < node.attributes.length; ++i) {
       var attr = node.attributes[i];
+
+      if (attr === void"") break; // attr 'role' bug in Opera 9.6
+
       var S = ce("S");
       S.appendChild(ct(" "));
 
@@ -187,7 +192,7 @@ addEventListener("DOMContentLoaded", function() {
   "));
   root.appendChild(style);
 
-  title.appendChild(ct(decodeURI(document.documentURI).split("/").pop()));
+  title.appendChild(ct(decodeURI(document.documentURI)));
   root.appendChild(title);
 
   document.appendChild(root);

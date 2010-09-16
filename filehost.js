@@ -23,7 +23,8 @@ window.addEventListener("DOMContentLoaded", function() {
     };
     xhr.send(null);
   } else {
-    Array.prototype.forEach.call(document.links, function(a) {
+    Array.prototype.forEach.call(document.getElementsByTagName("a"),
+    function(a) {
       if (a.href.indexOf("http://www.yourfilehost.com/media.php") === 0)
         a.href = cushion + encodeURIComponent(a.href);
     });
