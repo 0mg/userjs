@@ -11,7 +11,7 @@ addEventListener("DOMContentLoaded", function() {
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
 
-  function getXML(node) {a=node;
+  function getXML(node) {
 
     if (node.nodeType === 3) {
       var CharData = ce("CharData");
@@ -156,38 +156,29 @@ addEventListener("DOMContentLoaded", function() {
     :root {\
       display: block;\
       margin: 2ex;\
-      background-color: black;\
-      color: silver;\
     }\
-    element, content, CharData, Comment, CommentValue {\
+    element, content, CharData, Comment {\
       display: block;\
     }\
-    content, CommentValue {\
+    content {\
       margin-left: 2ex;\
     }\
-    STagStart, STagEnd, ETagStart, ETagEnd, CommentStart, CommentEnd,\
-    EmptyElemTagStart, EmptyElemTagEnd {\
-      color: #0066cc;\
-    }\
     AttName {\
-      color: #996699;\
-    }\
-    Eq, AttValueStart, AttValueEnd {\
-      color: #666666;\
+      color: blue;\
     }\
     AttValueValue {\
-      color: #00cc66;\
+      color: green;\
     }\
     STagName,\
     ETagName,\
     EmptyElemTagName {\
-      color: #0066cc;\
-      font-weight: bold;\
+      color: blue;\
     }\
     CharData {\
+      color: red;\
     }\
     CommentValue {\
-      color: #666666;\
+      color: gray;\
     }\
   "));
   root.appendChild(style);
