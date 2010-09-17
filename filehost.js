@@ -3,7 +3,7 @@
 // @include *
 // ==/UserScript==
 
-window.addEventListener("DOMContentLoaded", function() {
+document.body && window.addEventListener("DOMContentLoaded", function() {
   var cushion = "http://www.yourfilehost.com/img/spacer.gif#";
   if (location.href.indexOf(cushion) === 0) {
     var url = decodeURIComponent(location.hash.slice(1));
@@ -23,8 +23,7 @@ window.addEventListener("DOMContentLoaded", function() {
     };
     xhr.send(null);
   } else {
-    Array.prototype.forEach.call(document.getElementsByTagName("a"),
-    function(a) {
+    Array.prototype.forEach.call(document.links, function(a) {
       if (a.href.indexOf("http://www.yourfilehost.com/media.php") === 0)
         a.href = cushion + encodeURIComponent(a.href);
     });

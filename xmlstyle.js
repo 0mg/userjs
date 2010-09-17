@@ -31,8 +31,6 @@ addEventListener("DOMContentLoaded", function() {
       return Comment;
     }
 
-    var tagname = node.nodeName;
-
     var element = ce("element");
 
     var Attributes = ce("Atrributes");
@@ -82,24 +80,26 @@ addEventListener("DOMContentLoaded", function() {
       ETag.ETagName = ce("ETagName");
       ETag.ETagEnd = ce("ETagEnd");
 
-      var content = ce("content");
-
       STag.STagStart.appendChild(ct("<"));
-      STag.STagName.appendChild(ct(tagname));
+      STag.STagName.appendChild(ct(node.nodeName));
       STag.STagEnd.appendChild(ct(">"));
 
       ETag.ETagStart.appendChild(ct("</"));
-      ETag.ETagName.appendChild(ct(tagname));
+      ETag.ETagName.appendChild(ct(node.nodeName));
       ETag.ETagEnd.appendChild(ct(">"));
 
-      element.appendChild(STag.STagStart);
-      element.appendChild(STag.STagName);
-      element.appendChild(Attributes);
-      element.appendChild(STag.STagEnd);
-      element.appendChild(content);
-      element.appendChild(ETag.ETagStart);
-      element.appendChild(ETag.ETagName);
-      element.appendChild(ETag.ETagEnd);
+      STag.appendChild(STag.STagStart);
+      STag.appendChild(STag.STagName);
+      STag.appendChild(Attributes);
+      STag.appendChild(STag.STagEnd);
+
+      ETag.appendChild(ETag.ETagStart);
+      ETag.appendChild(ETag.ETagName);
+      ETag.appendChild(ETag.ETagEnd);
+
+      element.appendChild(STag);
+      element.appendChild(ce("content"));
+      element.appendChild(ETag);
     } else {
       var EmptyElemTag = ce("EmptyElemTag");
       EmptyElemTag.EmptyElemTagStart = ce("EmptyElemTagStart");
@@ -107,7 +107,7 @@ addEventListener("DOMContentLoaded", function() {
       EmptyElemTag.EmptyElemTagEnd = ce("EmptyElemTagEnd");
 
       EmptyElemTag.EmptyElemTagStart.appendChild(ct("<"));
-      EmptyElemTag.EmptyElemTagName.appendChild(ct(tagname));
+      EmptyElemTag.EmptyElemTagName.appendChild(ct(node.nodeName));
       EmptyElemTag.EmptyElemTagEnd.appendChild(ct("/>"));
 
       EmptyElemTag.appendChild(EmptyElemTag.EmptyElemTagStart);
@@ -129,13 +129,12 @@ addEventListener("DOMContentLoaded", function() {
   var original = ce("original");
   var arrenge = ce("arrenge");
 
-  original.root = document.documentElement;
+  original.root = document.getElementsByTagName("*")[0];
   original.appendChild(original.root);
   root.appendChild(original);
 
   arrenge.root = (function(node) {
     var element = getXML(node);
-    //alert(XMLSerializer().serializeToString(element));
     for (var i = 0; i < node.childNodes.length; ++i) {
       element.getElementsByTagName("content")[0].appendChild(
         arguments.callee(node.childNodes[i])
