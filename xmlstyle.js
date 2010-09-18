@@ -129,7 +129,7 @@ addEventListener("DOMContentLoaded", function() {
   var original = ce("original");
   var arrenge = ce("arrenge");
 
-  original.root = document.getElementsByTagName("*")[0];
+  original.root = document.documentElement;
   original.appendChild(original.root);
   root.appendChild(original);
 
