@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name Keyboard Hijack Hijack
+// @exclude http://www.youtube.com/*
 // ==/UserScript==
 
 (function() {
   function keyJack(v) {
     if (v.keyCode === 13) return;
-    else if (/\.google\.|\.youtube\./test(location.host) &&
-             v.target.name === "q" && (v.keyCode === 38 || v.keyCode === 40) &&
+    else if (~location.host.indexOf(".google.") &&
+             v.target.autocomplete && (v.keyCode === 38 || v.keyCode === 40) &&
              !v.shiftKey) return;
     else v.stopPropagation();
   };
