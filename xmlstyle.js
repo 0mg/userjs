@@ -146,7 +146,7 @@ addEventListener("DOMContentLoaded", function() {
       margin: 2ex;\
       font-family: monospace;\
     }\
-    element, content, char, comment, proc {\
+    element, char, comment, proc {\
       display: block;\
       margin-left: 2ex;\
     }\
