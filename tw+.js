@@ -67,27 +67,33 @@ addEventListener("DOMContentLoaded", function() {
   function applyMyself(my) {
     var hash = location.pathname.slice(3).replace(/[/]+$/, "").split("/");
     var query = location.search.slice(1);
-    switch (hash[0]) {
-      case ("list"): {
-        switch (hash.length) {
-          case (1): {
-            get("/1/" + my.id + "/lists.json?" + query, showLists);
-            get("/1/" + my.id + "/lists/subscriptions.json?" + query,
+    switch (hash.length) {
+      case (1): {
+        switch (hash[0]) {
+          case ("following"): {
+            break;
+          }
+          case (""):
+          default: {
+            get("/1/statuses/user_timeline.json?screen_name=" + hash[0] +
+            "&" + query, showTL);
+            break;
+          }
+        }
+      }
+      case (2): {
+        switch (hash[1]) {
+          case ("lists"): {
+            get("/1/" + hash[0] + "/lists.json?" + query, showLists);
+            get("/1/" + hash[0] + "/lists/subscriptions.json?" + query,
             showLists);
             break;
           }
-          case (2): {
-            get("/1/" + hash[1] + "/lists.json?" + query, showLists);
-            get("/1/" + hash[1] + "/lists/subscriptions.json?" + query,
-            showLists);
+          default: {
+            get("/1/" + hash[0] + "/lists/" + hash[1] +
+            "/statuses.json?" + query, showTL);
             break;
           }
-          case (3): {
-            get("/1/" + hash[1] + "/lists/" + hash[2] +
-            "/statuses.json?" + query, showListTL);
-            break;
-          }
-          break;
         }
       }
     }
@@ -98,13 +104,12 @@ addEventListener("DOMContentLoaded", function() {
     var lists = data.lists;
 
     var ul = ce("ul");
-    ul.id = "lists";
 
     lists.forEach(function(l) {
       var li = ce("li");
       var a = ce("a");
 
-      a.href = "/+/list/" + l.full_name.slice(1);
+      a.href = "/+/" + l.full_name.slice(1);
       a.appendChild(ct(l.full_name));
 
       li.appendChild(a);
@@ -115,8 +120,7 @@ addEventListener("DOMContentLoaded", function() {
     body.appendChild(ul);
   };
 
-
-  function showListTL(xhr) {
+  function showTL(xhr) {
     var TL = JSON.parse(xhr.responseText);
     var ul = ce("ul");
 
