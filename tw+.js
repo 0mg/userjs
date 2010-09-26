@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitter+
-// @include http://api.twitter.com/+*
+// @include http://api.twitter.com/+/*
 // ==/UserScript==
 
 opera.addEventListener("BeforeScript", function(v) {
@@ -12,7 +12,15 @@ opera.addEventListener("BeforeExternalScript", function(v) {
 addEventListener("DOMContentLoaded", function() {
   if (!document.body) return;
 
-  /* GLOBAL FUNCTIONS */
+  /* GLOBAL VAR & FUNCTIONS */
+
+  var JSON;
+  if (!JSON) {
+    JSON = {};
+    JSON.parse = JSON.parse || function(s) {
+      return eval("(" + s + ")");
+    };
+  }
 
   function ce(s) {return document.createElement(s); };
   function ct(s) {return document.createTextNode(s); };
@@ -38,13 +46,6 @@ addEventListener("DOMContentLoaded", function() {
 
   title.appendChild(ct("Twitter+"));
   style.appendChild(ct("\
-    div {\
-      display: inline-block;\
-      margin: 1px;\
-      padding: 1ex;\
-      border: 1px solid black;\
-      background: lime;\
-    }\
   "));
 
   head.appendChild(title);
@@ -59,30 +60,76 @@ addEventListener("DOMContentLoaded", function() {
   /* BUILD */
 
   function getMyself(xhr) {
-    var my = eval(xhr.responseText)[0].user;
+    var my = JSON.parse(xhr.responseText)[0].user;
     applyMyself(my);
   };
 
   function applyMyself(my) {
-    switch (location.pathname.slice(2)) {
-      case ("lists"):
-        get("/1/" + my.id + "/lists.xml", showLists);
-        get("/1/" + my.id + "/lists/subscriptions.xml", showLists);
-        break;
-      case ("list"):
-        var hash = location.search.slice(2).split("/");
-        var screen_name = hash[0];
-        var list_name = hash[1];
-        get("/1/" + screen_name + "/lists/" + list_name + "/statuses.json",
-        showListTL);
-        break;
+    var hash = location.pathname.slice(3).replace(/[/]+$/, "").split("/");
+    var query = location.search.slice(1);
+    switch (hash[0]) {
+      case ("list"): {
+        switch (hash.length) {
+          case (1): {
+            get("/1/" + my.id + "/lists.json?" + query, showLists);
+            get("/1/" + my.id + "/lists/subscriptions.json?" + query,
+            showLists);
+            break;
+          }
+          case (2): {
+            get("/1/" + hash[1] + "/lists.json?" + query, showLists);
+            get("/1/" + hash[1] + "/lists/subscriptions.json?" + query,
+            showLists);
+            break;
+          }
+          case (3): {
+            get("/1/" + hash[1] + "/lists/" + hash[2] +
+            "/statuses.json?" + query, showListTL);
+            break;
+          }
+          break;
+        }
+      }
     }
   };
 
-  function showListTL(xhr) {
-    var TL = eval(xhr.responseText);
+  function showLists(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    var lists = data.lists;
+
     var ul = ce("ul");
-    TL.forEach(function(s) {
+    ul.id = "lists";
+
+    lists.forEach(function(l) {
+      var li = ce("li");
+      var a = ce("a");
+
+      a.href = "/+/list/" + l.full_name.slice(1);
+      a.appendChild(ct(l.full_name));
+
+      li.appendChild(a);
+
+      ul.appendChild(li);
+    });
+
+    body.appendChild(ul);
+  };
+
+
+  function showListTL(xhr) {
+    var TL = JSON.parse(xhr.responseText);
+    var ul = ce("ul");
+
+    var more = ce("li");
+    more.a = ce("a");
+
+    more.a.appendChild(ct("more"));
+    more.appendChild(more.a);
+
+    TL.forEach(function(s, i) {
+      if (i === 0) {
+        more.a.href = "?page=2&max_id=" + s.id;
+      }
       var li = ce("li");
       [s.user.screen_name, s.text, s.created_at].forEach(function(s) {
         var p = ce("p");
@@ -91,27 +138,7 @@ addEventListener("DOMContentLoaded", function() {
       });
       ul.appendChild(li);
     });
-    body.appendChild(ul);
-  };
-
-  function showLists(xhr) {
-    var lists = xhr.responseXML;
-
-    var ul = ce("ul");
-    ul.id = "lists";
-
-    [].forEach.call(lists.getElementsByTagName("full_name"), function(s) {
-      var li = ce("li");
-      var a = ce("a");
-
-      a.href = "/+list?" + s.textContent;
-      a.appendChild(ct(s.textContent));
-
-      li.appendChild(a);
-
-      ul.appendChild(li);
-    });
-
+    ul.appendChild(more);
     body.appendChild(ul);
   };
 
