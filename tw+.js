@@ -73,7 +73,9 @@ addEventListener("DOMContentLoaded", function() {
           case ("following"): {
             break;
           }
-          case (""):
+          case (""): {
+            get("/1/statuses/home_timeline.json?" + query, showTL);
+          }
           default: {
             get("/1/statuses/user_timeline.json?screen_name=" + hash[0] +
             "&" + query, showTL);
