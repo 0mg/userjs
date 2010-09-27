@@ -16,9 +16,8 @@ addEventListener("DOMContentLoaded", function() {
 
   var JSON;
   if (!JSON) {
-    JSON = {};
-    JSON.parse = JSON.parse || function(s) {
-      return eval("(" + s + ")");
+    JSON = {
+      "parse": function(s) { return eval("(" + s + ")"); }
     };
   }
 
@@ -29,44 +28,57 @@ addEventListener("DOMContentLoaded", function() {
     xhr.open("GET", u, true);
     xhr.setRequestHeader("X-PHX", "true");
     xhr.onreadystatechange = function() {
-      if (this.readyState === 4) f(this);
+      if (this.readyState === 4) {
+        if (this.status === 200) f(this);
+        else alert(this.responseText);
+      }
     };
     xhr.send(null);
   };
   function post(u, q, f) {
-    var xhr = new XMLHttpRequest;
-    xhr.open("POST", u, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("X-PHX", "true");
-    xhr.onreadystatechange = function() {
-      if (this.readyState === 4) f(this);
-    };
-    xhr.send(q);
+    get("/about/contact", function(xhr) {
+      var data = xhr.responseText;
+      var key = '<input name="authenticity_token" value="';
+      var auth = data.substr(data.indexOf(key) + key.length, 40);
+
+      xhr = new XMLHttpRequest;
+      xhr.open("POST", u, true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.setRequestHeader("X-PHX", "true");
+      xhr.onreadystatechange = function() {
+        if (this.readyState === 4) {
+          if (this.status === 200) f(this);
+          else alert(this.responseText);
+        }
+      };
+      xhr.send(q + "&post_authenticity_token=" + auth);
+    });
   };
 
   /* SCREEN INITIALIZE */
-
-  document.removeChild(document.documentElement);
-
-  var html = ce("html");
-  var head = ce("head");
-  var title = ce("title");
-  var style = ce("style");
-  var body = ce("body");
-
-  title.appendChild(ct("tw+"));
-  style.appendChild(ct("\
-  "));
-
-  head.appendChild(title);
-  head.appendChild(style);
-
-  html.appendChild(head);
-  html.appendChild(body);
-
-  document.appendChild(html);
-  html.style.height = "100%";
-  html.style.display = "block";
+  function initDOM() {
+    document.removeChild(document.documentElement);
+  
+    var html = ce("html");
+    var head = ce("head");
+    var title = ce("title");
+    var style = ce("style");
+    var body = ce("body");
+  
+    title.appendChild(ct("tw+"));
+    style.appendChild(ct("\
+    "));
+  
+    head.appendChild(title);
+    head.appendChild(style);
+  
+    html.appendChild(head);
+    html.appendChild(body);
+  
+    document.appendChild(html);
+    html.style.height = "100%";
+    html.style.display = "block";
+  };
 
   /* BUILD */
 
@@ -74,6 +86,11 @@ addEventListener("DOMContentLoaded", function() {
     var my = JSON.parse(xhr.responseText)[0].user;
     applyMyself(my);
   };
+
+
+
+
+
 
   function applyMyself(my) {
     var hash = location.pathname.slice(3).replace(/[/]+$/, "").split("/");
@@ -94,6 +111,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
         }
+        break;
       }
       case (2): {
         switch (hash[1]) {
@@ -109,23 +127,26 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
         }
+        break;
       }
       case (3): {
         switch (hash[2]) {
           case ("members"): {
             get("/1/" + hash[0] + "/" + hash[1] + "/members.json?" + query,
-            function(xhr) { showUsers(xhr, my); });
+            showUsers);
             break;
           }
         }
+        break;
       }
     }
   };
 
-  function showUsers(xhr, my) {
-    var data = JSON.parse(xhr.responseText);
-    var users = data.users;
 
+
+
+
+  function makeActbar() {
     var actbar = {};
     actbar.form = ce("div");
     actbar.source = ce("input");
@@ -143,17 +164,11 @@ addEventListener("DOMContentLoaded", function() {
     actbar.submit.value = "POST";
 
     actbar.submit.addEventListener("click", function(v) {
-      get("/", function(xhr) {
-        var data = xhr.responseText;
-        var key = '<input name="authenticity_token" value="';
-        var auth = data.substr(data.indexOf(key) + key.length, 40);
-        post("/1/" + actbar.source.value +
-        "/members.json",
-        "post_authenticity_token=" + auth +
-        "&id=" + actbar.target.value +
-        (actbar.rm.checked ? "&_method=DELETE" : ""), function(xhr) {
-          alert(xhr.getAllResponseHeaders());
-        });
+      post("/1/" + actbar.source.value + "/members.json",
+      "id=" + actbar.target.value +
+      (actbar.rm.checked ? "&_method=DELETE" : ""),
+      function(xhr) {
+        alert(xhr.getAllResponseHeaders());
       });
     }, false);
 
@@ -166,8 +181,17 @@ addEventListener("DOMContentLoaded", function() {
     actbar.form.appendChild(actbar.rm);
     actbar.form.appendChild(ct("delete"));
     actbar.form.appendChild(actbar.submit);
+    return actbar.form;
+  };
 
-    body.appendChild(actbar.form);
+
+
+
+
+
+  function showUsers(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    var users = data.users;
 
     var ul = ce("ul");
     users.forEach(function(s) {
@@ -179,6 +203,19 @@ addEventListener("DOMContentLoaded", function() {
       ul.appendChild(li);
     });
 
+    ul.appendChild(makeCursor(data));
+
+    document.body.appendChild(makeActbar());
+    document.body.appendChild(ul);
+  };
+
+
+
+
+
+  function makeCursor(data) {
+    var cursors = ce("ol");
+
     if (data.previous_cursor) {
       var previous = ce("li");
 
@@ -188,7 +225,7 @@ addEventListener("DOMContentLoaded", function() {
 
       previous.appendChild(previous.a);
 
-      ul.appendChild(previous);
+      cursors.appendChild(previous);
     }
 
     if (data.next_cursor) {
@@ -200,11 +237,15 @@ addEventListener("DOMContentLoaded", function() {
 
       next.appendChild(next.a);
 
-      ul.appendChild(next);
+      cursors.appendChild(next);
     }
 
-    body.appendChild(ul);
+    return cursors;
   };
+
+
+
+
 
   function showLists(xhr) {
     var data = JSON.parse(xhr.responseText);
@@ -224,32 +265,13 @@ addEventListener("DOMContentLoaded", function() {
       ul.appendChild(li);
     });
 
-    if (data.previous_cursor) {
-      var previous = ce("li");
-
-      previous.a = ce("a");
-      previous.a.href = "?cursor=" + data.previous_cursor;
-      previous.a.appendChild(ct("previous"));
-
-      previous.appendChild(previous.a);
-
-      ul.appendChild(previous);
-    }
-
-    if (data.next_cursor) {
-      var next = ce("li");
-
-      next.a = ce("a");
-      next.a.href = "?cursor=" + data.next_cursor;
-      next.a.appendChild(ct("next"));
-
-      next.appendChild(next.a);
-
-      ul.appendChild(next);
-    }
-
-    body.appendChild(ul);
+    document.body.appendChild(makeCursor(data));
+    document.body.appendChild(ul);
   };
+
+
+
+
 
   function showTL(xhr) {
     var TL = JSON.parse(xhr.responseText);
@@ -274,9 +296,14 @@ addEventListener("DOMContentLoaded", function() {
       ul.appendChild(li);
     });
     ul.appendChild(past);
-    body.appendChild(ul);
+    document.body.appendChild(ul);
   };
 
+
+
+
+
+  initDOM();
   get("/1/statuses/user_timeline.json?count=1", getMyself);
 
 }, false);
