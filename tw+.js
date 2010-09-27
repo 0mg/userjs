@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name Twitter+
+// @name tw+
 // @include http://api.twitter.com/+/*
 // ==/UserScript==
 
@@ -27,11 +27,21 @@ addEventListener("DOMContentLoaded", function() {
   function get(u, f) {
     var xhr = new XMLHttpRequest;
     xhr.open("GET", u, true);
-    xhr.setRequestHeader("X-PHX","true");
+    xhr.setRequestHeader("X-PHX", "true");
     xhr.onreadystatechange = function() {
-      if (this.readyState === 4 && this.status === 200) f(this);
+      if (this.readyState === 4) f(this);
     };
     xhr.send(null);
+  };
+  function post(u, q, f) {
+    var xhr = new XMLHttpRequest;
+    xhr.open("POST", u, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("X-PHX", "true");
+    xhr.onreadystatechange = function() {
+      if (this.readyState === 4) f(this);
+    };
+    xhr.send(q);
   };
 
   /* SCREEN INITIALIZE */
@@ -44,7 +54,7 @@ addEventListener("DOMContentLoaded", function() {
   var style = ce("style");
   var body = ce("body");
 
-  title.appendChild(ct("Twitter+"));
+  title.appendChild(ct("tw+"));
   style.appendChild(ct("\
   "));
 
@@ -56,6 +66,7 @@ addEventListener("DOMContentLoaded", function() {
 
   document.appendChild(html);
   html.style.height = "100%";
+  html.style.display = "block";
 
   /* BUILD */
 
@@ -99,7 +110,100 @@ addEventListener("DOMContentLoaded", function() {
           }
         }
       }
+      case (3): {
+        switch (hash[2]) {
+          case ("members"): {
+            get("/1/" + hash[0] + "/" + hash[1] + "/members.json?" + query,
+            function(xhr) { showUsers(xhr, my); });
+            break;
+          }
+        }
+      }
     }
+  };
+
+  function showUsers(xhr, my) {
+    var data = JSON.parse(xhr.responseText);
+    var users = data.users;
+
+    var actbar = {};
+    actbar.form = ce("div");
+    actbar.source = ce("input");
+    actbar.target = ce("input");
+    actbar.add = ce("input");
+    actbar.rm = ce("input");
+    actbar.submit = ce("input");
+
+    actbar.source.type = "text";
+    actbar.target.type = "text";
+    actbar.add.type = "radio";
+    actbar.add.checked = true;
+    actbar.rm.type = "radio";
+    actbar.submit.type = "button";
+    actbar.submit.value = "POST";
+
+    actbar.submit.addEventListener("click", function(v) {
+      get("/", function(xhr) {
+        var data = xhr.responseText;
+        var key = '<input name="authenticity_token" value="';
+        var auth = data.substr(data.indexOf(key) + key.length, 40);
+        post("/1/" + actbar.source.value +
+        "/members.json",
+        "post_authenticity_token=" + auth +
+        "&id=" + actbar.target.value +
+        (actbar.rm.checked ? "&_method=DELETE" : ""), function(xhr) {
+          alert(xhr.getAllResponseHeaders());
+        });
+      });
+    }, false);
+
+    actbar.form.appendChild(ct("source: "));
+    actbar.form.appendChild(actbar.source);
+    actbar.form.appendChild(ct("target: "));
+    actbar.form.appendChild(actbar.target);
+    actbar.form.appendChild(actbar.add);
+    actbar.form.appendChild(ct("add"));
+    actbar.form.appendChild(actbar.rm);
+    actbar.form.appendChild(ct("delete"));
+    actbar.form.appendChild(actbar.submit);
+
+    body.appendChild(actbar.form);
+
+    var ul = ce("ul");
+    users.forEach(function(s) {
+      var li = ce("li");
+      var a = ce("a");
+      a.href = "/+/" + s.screen_name;
+      a.appendChild(ct(s.screen_name));
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+
+    if (data.previous_cursor) {
+      var previous = ce("li");
+
+      previous.a = ce("a");
+      previous.a.href = "?cursor=" + data.previous_cursor;
+      previous.a.appendChild(ct("previous"));
+
+      previous.appendChild(previous.a);
+
+      ul.appendChild(previous);
+    }
+
+    if (data.next_cursor) {
+      var next = ce("li");
+
+      next.a = ce("a");
+      next.a.href = "?cursor=" + data.next_cursor;
+      next.a.appendChild(ct("next"));
+
+      next.appendChild(next.a);
+
+      ul.appendChild(next);
+    }
+
+    body.appendChild(ul);
   };
 
   function showLists(xhr) {
@@ -120,6 +224,30 @@ addEventListener("DOMContentLoaded", function() {
       ul.appendChild(li);
     });
 
+    if (data.previous_cursor) {
+      var previous = ce("li");
+
+      previous.a = ce("a");
+      previous.a.href = "?cursor=" + data.previous_cursor;
+      previous.a.appendChild(ct("previous"));
+
+      previous.appendChild(previous.a);
+
+      ul.appendChild(previous);
+    }
+
+    if (data.next_cursor) {
+      var next = ce("li");
+
+      next.a = ce("a");
+      next.a.href = "?cursor=" + data.next_cursor;
+      next.a.appendChild(ct("next"));
+
+      next.appendChild(next.a);
+
+      ul.appendChild(next);
+    }
+
     body.appendChild(ul);
   };
 
@@ -127,15 +255,15 @@ addEventListener("DOMContentLoaded", function() {
     var TL = JSON.parse(xhr.responseText);
     var ul = ce("ul");
 
-    var more = ce("li");
-    more.a = ce("a");
+    var past = ce("li");
+    past.a = ce("a");
 
-    more.a.appendChild(ct("more"));
-    more.appendChild(more.a);
+    past.a.appendChild(ct("past"));
+    past.appendChild(past.a);
 
     TL.forEach(function(s, i) {
       if (i === 0) {
-        more.a.href = "?page=2&max_id=" + s.id;
+        past.a.href = "?page=2&max_id=" + s.id;
       }
       var li = ce("li");
       [s.user.screen_name, s.text, s.created_at].forEach(function(s) {
@@ -145,7 +273,7 @@ addEventListener("DOMContentLoaded", function() {
       });
       ul.appendChild(li);
     });
-    ul.appendChild(more);
+    ul.appendChild(past);
     body.appendChild(ul);
   };
 
