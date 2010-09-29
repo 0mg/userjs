@@ -14,6 +14,12 @@ addEventListener("DOMContentLoaded", function() {
 
   /* GLOBAL VAR & FUNCTIONS */
 
+  var ROOT = "/+/"; // HOMEPATH
+  var ROOTLEN = ROOT.length;
+
+  var APV = 1; // API VERSION
+  APV = "/" + APV + "/";
+
   var JSON;
   if (!JSON) {
     JSON = {
@@ -119,33 +125,33 @@ addEventListener("DOMContentLoaded", function() {
 
     g.bar.id = "globalbar";
 
-    g.home.href = "/+/";
+    g.home.href = ROOT;
     g.home.appendChild(ct("Home"));
 
-    g.profile.href = "/+/" + my.screen_name;
+    g.profile.href = ROOT + my.screen_name;
     g.profile.appendChild(ct("Profile"));
 
-    g.replies.href = "/+/replies";
+    g.replies.href = ROOT + "replies";
     g.replies.appendChild(ct("@" + my.screen_name));
 
-    g.following.href = "/+/following";
+    g.following.href = ROOT + "following";
     g.following.appendChild(ct("Following:" + my.friends_count));
 
-    g.followers.href = "/+/followers";
+    g.followers.href = ROOT + "followers";
     g.followers.appendChild(ct("Followers:" + my.followers_count));
 
-    g.lists.href = "/+/" + my.screen_name + "/lists";
+    g.lists.href = ROOT + my.screen_name + "/lists";
     g.lists.appendChild(ct("Lists"));
 
-    g.listed.href = "/+/" + my.screen_name + "/lists/memberships";
+    g.listed.href = ROOT + my.screen_name + "/lists/memberships";
     g.listed.appendChild(ct("Listed:" + my.listed_count));
 
-    g.blocking.href = "/+/blocking";
+    g.blocking.href = ROOT + "blocking";
     g.blocking.appendChild(ct("Blocking"));
 
     g.logout.onclick = function() {
       if (confirm("logout Sure?")) {
-        post("/sessions/destroy", "", function(xhr) { location = "/+/"; });
+        post("/sessions/destroy", "", function(xhr) { location = ROOT; });
       }
       return false;
     };
@@ -170,42 +176,42 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function getPage(my) {
-    var key = location.pathname.slice(3).replace(/[/]+$/, "");
+    var key = location.pathname.slice(ROOTLEN).replace(/[/]+$/, "");
     var hash = key.split("/");
     var q = location.search.slice(1);
     switch (hash.length) {
       case (1): {
         switch (hash[0]) {
           case ("lists"): {
-            showLists("/1/" + my.id +
+            showLists(APV + my.id +
             "/lists.json?" + q + "&cursor=-1", my);
-            showLists("/1/" + my.id +
+            showLists(APV + my.id +
             "/lists/subscriptions.json?" + q, my);
             break;
           }
           case ("following"): {
-            showUsers("/1/statuses/friends.json?" + q + "&cursor=-1", my);
+            showUsers(APV + "statuses/friends.json?" + q + "&cursor=-1", my);
             break;
           }
           case ("followers"): {
-            showUsers("/1/statuses/followers.json?" + q + "&cursor=-1", my);
+            showUsers(APV + "statuses/followers.json?" + q + "&cursor=-1", my);
             break;
           }
           case ("replies"): {
-            showTL("/1/statuses/mentions.json?" + q, my);
+            showTL(APV + "statuses/mentions.json?" + q, my);
             break;
           }
           case ("blocking"): {
-            showUsers("/1/blocks/blocking.json?" + q, my);
+            showUsers(APV + "blocks/blocking.json?" + q, my);
             break;
           }
           case (""): {
             showTweetBox();
-            showTL("/1/statuses/home_timeline.json?" + q, my);
+            showTL(APV + "statuses/home_timeline.json?" + q, my);
             break;
           }
           default: {
-            showTL("/1/statuses/user_timeline.json?screen_name=" + hash[0] +
+            showTL(APV + "statuses/user_timeline.json?screen_name=" + hash[0] +
             "&" + q, my);
             break;
           }
@@ -215,28 +221,28 @@ addEventListener("DOMContentLoaded", function() {
       case (2): {
         switch (hash[1]) {
           case ("following"): {
-            showUsers("/1/statuses/friends.json?screen_name=" + hash[0] + "&" +
-            q + "&cursor=-1", my);
+            showUsers(APV + "statuses/friends.json?screen_name=" + hash[0] +
+            "&" + q + "&cursor=-1", my);
             break;
           }
           case ("followers"): {
-            showUsers("/1/statuses/followers.json?screen_name=" + hash[0] +
+            showUsers(APV + "statuses/followers.json?screen_name=" + hash[0] +
             "&" + q + "&cursor=-1", showUsers);
             break;
           }
           case ("lists"): {
-            showLists("/1/" + hash[0] + "/lists.json?" + q, my);
-            showLists("/1/" + hash[0] + "/lists/subscriptions.json?" + q, my);
+            showLists(APV + hash[0] + "/lists.json?" + q, my);
+            showLists(APV + hash[0] + "/lists/subscriptions.json?" + q, my);
             break;
           }
           case ("memberships"): {
             if (hash[0] === "lists") {
-              showLists("/1/" + hash.join("/") + ".json?" + q, my);
+              showLists(APV + hash.join("/") + ".json?" + q, my);
             }
             break;
           }
           default: {
-            showTL("/1/" + hash[0] + "/lists/" + hash[1] +
+            showTL(APV + hash[0] + "/lists/" + hash[1] +
             "/statuses.json?" + q, showTL);
             break;
           }
@@ -246,13 +252,13 @@ addEventListener("DOMContentLoaded", function() {
       case (3): {
         switch (hash[2]) {
           case ("members"): {
-            showUsers("/1/" + hash[0] + "/" + hash[1] + "/members.json?" + q,
+            showUsers(APV + hash[0] + "/" + hash[1] + "/members.json?" + q,
             my);
             break;
           }
           case ("memberships"): {
             if (hash[1] === "lists") {
-              showLists("/1/" + hash.join("/") + ".json?" + q, my);
+              showLists(APV + hash.join("/") + ".json?" + q, my);
             }
             break;
           }
@@ -286,7 +292,7 @@ addEventListener("DOMContentLoaded", function() {
 
     tbox.subm.appendChild(ct("Tweet"));
     tbox.subm.addEventListener("click", function() {
-      post("/1/statuses/update.json",
+      post(APV + "statuses/update.json",
       "status=" + encodeURIComponent(tbox.box.value) +
       "&in_reply_to_status_id=" + tbox.id.value, function(xhr) {
         alert(xhr.status);
@@ -295,7 +301,8 @@ addEventListener("DOMContentLoaded", function() {
 
     tbox.del.appendChild(ct("Delete"));
     tbox.del.addEventListener("click", function() {
-      post("/1/statuses/destroy/" + tbox.id.value + ".json", "", function(xhr) {
+      post(APV + "statuses/destroy/" + tbox.id.value + ".json", "",
+      function(xhr) {
         alert(xhr.status);
       })
     }, false);
@@ -332,7 +339,7 @@ addEventListener("DOMContentLoaded", function() {
 
     actbar.source.type = "text";
     actbar.source.value =
-    location.pathname.slice(3).match(/[^/]+(?:[/][^/]+)?/);
+    location.pathname.slice(ROOTLEN).match(/[^/]+(?:[/][^/]+)?/);
     actbar.target.type = "text";
     actbar.add.type = "radio";
     actbar.add.checked = true;
@@ -344,12 +351,12 @@ addEventListener("DOMContentLoaded", function() {
       if (actbar.source.value === "following" ||
       actbar.source.value === my.screen_name + "/following") {
         if (actbar.add.checked) {
-          post("/1/friendships/create/" + actbar.target.value + ".json", "",
+          post(APV + "friendships/create/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
         } else if (actbar.rm.checked) {
-          post("/1/friendships/destroy/" + actbar.target.value + ".json", "",
+          post(APV + "friendships/destroy/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
@@ -357,30 +364,30 @@ addEventListener("DOMContentLoaded", function() {
       } else if (actbar.source.value === "followers" ||
       actbar.source.value === my.screen_name + "/followers") {
         if (actbar.add.checked) {
-          post("/1/blocks/destroy/" + actbar.target.value + ".json", "",
+          post(APV + "blocks/destroy/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
         } else if (actbar.rm.checked) {
-          post("/1/blocks/create/" + actbar.target.value + ".json", "",
+          post(APV + "blocks/create/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
         }
       } else if (actbar.source.value === "blocking") {
         if (actbar.add.checked) {
-          post("/1/blocks/create/" + actbar.target.value + ".json", "",
+          post(APV + "blocks/create/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
         } else if (actbar.rm.checked) {
-          post("/1/blocks/destroy/" + actbar.target.value + ".json", "",
+          post(APV + "blocks/destroy/" + actbar.target.value + ".json", "",
           function(xhr) {
             alert(xhr.status);
           });
         }
       } else {
-        post("/1/" + actbar.source.value + "/members.json",
+        post(APV + actbar.source.value + "/members.json",
         "id=" + actbar.target.value +
         (actbar.rm.checked ? "&_method=DELETE" : ""),
         function(xhr) {
@@ -412,7 +419,7 @@ addEventListener("DOMContentLoaded", function() {
       users && users.forEach(function(s) {
         var li = ce("li");
         var a = ce("a");
-        a.href = "/+/" + s.screen_name;
+        a.href = ROOT + s.screen_name;
         a.appendChild(ct(s.screen_name));
         li.appendChild(a);
         ul.appendChild(li);
@@ -474,7 +481,7 @@ addEventListener("DOMContentLoaded", function() {
         var li = ce("li");
         var a = ce("a");
 
-        a.href = "/+/" + l.full_name.slice(1);
+        a.href = ROOT + l.full_name.slice(1);
         a.appendChild(ct(l.full_name));
 
         li.appendChild(a);
@@ -548,15 +555,16 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function main() {
-    if (~document.cookie.indexOf("auth_token")) {
-      get("/1/statuses/user_timeline.json?count=1", function(xhr) {
+    if (~document.cookie.indexOf("auth_token=")) {
+      get(APV + "statuses/user_timeline.json?count=1", function(xhr) {
         var my = JSON.parse(xhr.responseText)[0].user;
         initDOM(my);
         getPage(my);
       });
     } else {
       location =
-      "/login?redirect_after_login=http%3A%2F%2Fapi.twitter.com%2F%2B%2F";
+      "/login?redirect_after_login=http%3A%2F%2Fapi.twitter.com" +
+      encodeURIComponent(ROOT);
     }
   };
 
