@@ -10,7 +10,7 @@ opera.addEventListener("BeforeExternalScript", function(v) {
   v.preventDefault();
 }, false);
 addEventListener("DOMContentLoaded", function() {
-  if (!document.body) return;
+  if (location.href.indexOf("http://api.twitter.com/+/")) return;
 
   /* GLOBAL VAR & FUNCTIONS */
 
@@ -189,6 +189,18 @@ addEventListener("DOMContentLoaded", function() {
             "/lists/subscriptions.json?" + q, my);
             break;
           }
+          case ("inbox"): {
+            showDM(APV + "direct_messages.json?" + q + "&cursor=-1", my);
+            break;
+          }
+          case ("sent"): {
+            showDM(APV + "direct_messages/sent.json?" + q + "&cursor=-1", my);
+            break;
+          }
+          case ("favorites"): {
+            showTL(APV + "favorites.json?" + q + "&cursor=-1", my);
+            break;
+          }
           case ("following"): {
             showUsers(APV + "statuses/friends.json?" + q + "&cursor=-1", my);
             break;
@@ -219,7 +231,15 @@ addEventListener("DOMContentLoaded", function() {
         break;
       }
       case (2): {
-        switch (hash[1]) {
+        if (hash[0] === "statuses") {
+          showTL(APV + "statuses/show/" + hash[1] + ".json", my);
+
+        } else switch (hash[1]) {
+          case ("favorites"): {
+            showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
+            "&cursor=-1", my);
+            break;
+          }
           case ("following"): {
             showUsers(APV + "statuses/friends.json?screen_name=" + hash[0] +
             "&" + q + "&cursor=-1", my);
@@ -498,19 +518,22 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
+
+
+
+
+
   function showTL(u, my) {
     get(u, function(xhr) {
-      var tl = JSON.parse(xhr.responseText);
+      var data = JSON.parse(xhr.responseText);
       var timeline = ce("ol");
 
-      tl.forEach(function(t) {
+      [].concat(data).forEach(function(t) {
         var entry = {
           entry: ce("li"),
           name: ce("p"),
           id: ce("p"),
           reid: ce("p"),
-          reuid: ce("p"),
-          reuname: ce("p"),
           text: ce("p"),
           date: ce("p")
         };
@@ -519,18 +542,60 @@ addEventListener("DOMContentLoaded", function() {
         entry.id.appendChild(ct("id: " + t.id));
         entry.reid.appendChild(ct("in_reply_to_status_id: " +
         t.in_reply_to_status_id));
-        entry.reuid.appendChild(ct("in_reply_to_user_id: " +
-        t.in_reply_to_user_id));
-        entry.reuname.appendChild(ct("in_reply_to_screen_name: " +
-        t.in_reply_to_screen_name));
         entry.text.appendChild(ct(t.text));
-        entry.date.appendChild(ct(new Date(t.created_at).toString()));
+        entry.date.appendChild(ct(new Date(t.created_at)));
 
         entry.entry.appendChild(entry.name);
         entry.entry.appendChild(entry.text);
         entry.entry.appendChild(entry.id);
         entry.entry.appendChild(entry.reid);
-        entry.entry.appendChild(entry.reuid);
+        entry.entry.appendChild(entry.date);
+
+        timeline.appendChild(entry.entry);
+      });
+
+      document.body.appendChild(timeline);
+
+      if (data.length) {
+        var past = ce("li");
+        past.a = ce("a");
+        past.a.appendChild(ct("past"));
+        past.appendChild(past.a);
+        past.a.href = "?page=2&max_id=" + data[0].id;
+        document.body.appendChild(past);
+      }
+    });
+  };
+
+
+
+
+
+  function showDM(u, my) {
+    get(u, function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      var timeline = ce("ol");
+
+      [].concat(data).forEach(function(t) {
+        var entry = {
+          entry: ce("li"),
+          name: ce("p"),
+          id: ce("p"),
+          reuname: ce("p"),
+          text: ce("p"),
+          date: ce("p")
+        };
+
+        entry.name.appendChild(ct(t.sender_screen_name));
+        entry.id.appendChild(ct("id: " + t.id));
+        entry.reuname.appendChild(ct("recipient_screen_name: " +
+        t.recipient_screen_name));
+        entry.text.appendChild(ct(t.text));
+        entry.date.appendChild(ct(new Date(t.created_at)));
+
+        entry.entry.appendChild(entry.name);
+        entry.entry.appendChild(entry.text);
+        entry.entry.appendChild(entry.id);
         entry.entry.appendChild(entry.reuname);
         entry.entry.appendChild(entry.date);
 
@@ -539,16 +604,17 @@ addEventListener("DOMContentLoaded", function() {
 
       document.body.appendChild(timeline);
 
-      if (tl.length) {
+      if (data.length) {
         var past = ce("li");
         past.a = ce("a");
         past.a.appendChild(ct("past"));
         past.appendChild(past.a);
-        past.a.href = "?page=2&max_id=" + tl[0].id;
+        past.a.href = "?page=2&max_id=" + data[0].id;
         document.body.appendChild(past);
       }
     });
   };
+
 
 
 
