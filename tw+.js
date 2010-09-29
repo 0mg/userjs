@@ -177,8 +177,10 @@ addEventListener("DOMContentLoaded", function() {
       case (1): {
         switch (hash[0]) {
           case ("lists"): {
-            showLists("/1/" + my.id + "/lists.json?" + q + "&cursor=-1", my);
-            showLists("/1/" + my.id + "/lists/subscriptions.json?" + q, my);
+            showLists("/1/" + my.id +
+            "/lists.json?" + q + "&cursor=-1", my);
+            showLists("/1/" + my.id +
+            "/lists/subscriptions.json?" + q, my);
             break;
           }
           case ("following"): {
@@ -198,6 +200,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case (""): {
+            showTweetBox();
             showTL("/1/statuses/home_timeline.json?" + q, my);
             break;
           }
@@ -257,6 +260,52 @@ addEventListener("DOMContentLoaded", function() {
         break;
       }
     }
+  };
+
+
+
+
+
+
+  function showTweetBox() {
+    document.body.appendChild(makeTweetBox());
+  };
+
+
+
+
+
+  function makeTweetBox() {
+    var tbox = {
+      tbox: ce("div"),
+      box: ce("textarea"),
+      id: ce("input"),
+      subm: ce("button"),
+      del: ce("button")
+    };
+
+    tbox.subm.appendChild(ct("Tweet"));
+    tbox.subm.addEventListener("click", function() {
+      post("/1/statuses/update.json",
+      "status=" + encodeURIComponent(tbox.box.value) +
+      "&in_reply_to_status_id=" + tbox.id.value, function(xhr) {
+        alert(xhr.status);
+      })
+    }, false);
+
+    tbox.del.appendChild(ct("Delete"));
+    tbox.del.addEventListener("click", function() {
+      post("/1/statuses/destroy/" + tbox.id.value + ".json", "", function(xhr) {
+        alert(xhr.status);
+      })
+    }, false);
+
+    tbox.tbox.appendChild(tbox.box);
+    tbox.tbox.appendChild(tbox.id);
+    tbox.tbox.appendChild(tbox.subm);
+    tbox.tbox.appendChild(tbox.del);
+
+    return tbox.tbox;
   };
 
 
@@ -354,7 +403,6 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-
   function showUsers(u, my) {
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -445,29 +493,51 @@ addEventListener("DOMContentLoaded", function() {
 
   function showTL(u, my) {
     get(u, function(xhr) {
-      var TL = JSON.parse(xhr.responseText);
-      var list = ce("ol");
-      list.id = "timeline";
+      var tl = JSON.parse(xhr.responseText);
+      var timeline = ce("ol");
 
-      var past = ce("li");
-      past.a = ce("a");
+      tl.forEach(function(t) {
+        var entry = {
+          entry: ce("li"),
+          name: ce("p"),
+          id: ce("p"),
+          reid: ce("p"),
+          reuid: ce("p"),
+          reuname: ce("p"),
+          text: ce("p"),
+          date: ce("p")
+        };
 
-      TL.forEach(function(s, i) {
-        var li = ce("li");
-        [s.user.screen_name, s.text, s.created_at].forEach(function(s) {
-          var p = ce("p");
-          p.appendChild(ct(s));
-          li.appendChild(p);
-        });
-        list.appendChild(li);
+        entry.name.appendChild(ct(t.user.screen_name));
+        entry.id.appendChild(ct("id: " + t.id));
+        entry.reid.appendChild(ct("in_reply_to_status_id: " +
+        t.in_reply_to_status_id));
+        entry.reuid.appendChild(ct("in_reply_to_user_id: " +
+        t.in_reply_to_user_id));
+        entry.reuname.appendChild(ct("in_reply_to_screen_name: " +
+        t.in_reply_to_screen_name));
+        entry.text.appendChild(ct(t.text));
+        entry.date.appendChild(ct(new Date(t.created_at).toString()));
+
+        entry.entry.appendChild(entry.name);
+        entry.entry.appendChild(entry.text);
+        entry.entry.appendChild(entry.id);
+        entry.entry.appendChild(entry.reid);
+        entry.entry.appendChild(entry.reuid);
+        entry.entry.appendChild(entry.reuname);
+        entry.entry.appendChild(entry.date);
+
+        timeline.appendChild(entry.entry);
       });
 
-      document.body.appendChild(list);
+      document.body.appendChild(timeline);
 
-      if (TL.length) {
+      if (tl.length) {
+        var past = ce("li");
+        past.a = ce("a");
         past.a.appendChild(ct("past"));
         past.appendChild(past.a);
-        past.a.href = "?page=2&max_id=" + TL[0].id;
+        past.a.href = "?page=2&max_id=" + tl[0].id;
         document.body.appendChild(past);
       }
     });
