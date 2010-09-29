@@ -10,7 +10,6 @@ opera.addEventListener("BeforeExternalScript", function(v) {
   v.preventDefault();
 }, false);
 addEventListener("DOMContentLoaded", function() {
-  if (location.href.indexOf("http://api.twitter.com/+/")) return;
 
   /* GLOBAL VAR & FUNCTIONS */
 
