@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name tw+
-// @include http://api.twitter.com/+/*
+// @name tw-
+// @include http://api.twitter.com/-/*
 // ==/UserScript==
 
 opera.addEventListener("BeforeScript", function(v) {
@@ -13,7 +13,7 @@ addEventListener("DOMContentLoaded", function() {
 
   /* GLOBAL VAR & FUNCTIONS */
 
-  var ROOT = "/+/"; // HOMEPATH
+  var ROOT = "/-/"; // HOMEPATH
   var ROOTLEN = ROOT.length;
 
   var APV = 1; // API VERSION
