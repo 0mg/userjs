@@ -3,12 +3,25 @@
 // @include http://api.twitter.com/-/*
 // ==/UserScript==
 
+/* Debug */
+var props = function(o) {
+  if (!o) return;
+  var s = [];
+  for (var p in o) {
+    s.push(p + " : " + o[p]);
+  }
+  return s.sort().join("\n");
+};
+
+/* Disable Script in Original Page */
 opera.addEventListener("BeforeScript", function(v) {
   v.preventDefault();
 }, false);
 opera.addEventListener("BeforeExternalScript", function(v) {
   v.preventDefault();
 }, false);
+
+/* Main */
 addEventListener("DOMContentLoaded", function() {
 
   /* GLOBAL VAR & FUNCTIONS */
@@ -89,7 +102,7 @@ addEventListener("DOMContentLoaded", function() {
 
     html.style.height = "100%";
 
-    title.appendChild(ct("tw+"));
+    title.appendChild(ct("tw-"));
     style.appendChild(ct("\
     "));
 
@@ -114,6 +127,8 @@ addEventListener("DOMContentLoaded", function() {
       home: ce("a"),
       profile: ce("a"),
       replies: ce("a"),
+      inbox: ce("a"),
+      favorites: ce("a"),
       following: ce("a"),
       followers: ce("a"),
       lists: ce("a"),
@@ -127,11 +142,17 @@ addEventListener("DOMContentLoaded", function() {
     g.home.href = ROOT;
     g.home.appendChild(ct("Home"));
 
-    g.profile.href = ROOT + my.screen_name;
+    g.profile.href = ROOT + "@" + my.screen_name;
     g.profile.appendChild(ct("Profile"));
 
     g.replies.href = ROOT + "replies";
     g.replies.appendChild(ct("@" + my.screen_name));
+
+    g.inbox.href = ROOT + "inbox";
+    g.inbox.appendChild(ct("Messages"));
+
+    g.favorites.href = ROOT + "favorites";
+    g.favorites.appendChild(ct("Favorites"));
 
     g.following.href = ROOT + "following";
     g.following.appendChild(ct("Following:" + my.friends_count));
@@ -139,10 +160,10 @@ addEventListener("DOMContentLoaded", function() {
     g.followers.href = ROOT + "followers";
     g.followers.appendChild(ct("Followers:" + my.followers_count));
 
-    g.lists.href = ROOT + my.screen_name + "/lists";
+    g.lists.href = ROOT + "@" + my.screen_name + "/lists";
     g.lists.appendChild(ct("Lists"));
 
-    g.listed.href = ROOT + my.screen_name + "/lists/memberships";
+    g.listed.href = ROOT + "@" + my.screen_name + "/lists/memberships";
     g.listed.appendChild(ct("Listed:" + my.listed_count));
 
     g.blocking.href = ROOT + "blocking";
@@ -160,6 +181,8 @@ addEventListener("DOMContentLoaded", function() {
       g.home,
       g.profile,
       g.replies,
+      g.inbox,
+      g.favorites,
       g.following,
       g.followers,
       g.lists,
@@ -178,6 +201,7 @@ addEventListener("DOMContentLoaded", function() {
     var key = location.pathname.slice(ROOTLEN).replace(/[/]+$/, "");
     var hash = key.split("/");
     var q = location.search.slice(1);
+    showTweetBox();
     switch (hash.length) {
       case (1): {
         switch (hash[0]) {
@@ -217,7 +241,6 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case (""): {
-            showTweetBox();
             showTL(APV + "statuses/home_timeline.json?" + q, my);
             break;
           }
@@ -230,10 +253,7 @@ addEventListener("DOMContentLoaded", function() {
         break;
       }
       case (2): {
-        if (hash[0] === "statuses") {
-          showTL(APV + "statuses/show/" + hash[1] + ".json", my);
-
-        } else switch (hash[1]) {
+        switch (hash[1]) {
           case ("favorites"): {
             showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
             "&cursor=-1", my);
@@ -269,7 +289,11 @@ addEventListener("DOMContentLoaded", function() {
         break;
       }
       case (3): {
-        switch (hash[2]) {
+        if (hash[0] === "@" &&
+        (hash[1] === "status" || hash[1] === "statuses")) {
+          showTL(APV + "statuses/show/" + hash[2] + ".json", my);
+
+        } else switch (hash[2]) {
           case ("members"): {
             showUsers(APV + hash[0] + "/" + hash[1] + "/members.json?" + q,
             my);
@@ -430,6 +454,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showUsers(u, my) {
+    document.body.appendChild(makeActbar(my));
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var users = data.users || data;
@@ -438,7 +463,7 @@ addEventListener("DOMContentLoaded", function() {
       users && users.forEach(function(s) {
         var li = ce("li");
         var a = ce("a");
-        a.href = ROOT + s.screen_name;
+        a.href = ROOT + "@" + s.screen_name;
         a.appendChild(ct(s.screen_name));
         li.appendChild(a);
         ul.appendChild(li);
@@ -446,7 +471,6 @@ addEventListener("DOMContentLoaded", function() {
 
       ul.appendChild(makeCursor(data));
 
-      document.body.appendChild(makeActbar(my));
       document.body.appendChild(ul);
     });
   };
@@ -500,7 +524,7 @@ addEventListener("DOMContentLoaded", function() {
         var li = ce("li");
         var a = ce("a");
 
-        a.href = ROOT + l.full_name.slice(1);
+        a.href = ROOT + l.full_name;
         a.appendChild(ct(l.full_name));
 
         li.appendChild(a);
@@ -530,25 +554,44 @@ addEventListener("DOMContentLoaded", function() {
       [].concat(data).forEach(function(t) {
         var entry = {
           entry: ce("li"),
-          name: ce("p"),
-          id: ce("p"),
-          reid: ce("p"),
+          name: ce("a"),
+          icon: ce("img"),
+          reid: ce("span"),
           text: ce("p"),
-          date: ce("p")
+          date: ce("a"),
+          src: ce("span"),
         };
 
+        entry.entry.className = "tweet";
+
+        entry.name.className = "screen_name";
+        entry.name.href = ROOT + "@" + t.user.screen_name;
         entry.name.appendChild(ct(t.user.screen_name));
-        entry.id.appendChild(ct("id: " + t.id));
-        entry.reid.appendChild(ct("in_reply_to_status_id: " +
-        t.in_reply_to_status_id));
+
+        entry.icon.className = "icon";
+        entry.icon.alt = t.user.name;
+        entry.icon.src = t.user.profile_image_url;
+
+        entry.reid.className = "in_reply_to_status_id";
+        entry.reid.appendChild(ct(t.in_reply_to_status_id));
+
+        entry.text.className = "content";
         entry.text.appendChild(ct(t.text));
+
+        entry.date.className = "created_at";
+        entry.date.href = ROOT + "@/status/" + t.id;
         entry.date.appendChild(ct(new Date(t.created_at)));
 
-        entry.entry.appendChild(entry.name);
-        entry.entry.appendChild(entry.text);
-        entry.entry.appendChild(entry.id);
-        entry.entry.appendChild(entry.reid);
-        entry.entry.appendChild(entry.date);
+        entry.src.className = "source";
+        entry.src.innerHTML = t.source;
+
+        entry.entry.innerHTML =
+        entry.name.outerHTML +
+        entry.icon.outerHTML +
+        entry.reid.outerHTML +
+        entry.text.outerHTML +
+        entry.date.outerHTML +
+        entry.src.outerHTML;
 
         timeline.appendChild(entry.entry);
       });
@@ -628,8 +671,7 @@ addEventListener("DOMContentLoaded", function() {
       });
     } else {
       location =
-      "/login?redirect_after_login=http%3A%2F%2Fapi.twitter.com" +
-      encodeURIComponent(ROOT);
+      "/login?redirect_after_login=" + encodeURIComponent(location);
     }
   };
 
