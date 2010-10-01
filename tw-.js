@@ -14,9 +14,6 @@ var props = function(o) {
 };
 
 /* Disable Script in Original Page */
-opera.addEventListener("BeforeEvent.StateChange", function(v) {
-  alert(2);
-}, false);
 opera.addEventListener("BeforeScript", function(v) {
   v.preventDefault();
 }, false);
@@ -535,7 +532,7 @@ addEventListener("DOMContentLoaded", function() {
     tbox.subm.addEventListener("click", function() {
       post(APV + "statuses/update.json",
       "status=" + encodeURIComponent(tbox.box.value) +
-      "&in_reply_to_status_id=" + tbox.id.value, function(xhr) {
+      "&in_reply_to_status_id=" + tbox.id.value + "&source=tw-", function(xhr) {
         alert(xhr.status);
       })
     }, false);
