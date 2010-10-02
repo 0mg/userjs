@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitter Prompt
-// @include http://twitter.com/share?url=www.u.js
+// @include http://api.twitter.com/share?url=www.u.js
 // @description Tweet via window.prompt
 // ==/UserScript==
 
@@ -9,7 +9,7 @@ if (false) {
 javascript: (function/**/f(s) {
   if (s = prompt('いまどうしてる？', s)) confirm(s.slice(0, 140) +
   '\n\nあと\x20' + (140 - s.length) + '\x20字入力可能') ?
-  open('http://twitter.com/share?url=www.u.js', s,
+  open('http://api.twitter.com/share?url=www.u.js', s,
   'height=1,width=' + innerWidth) : f(s)
 })(encodeURI(decodeURI(location)))
 }
@@ -24,7 +24,6 @@ if (window.name) {
   }, false);
   window.addEventListener("DOMContentLoaded", function() {
     var tweet = window.name.slice(0, 140);
-    //tweet = tweet.split("").reverse().join("");
     if (!document.getElementById("status")) {
       document.documentElement.style.display = "block";
       window.resizeTo(innerWidth, 320);
@@ -32,14 +31,15 @@ if (window.name) {
     }
     if (!confirm(tweet + "\n\nこの文をツイートします")) return exit();
     var xhr = new XMLHttpRequest;
-    xhr.open("POST", "/status/update", true);
+    xhr.open("POST", "/1/statuses/update.xml", true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("X-PHX", "true");
     xhr.onreadystatechange = function() {
       if (this.readyState < 4) return;
       if (this.status === 200) exit();
       else exit(Error(this.getAllResponseHeaders()), tweet);
     };
-    xhr.send("authenticity_token=" +
+    xhr.send("post_authenticity_token=" +
     document.getElementsByName("authenticity_token")[0].value +
     "&status=" + encodeURIComponent(tweet));
   }, false);

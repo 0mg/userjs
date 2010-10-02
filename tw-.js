@@ -88,15 +88,16 @@ addEventListener("DOMContentLoaded", function() {
   };
   function linker(text) {
     return text.split(/\s/).map(function(s) {
-      if (s.indexOf("http://") === 0 || s.indexOf("https://") === 0 ||
-      s.indexOf("javascript:") === 0 || s.indexOf("data:") === 0) {
-        return '<a href="' + encodeURI(decodeURI(s)) + '">' + s + '</a>';
-      } else if (/^@\w+/.test(s)) {
-        return '@<a href="' + ROOT + s.slice(1) + '">' + s.slice(1) +
-        '</a>';
-      } else if (/^#\w+/.test(s)) {
-        return '<a href="' + ROOT + 'search/?q=' +
-        encodeURIComponent(s) + '">' + s + '</a>';
+      if (/(.*)((?:https?:\/\/|javascript:|data:).*)/.test(s)) {
+        return RegExp.$1 + '<a href="' + encodeURI(decodeURI(RegExp.$2)) +
+        '">' + RegExp.$2 + '</a>';
+      } else if (/(.*)@(\w+)(.*)/.test(s)) {
+        return RegExp.$1 + '@<a href="' + ROOT + RegExp.$2 + '">' + RegExp.$2 +
+        '</a>' + RegExp.$3;
+      } else if (/(.*)(#\w+)(.*)/.test(s)) {
+        return RegExp.$1 + '<a href="' + ROOT + 'search/?q=' +
+        encodeURIComponent(RegExp.$2) + '">' + RegExp.$2 + '</a>' +
+        RegExp.$3;
       }
       return s;
     }).join(" ");
@@ -176,10 +177,6 @@ addEventListener("DOMContentLoaded", function() {
       #header {\
         background: #fcf;\
       }\
-      #logo a {\
-        font-weight: bold;\
-        font-size: 2em;\
-      }\
       #globalbar li {\
         display: inline-block;\
       }\
@@ -197,6 +194,10 @@ addEventListener("DOMContentLoaded", function() {
       }\
       #footer {\
         background: #ffc;\
+      }\
+      #status {\
+        width: 30em;\
+        height: 7em;\
       }\
       #timeline {\
       }\
@@ -234,8 +235,6 @@ addEventListener("DOMContentLoaded", function() {
       }\
       .tweet-action li {\
         display: inline-block;\
-      }\
-      .tweet-action .fav {\
         margin-right: 1ex;\
       }\
     '));
@@ -502,7 +501,7 @@ addEventListener("DOMContentLoaded", function() {
         entry.date.outerHTML + " via " + entry.src.outerHTML +
         '</div>';
 
-        entry.entry.appendChild(makeTwAct(t));
+        entry.entry.appendChild(makeTwAct(t, my));
 
         timeline.appendChild(entry.entry);
       });
@@ -568,11 +567,12 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function makeTwAct(t) {
+  function makeTwAct(t, my) {
     var act = {
       bar: ce("ul"),
       fav: ce("button"),
       rep: ce("a"),
+      del: ce("button"),
       rt: ce("button")
     };
 
@@ -591,8 +591,7 @@ addEventListener("DOMContentLoaded", function() {
     }, false);
 
     act.rep.className = "reply";
-    act.rep.href = "#update";
-    act.rep.onclick = function() { scrollTo(0, 0); return false; };
+    act.rep.href = "javascript:;";
     act.rep.appendChild(ct("Reply"));
     act.rep.addEventListener("click", function() {
       var status = id("status");
@@ -600,12 +599,27 @@ addEventListener("DOMContentLoaded", function() {
 
       status.value = "@" + t.user.screen_name + " " + status.value;
       repid.value = t.id;
+
+      id("status").focus();
     }, false);
 
     act.bar.appendChild(listize(
       act.fav,
       act.rep
     ));
+
+    if (my.id === t.user.id) {
+      act.del.appendChild(ct("Delete"));
+      act.del.addEventListener("click", function(v) {
+        if (confirm("Delete Sure?")) {
+          post(APV + "statuses/destroy/" + t.id + ".json", "", function(xhr) {
+              act.bar.parentNode.parentNode.removeChild(act.bar.parentNode);
+          });
+        }
+      }, false);
+
+      act.bar.appendChild(listize(act.del));
+    };
 
     return act.bar;
   };
