@@ -186,7 +186,7 @@ addEventListener("DOMContentLoaded", function() {
             showUsers(APV + "statuses/followers.json?" + q + "&cursor=-1", my);
             break;
           }
-          case ("replies"): {
+          case ("mentions"): {
             showTL(APV + "statuses/mentions.json?" + q, my);
             break;
           }
@@ -459,7 +459,7 @@ addEventListener("DOMContentLoaded", function() {
     g.profile.href = ROOT + my.screen_name;
     g.profile.appendChild(ct("Profile:" + my.statuses_count));
 
-    g.replies.href = ROOT + "replies";
+    g.replies.href = ROOT + "mentions";
     g.replies.appendChild(ct("@" + my.screen_name));
 
     g.inbox.href = ROOT + "inbox";
