@@ -78,12 +78,27 @@ addEventListener("DOMContentLoaded", function() {
   };
   function listize() {
     var f = document.createDocumentFragment();
-    arguments.forEach(function(o) {
+    Array.prototype.forEach.call(arguments, function(o) {
       var li = ce("li");
       li.appendChild(o);
       f.appendChild(li);
     });
     return f;
+  };
+  function linker(text) {
+    return text.split(/\s/).map(function(s) {
+      if (s.indexOf("http://") === 0 || s.indexOf("https://") === 0 ||
+      s.indexOf("javascript:") === 0 || s.indexOf("data:") === 0) {
+        return '<a href="' + encodeURI(decodeURI(s)) + '">' + s + '</a>';
+      } else if (/^@\w+/.test(s)) {
+        return '@<a href="' + ROOT + s.slice(1) + '">' + s.slice(1) +
+        '</a>';
+      } else if (/^#\w+/.test(s)) {
+        return '<a href="' + ROOT + 'search/?q=' +
+        encodeURIComponent(s) + '">' + s + '</a>';
+      }
+      return s;
+    }).join(" ");
   };
 
 
@@ -98,8 +113,8 @@ addEventListener("DOMContentLoaded", function() {
 
   function main() {
     if (~document.cookie.indexOf("auth_token=")) {
-      get(APV + "statuses/user_timeline.json?count=1", function(xhr) {
-        var my = JSON.parse(xhr.responseText)[0].user;
+      get(APV + "account/verify_credentials.json", function(xhr) {
+        var my = JSON.parse(xhr.responseText);
         initDOM(my);
         getPage(my);
       });
@@ -131,8 +146,8 @@ addEventListener("DOMContentLoaded", function() {
     html.style.height = "100%";
 
     title.appendChild(ct("tw-"));
-    style.appendChild(ct("\
-    "));
+    style.appendChild(ct('\
+    '));
 
     head.appendChild(title);
     head.appendChild(style);
@@ -281,10 +296,10 @@ addEventListener("DOMContentLoaded", function() {
     document.body.appendChild(makeActbar(my));
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      var users = data.users || data;
+      data.users = data.users || data;
 
       var ul = ce("ul");
-      users && users.forEach(function(s) {
+      data.users && data.users.forEach(function(s) {
         var li = ce("li");
         var a = ce("a");
         a.href = ROOT + s.screen_name;
@@ -344,7 +359,7 @@ addEventListener("DOMContentLoaded", function() {
           reid: ce("a"),
           text: ce("p"),
           date: ce("a"),
-          src: ce("span"),
+          src: ce("span")
         };
 
         t.user = t.user || t.sender;
@@ -358,6 +373,8 @@ addEventListener("DOMContentLoaded", function() {
 
         entry.icon.className = "icon";
         entry.icon.alt = t.user.name;
+        entry.icon.width = "48";
+        entry.icon.height = "48";
         entry.icon.src = t.user.profile_image_url;
 
         entry.reid.className = "in_reply_to_status_id";
@@ -368,23 +385,8 @@ addEventListener("DOMContentLoaded", function() {
           t.in_reply_to_screen_name));
         }
 
-        var text = t.text.split(/\s/);
-        text = text.map(function(s) {
-          if (s.indexOf("http://") === 0 || s.indexOf("https://") === 0 ||
-          s.indexOf("javascript:") === 0 || s.indexOf("data:") === 0) {
-            return '<a href="' + encodeURI(decodeURI(s)) + '">' + s + '</a>';
-          } else if (/^@\w+/.test(s)) {
-            return '@<a href="' + ROOT + s.slice(1) + '">' + s.slice(1) +
-            '</a>';
-          } else if (/^#\w+/.test(s)) {
-            return '<a href="' + ROOT + 'search/?q=' +
-            encodeURIComponent(s) + '">' + s + '</a>';
-          }
-          return s;
-        }).join(" ");
-
         entry.text.className = "content";
-        entry.text.innerHTML = text;
+        entry.text.innerHTML = linker(t.text);
 
         entry.date.className = "created_at";
         entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
@@ -400,6 +402,8 @@ addEventListener("DOMContentLoaded", function() {
         entry.text.outerHTML +
         entry.date.outerHTML +
         entry.src.outerHTML;
+
+        entry.entry.appendChild(makeTwAct(t));
 
         timeline.appendChild(entry.entry);
       });
@@ -422,6 +426,51 @@ addEventListener("DOMContentLoaded", function() {
 
 
   /* Supplemental */
+
+
+
+
+
+  function makeTwAct(t) {
+    var act = {
+      bar: ce("ul"),
+      fav: ce("button"),
+      rep: ce("a"),
+      rt: ce("button")
+    };
+
+    act.fav.className = "do-fav";
+    act.fav.favorited = t.favorited;
+    act.fav.appendChild(ct(t.favorited ? "★" : "☆"));
+    act.fav.addEventListener("click", function(v) {
+      var star = v.target;
+      post(APV + "favorites/" + (star.favorited ? "destroy" : "create") + "/" +
+      t.id + ".json", "", function(xhr) {
+        star.favorited = !star.favorited;
+        star.textContent = star.favorited ? "★" : "☆";
+        alert(xhr.responseText.match(/favorited[^,]+/));
+      });
+    }, false);
+
+    act.rep.className = "do-reply";
+    act.rep.href = "#update";
+    act.rep.onclick = function() { scrollTo(0, 0); return false; };
+    act.rep.appendChild(ct("Reply"));
+    act.rep.addEventListener("click", function() {
+      var status = document.getElementById("status");
+      var repid = document.getElementById("in_reply_to_status_id");
+
+      status.value = "@" + t.user.screen_name + " " + status.value;
+      repid.value = t.id;
+    }, false);
+
+    act.bar.appendChild(listize(
+      act.fav,
+      act.rep
+    ));
+
+    return act.bar;
+  };
 
 
 
@@ -527,6 +576,12 @@ addEventListener("DOMContentLoaded", function() {
       subm: ce("button"),
       del: ce("button")
     };
+
+    tbox.tbox.id = "update";
+
+    tbox.box.id = "status";
+
+    tbox.id.id = "in_reply_to_status_id";
 
     tbox.subm.appendChild(ct("Tweet"));
     tbox.subm.addEventListener("click", function() {
