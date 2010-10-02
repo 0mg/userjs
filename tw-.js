@@ -155,9 +155,16 @@ addEventListener("DOMContentLoaded", function() {
       body {\
         padding: 1em;\
         line-height: 1.6;\
-        font-family: "Lucida Console";\
+        font-family: "Lucida Console" sans-serif;\
         font-size: 1.8ex;\
-        color: #000;\
+        background-color: #' + my.profile_background_color + ';' +
+
+        (my.profile_use_background_image ?
+          'background-image: url(' + my.profile_background_image_url + ');' +
+          (my.profile_background_tile ? '' : 'background-repeat: no-repeat;') :
+        '') +
+
+        'color: #' + my.profile_text_color + ';\
       }\
       a {\
         color: #' + my.profile_link_color + ';\
