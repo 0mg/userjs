@@ -86,6 +86,18 @@ addEventListener("DOMContentLoaded", function() {
     });
     return f;
   };
+  function dlize() {
+    var f = document.createDocumentFragment();
+    Array.prototype.forEach.call(arguments, function(o) {
+      var dt = ce("dt");
+      var dd = ce("dd");
+      dt.appendChild(o[0]);
+      dd.appendChild(o[1]);
+      f.appendChild(dt);
+      f.appendChild(dd);
+    });
+    return f;
+  };
   function linker(text) {
     return text.split(/\s/).map(function(s) {
       if (/(.*)((?:https?:\/\/|javascript:|data:).*)/.test(s)) {
@@ -154,10 +166,13 @@ addEventListener("DOMContentLoaded", function() {
         padding: 0;\
       }\
       body {\
-        padding: 1em;\
+        max-width: 750px;\
+        margin: 0 auto;\
+        padding: 1ex;\
         line-height: 1.6;\
         font-family: "Lucida Console" sans-serif;\
         font-size: 1.8ex;\
+        background-attachment: fixed;\
         background-color: #' + my.profile_background_color + ';' +
 
         (my.profile_use_background_image ?
@@ -169,6 +184,9 @@ addEventListener("DOMContentLoaded", function() {
       }\
       a {\
         color: #' + my.profile_link_color + ';\
+      }\
+      a:hover {\
+        text-decoration: underline;\
       }\
       button {\
         line-height: 1;\
@@ -185,19 +203,50 @@ addEventListener("DOMContentLoaded", function() {
         padding-left: 1ex;\
         border-left: 1px solid;\
       }\
+      #subtitle {\
+        padding: 1ex;\
+      }\
+      #subtitle .icon {\
+        margin-right: 1ex;\
+      }\
+      #subtitle .screen_name {\
+        vertical-align: top;\
+        font-size: 2ex;\
+      }\
+      #side:before {\
+        content: ".";\
+        line-height: 0.1;\
+        visibility: hidden;\
+      }\
       #side {\
-        background: #ccf;\
+        float: right;\
+        width: 250px;\
+        max-width: 100%;\
+        background-color: #ccf;\
+        font-size: smaller;\
       }\
       #content {\
-        max-width: 500px;\
+        float: right;\
+        width: 500px;\
+        max-width: 100%;\
         background: #cfc;\
       }\
       #footer {\
+        clear: both;\
         background: #ffc;\
       }\
       #status {\
-        width: 30em;\
+        width: 35em;\
         height: 7em;\
+      }\
+      #profile {\
+        padding: 2ex;\
+      }\
+      #profile dt {\
+        font-weight: bold;\
+      }\
+      #profile dd {\
+        margin: 0 0 1em 1em;\
       }\
       #timeline {\
       }\
@@ -205,7 +254,7 @@ addEventListener("DOMContentLoaded", function() {
         background: #f9f9f9;\
         position: relative;\
         list-style: none;\
-        padding: 5px 5px 10px 60px;\
+        padding: 1ex 1ex 1ex 60px;\
         margin-bottom: 1ex;\
       }\
       .tweet .name,\
@@ -220,8 +269,8 @@ addEventListener("DOMContentLoaded", function() {
       }\
       .tweet .icon {\
         position: absolute;\
-        left: 5px;\
-        top: 5px;\
+        left: 1ex;\
+        top: 1ex;\
         width: 48px;\
         height: 48px;\
       }\
@@ -236,6 +285,9 @@ addEventListener("DOMContentLoaded", function() {
       .tweet-action li {\
         display: inline-block;\
         margin-right: 1ex;\
+      }\
+      .tweet-action .fav.true {\
+        background-color: #ff0;\
       }\
     '));
 
@@ -306,7 +358,7 @@ addEventListener("DOMContentLoaded", function() {
           }
           default: {
             showTL(APV + "statuses/user_timeline.json?screen_name=" + hash[0] +
-            "&" + q, my);
+            "&" + q, my, "profile");
             break;
           }
         }
@@ -352,7 +404,7 @@ addEventListener("DOMContentLoaded", function() {
       }
       case (3): {
         if (hash[1] === "status" || hash[1] === "statuses") {
-          showTL(APV + "statuses/show/" + hash[2] + ".json", my);
+          showTL(APV + "statuses/show/" + hash[2] + ".json", my, "profile");
         } else switch (hash[2]) {
           case ("members"):
           case ("subscribers"): {
@@ -437,9 +489,98 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showTL(u, my) {
-    get(u, function(xhr) {
+  function showProfile(user) {
+    var p = {
+      box: ce("dl"),
+      icon: ce("img"),
+      url: ce("a"),
+    };
+
+    var sub = {
+      title: ce("h2"),
+      screen_name: ce("a"),
+    };
+
+    p.box.id = "profile";
+
+    p.icon.className = "icon";
+    p.icon.alt = user.name;
+    p.icon.width = "73";
+    p.icon.src = user.profile_image_url.replace(/_normal\.(.+)$/, "_bigger.$1");
+
+    p.url.appendChild(ct(user.url));
+    p.url.href = user.url;
+
+    p.box.appendChild(dlize(
+      [ct("ID"), ct(user.id)],
+      [ct("Since"), ct(new Date(user.created_at).toLocaleString())],
+      [ct("Screen Name"), ct(user.screen_name)],
+      [ct("Name"), ct(user.name)],
+      [ct("Location"), ct(user.location)],
+      [ct("Time Zone"), ct(user.time_zone)],
+      [ct("Language"), ct(user.lang)],
+      [ct("Web"), p.url],
+      [ct("Bio"), ct(user.description)]
+    ));
+
+    id("side").appendChild(p.box);
+
+    sub.screen_name.className = "screen_name";
+    sub.screen_name.href = ROOT + user.screen_name;
+    sub.screen_name.appendChild(ct(user.screen_name));
+
+    sub.title.id = "subtitle";
+    sub.title.appendChild(sub.screen_name);
+
+    id("header").appendChild(sub.title);
+
+    /* color */
+
+    document.body.style.backgroundColor =
+    "#" + user.profile_background_color;
+
+    if (user.profile_use_background_image) {
+      document.body.style.backgroundImage =
+      "url(" + user.profile_background_image_url + ")";
+      if (!user.profile_background_tile) {
+        document.body.style.backgroundRepeat = "no-repeat";
+      }
+    } else {
+      document.body.style.backgroundImage = "none";
+    }
+
+    id("subtitle").style.backgroundColor =
+    id("side").style.backgroundColor =
+    user.profile_sidebar_fill_color ?
+    "#" + user.profile_sidebar_fill_color :
+    "transparent";
+
+    document.getElementsByTagName("style")[0].textContent +=
+    "body { color: #" + user.profile_text_color + "; }" +
+    "a { color: #" + user.profile_link_color + "; }";
+
+    /* /color */
+
+  };
+
+
+
+
+
+  function showTL(u, my, page) {
+    get(u, page === "profile" ? function(xhr) {
+      tl(xhr);
       var data = JSON.parse(xhr.responseText);
+      data[0] ? showProfile(data[0].user) :
+      get(APV + "users/show.json?screen_name=" +
+      location.pathname.slice(ROOTLEN).split("/")[0], function(xhr) {
+        showProfile(JSON.parse(xhr.responseText));
+      });
+    } : tl);
+
+    function tl(xhr) {
+      var data = JSON.parse(xhr.responseText);
+
       var timeline = ce("ol");
       timeline.id = "timeline";
 
@@ -469,8 +610,7 @@ addEventListener("DOMContentLoaded", function() {
 
         entry.icon.className = "icon";
         entry.icon.alt = t.user.name;
-        entry.icon.width =
-        entry.icon.height = "48";
+        entry.icon.width = "48";
         entry.icon.src = t.user.profile_image_url;
 
         entry.reid.className = "in_reply_to";
@@ -493,8 +633,8 @@ addEventListener("DOMContentLoaded", function() {
 
         entry.entry.innerHTML =
         entry.name.outerHTML +
-        entry.nick.outerHTML +
         entry.icon.outerHTML +
+        entry.nick.outerHTML +
         entry.reid.outerHTML +
         entry.text.outerHTML +
         '<div class="meta">' +
@@ -516,7 +656,7 @@ addEventListener("DOMContentLoaded", function() {
         past.a.href = "?page=2&max_id=" + data[0].id;
         id("content").appendChild(past);
       }
-    });
+    };
   };
 
 
@@ -578,7 +718,7 @@ addEventListener("DOMContentLoaded", function() {
 
     act.bar.className = "tweet-action";
 
-    act.fav.className = "fav";
+    act.fav.className = "fav " + t.favorited;
     act.fav.favorited = t.favorited;
     act.fav.appendChild(ct(t.favorited ? "unfav" : "fav"));
     act.fav.addEventListener("click", function(v) {
@@ -586,6 +726,7 @@ addEventListener("DOMContentLoaded", function() {
       post(APV + "favorites/" + (star.favorited ? "destroy" : "create") + "/" +
       t.id + ".json", "", function(xhr) {
         star.favorited = !star.favorited;
+        star.className = "fav " + star.favorited;
         star.textContent = star.favorited ? "unfav" : "fav";
       });
     }, false);
