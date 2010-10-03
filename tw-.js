@@ -493,6 +493,7 @@ addEventListener("DOMContentLoaded", function() {
     var p = {
       box: ce("dl"),
       icon: ce("img"),
+      icorg: ce("a"),
       url: ce("a"),
     };
 
@@ -506,21 +507,25 @@ addEventListener("DOMContentLoaded", function() {
     p.icon.className = "icon";
     p.icon.alt = user.name;
     p.icon.width = "73";
-    p.icon.src = user.profile_image_url.replace(/_normal\.(.+)$/, "_bigger.$1");
+    p.icon.src = user.profile_image_url.replace(/_normal\./, "_bigger.");
 
+    p.icorg.appendChild(p.icon);
+    p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
+
+    if (user.url) p.url.href = user.url;
     p.url.appendChild(ct(user.url));
-    p.url.href = user.url;
 
     p.box.appendChild(dlize(
       [ct("ID"), ct(user.id)],
       [ct("Since"), ct(new Date(user.created_at).toLocaleString())],
       [ct("Screen Name"), ct(user.screen_name)],
+      [ct("Icon"), p.icorg],
       [ct("Name"), ct(user.name)],
       [ct("Location"), ct(user.location)],
-      [ct("Time Zone"), ct(user.time_zone)],
-      [ct("Language"), ct(user.lang)],
       [ct("Web"), p.url],
-      [ct("Bio"), ct(user.description)]
+      [ct("Bio"), ct(user.description)],
+      [ct("Time Zone"), ct(user.time_zone)],
+      [ct("Language"), ct(user.lang)]
     ));
 
     id("side").appendChild(p.box);
@@ -532,7 +537,7 @@ addEventListener("DOMContentLoaded", function() {
     sub.title.id = "subtitle";
     sub.title.appendChild(sub.screen_name);
 
-    id("header").appendChild(sub.title);
+    id("content").insertBefore(sub.title, id("content").firstChild);
 
     /* color */
 
