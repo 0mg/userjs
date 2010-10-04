@@ -3,7 +3,7 @@
 // @include http://api.twitter.com/-/*
 // ==/UserScript==
 
-/* Debug */
+/* デバッグ用の特別な関数 */
 var props = function(o) {
   if (!o) return;
   var s = [];
@@ -13,7 +13,7 @@ var props = function(o) {
   return s.sort().join("\n");
 };
 
-/* Disable Script in Original Page */
+/* もともとのページのスクリプトを無効化する */
 opera.addEventListener("BeforeScript", function(v) {
   v.preventDefault();
 }, false);
@@ -21,16 +21,18 @@ opera.addEventListener("BeforeExternalScript", function(v) {
   v.preventDefault();
 }, false);
 
-/* Main */
+/* オリジナルなページに書き換える */
 addEventListener("DOMContentLoaded", function() {
 
-  /* GLOBAL VAR & FUNCTIONS */
+  /* グローバル定数 */
 
-  var ROOT = "/-/"; // HOMEPATH
+  var ROOT = "/-/"; // HOMEPATH in URL
   var ROOTLEN = ROOT.length;
 
-  var APV = 1; // API VERSION
+  var APV = 1; // API VERSION in API URL
   APV = "/" + APV + "/";
+
+  /* 頻繁に行う処理を関数化したもの */
 
   var JSON;
   if (!JSON) {
@@ -43,6 +45,9 @@ addEventListener("DOMContentLoaded", function() {
   function ct(s) { return document.createTextNode(s); };
   function id(s) { return document.getElementById(s); };
   function get(u, f) {
+    /*
+      Twitter API 専用 XHR GET
+    */
     var xhr = new XMLHttpRequest;
     xhr.open("GET", u, true);
     xhr.setRequestHeader("X-PHX", "true");
@@ -55,6 +60,9 @@ addEventListener("DOMContentLoaded", function() {
     xhr.send(null);
   };
   function post(u, q, f) {
+    /*
+      Twitter API 専用 XHR POST
+    */
     auth(function(auth) {
       xhr = new XMLHttpRequest;
       xhr.open("POST", u, true);
@@ -70,6 +78,9 @@ addEventListener("DOMContentLoaded", function() {
     });
   };
   function auth(f) {
+    /*
+      Twitter 認証トークン取得
+    */
     get("/about/contact", function(xhr) {
       var data = xhr.responseText;
       var key = '<input name="authenticity_token" value="';
@@ -78,6 +89,9 @@ addEventListener("DOMContentLoaded", function() {
     });
   };
   function listize() {
+    /*
+      引数を li 要素に変換する
+    */
     var f = document.createDocumentFragment();
     Array.prototype.forEach.call(arguments, function(o) {
       var li = ce("li");
@@ -87,6 +101,9 @@ addEventListener("DOMContentLoaded", function() {
     return f;
   };
   function dlize() {
+    /*
+      引数を dt, dd 要素に変換する
+    */
     var f = document.createDocumentFragment();
     Array.prototype.forEach.call(arguments, function(o) {
       var dt = ce("dt");
@@ -99,6 +116,9 @@ addEventListener("DOMContentLoaded", function() {
     return f;
   };
   function linker(text) {
+    /*
+      自動リンク for innerHTML
+    */
     return text.split(/\s/).map(function(s) {
       if (/(.*)((?:https?:\/\/|javascript:|data:).*)/.test(s)) {
         return RegExp.$1 + '<a href="' + encodeURI(decodeURI(RegExp.$2)) +
@@ -126,6 +146,11 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function main() {
+    /*
+      ログインしていないならログイン画面に跳ばす
+      ログイン中ならページ描画を開始する
+    */
+
     if (~document.cookie.indexOf("auth_token=")) {
       get(APV + "account/verify_credentials.json", function(xhr) {
         var my = JSON.parse(xhr.responseText);
@@ -149,6 +174,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function initDOM(my) {
+    /*
+      ページ全体の DOM ツリーを初期化する
+    */
+
     document.removeChild(document.documentElement);
 
     var html = ce("html");
@@ -220,7 +249,7 @@ addEventListener("DOMContentLoaded", function() {
       }\
       #side {\
         float: right;\
-        width: 250px;\
+        width: 249px;\
         max-width: 100%;\
         background-color: #ccf;\
         font-size: smaller;\
@@ -229,7 +258,7 @@ addEventListener("DOMContentLoaded", function() {
         float: right;\
         width: 500px;\
         max-width: 100%;\
-        background: #cfc;\
+        background: #ddd;\
       }\
       #footer {\
         clear: both;\
@@ -255,7 +284,7 @@ addEventListener("DOMContentLoaded", function() {
         position: relative;\
         list-style: none;\
         padding: 1ex 1ex 1ex 60px;\
-        margin-bottom: 1ex;\
+        margin-bottom: 1px;\
       }\
       .tweet .name,\
       .tweet .in_reply_to {\
@@ -305,6 +334,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function getPage(my) {
+    /*
+      URL パスにしたがって適切な内容を全体に表示する
+    */
+
     var key = location.pathname.slice(ROOTLEN).replace(/[/]+$/, "");
     var hash = key.split("/");
     var q = location.search.slice(1);
@@ -436,6 +469,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showUsers(u, my) {
+    /*
+      ユーザー一覧を表示する
+    */
+
     id("side").appendChild(makeActbar(my));
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -462,6 +499,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showLists(u, my) {
+    /*
+      リスト一覧を表示する
+    */
+
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var lists = data.lists;
@@ -490,16 +531,15 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showProfile(user) {
+    /*
+      プロフィールにおける補足項目を表示する
+    */
+
     var p = {
       box: ce("dl"),
       icon: ce("img"),
       icorg: ce("a"),
       url: ce("a"),
-    };
-
-    var sub = {
-      title: ce("h2"),
-      screen_name: ce("a"),
     };
 
     p.box.id = "profile";
@@ -512,32 +552,66 @@ addEventListener("DOMContentLoaded", function() {
     p.icorg.appendChild(p.icon);
     p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
 
-    if (user.url) p.url.href = user.url;
-    p.url.appendChild(ct(user.url));
+    if (user.url) {
+      p.url.href = user.url;
+      p.url.appendChild(ct(user.url));
+    }
 
     p.box.appendChild(dlize(
-      [ct("ID"), ct(user.id)],
-      [ct("Since"), ct(new Date(user.created_at).toLocaleString())],
-      [ct("Screen Name"), ct(user.screen_name)],
       [ct("Icon"), p.icorg],
       [ct("Name"), ct(user.name)],
       [ct("Location"), ct(user.location)],
       [ct("Web"), p.url],
       [ct("Bio"), ct(user.description)],
+      [ct("Language"), ct(user.lang)],
       [ct("Time Zone"), ct(user.time_zone)],
-      [ct("Language"), ct(user.lang)]
+      [ct("ID"), ct(user.id)],
+      [ct("Since"), ct(new Date(user.created_at).toLocaleString())]
     ));
 
     id("side").appendChild(p.box);
+
+    var sub = {
+      screen_name: ce("a"),
+    };
 
     sub.screen_name.className = "screen_name";
     sub.screen_name.href = ROOT + user.screen_name;
     sub.screen_name.appendChild(ct(user.screen_name));
 
-    sub.title.id = "subtitle";
-    sub.title.appendChild(sub.screen_name);
+    id("subtitle").appendChild(sub.screen_name);
 
-    id("content").insertBefore(sub.title, id("content").firstChild);
+    var act = {
+      follow: ce("button"),
+      unfollow: ce("button"),
+      block: ce("button"),
+      unblock: ce("button"),
+    };
+
+    act.follow.appendChild(ct("Follow"));
+    act.follow.addEventListener("click", function() {
+      follow(user.id, function(xhr) { alert(xhr.responseText); });
+    }, false);
+
+    act.unfollow.appendChild(ct("Unfollow"));
+    act.unfollow.addEventListener("click", function() {
+      unfollow(user.id, function(xhr) { alert(xhr.responseText); });
+    }, false);
+
+    act.block.appendChild(ct("Block"));
+    act.block.addEventListener("click", function() {
+      block(user.id, function(xhr) { alert(xhr.responseText); });
+    }, false);
+
+    act.unblock.appendChild(ct("Unblock"));
+    act.unblock.addEventListener("click", function() {
+      unblock(user.id, function(xhr) { alert(xhr.responseText); });
+    }, false);
+
+    id("subaction").appendChild(act.follow);
+    id("subaction").appendChild(act.unfollow);
+    id("subaction").appendChild(act.block);
+    id("subaction").appendChild(act.unblock);
 
     /* color */
 
@@ -560,6 +634,10 @@ addEventListener("DOMContentLoaded", function() {
     "#" + user.profile_sidebar_fill_color :
     "transparent";
 
+    id("subtitle").style.borderBottom =
+    id("side").style.borderLeft =
+    "1px solid #" + user.profile_sidebar_border_color;
+
     document.getElementsByTagName("style")[0].textContent +=
     "body { color: #" + user.profile_text_color + "; }" +
     "a { color: #" + user.profile_link_color + "; }";
@@ -573,6 +651,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showTL(u, my, page) {
+    /*
+      タイムラインを表示する
+    */
+
     get(u, page === "profile" ? function(xhr) {
       tl(xhr);
       var data = JSON.parse(xhr.responseText);
@@ -584,6 +666,10 @@ addEventListener("DOMContentLoaded", function() {
     } : tl);
 
     function tl(xhr) {
+      /*
+        タイムラインを作成する
+      */
+
       var data = JSON.parse(xhr.responseText);
 
       var timeline = ce("ol");
@@ -668,6 +754,47 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
+  /* API */
+
+
+
+
+
+  function tweet(status, id, lat, lon, place_id,
+  display_coordinates, source, callback) {
+    post(APV + "statuses/update.xml",
+    "status=" + (encodeURIComponent(status) || "") +
+    "&in_reply_to_status_id=" + (id || "") +
+    "&lat=" + (lat || "") +
+    "&long=" + (lon || "") +
+    "&display_coordinates=" + (display_coordinates || "") +
+    "&source=" + (source || ""), callback);
+  };
+
+  function untweet(id, callback) {
+    post(APV + "statuses/destroy/" + id + ".xml", "", callback);
+  };
+
+  function follow(id, callback) {
+    post(APV + "friendships/create/" + id + ".xml", "", callback);
+  };
+
+  function unfollow(id, callback) {
+    post(APV + "friendships/destroy/" + id + ".xml", "", callback);
+  };
+
+  function block(id, callback) {
+    post(APV + "blocks/create/" + id + ".xml", "", callback);
+  };
+
+  function unblock(id, callback) {
+    post(APV + "blocks/destroy/" + id + ".xml", "", callback);
+  };
+
+
+
+
+
   /* Supplemental */
 
 
@@ -675,37 +802,43 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function structPage() {
+  /*
+    ページ全体の HTML 構造をセット
+    初期段階で実行
+   */
     var fw = {
-      head: ce("div"),
-      body: ce("div"),
+      header: ce("div"),
+      content: ce("div"),
+      subtitle: ce("h2"),
+      subaction: ce("div"),
       side: ce("div"),
-      foot: ce("div")
+      footer: ce("div")
     };
 
-    fw.head.id = "header";
-
-    fw.body.id = "content";
-
+    fw.header.id = "header";
+    fw.content.id = "content";
     fw.side.id = "side";
-
-    fw.foot.id = "footer";
+    fw.footer.id = "footer";
+    fw.subtitle.id = "subtitle";
+    fw.subaction.id = "subaction";
 
     var logo = {
       h1: ce("h1"),
       a: ce("a"),
-    }
+    };
     logo.a.href = ROOT;
     logo.a.appendChild(ct("tw-"));
-
     logo.h1.id = "logo";
     logo.h1.appendChild(logo.a);
+    fw.header.appendChild(logo.h1);
 
-    fw.head.appendChild(logo.h1);
+    fw.content.appendChild(fw.subtitle);
+    fw.content.appendChild(fw.subaction);
 
-    document.body.appendChild(fw.head);
+    document.body.appendChild(fw.header);
     document.body.appendChild(fw.side);
-    document.body.appendChild(fw.body);
-    document.body.appendChild(fw.foot);
+    document.body.appendChild(fw.content);
+    document.body.appendChild(fw.footer);
   };
 
 
@@ -713,6 +846,11 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function makeTwAct(t, my) {
+    /*
+      ツイートに対する操作
+      fav, reply, delete などボタンをツイート内に設置する
+    */
+
     var act = {
       bar: ce("ul"),
       fav: ce("button"),
@@ -758,8 +896,8 @@ addEventListener("DOMContentLoaded", function() {
       act.del.appendChild(ct("Delete"));
       act.del.addEventListener("click", function(v) {
         if (confirm("Delete Sure?")) {
-          post(APV + "statuses/destroy/" + t.id + ".json", "", function(xhr) {
-              act.bar.parentNode.parentNode.removeChild(act.bar.parentNode);
+          untweet(t.id, function(xhr) {
+            act.bar.parentNode.parentNode.removeChild(act.bar.parentNode);
           });
         }
       }, false);
@@ -775,6 +913,9 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showGlobalBar(my) {
+    /*
+      常時表示メニュー を表示する
+    */
     id("header").appendChild(makeGlobalBar(my));
   };
 
@@ -783,6 +924,9 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function makeGlobalBar(my) {
+    /*
+      常時表示メニュー を作成する
+    */
     var g = {
       bar: ce("ul"),
       home: ce("a"),
@@ -859,6 +1003,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function showTweetBox() {
+    /*
+      常時表示ツイート投稿フォーム を表示する
+    */
+
     id("header").appendChild(makeTweetBox());
   };
 
@@ -867,12 +1015,15 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function makeTweetBox() {
+    /*
+      常時表示ツイート投稿フォーム を作成する
+    */
+
     var tbox = {
       tbox: ce("div"),
       box: ce("textarea"),
       id: ce("input"),
       subm: ce("button"),
-      del: ce("button")
     };
 
     tbox.tbox.id = "update";
@@ -883,25 +1034,13 @@ addEventListener("DOMContentLoaded", function() {
 
     tbox.subm.appendChild(ct("Tweet"));
     tbox.subm.addEventListener("click", function() {
-      post(APV + "statuses/update.json",
-      "status=" + encodeURIComponent(tbox.box.value) +
-      "&in_reply_to_status_id=" + tbox.id.value, function(xhr) {
-        alert(xhr.status);
-      })
-    }, false);
-
-    tbox.del.appendChild(ct("Delete"));
-    tbox.del.addEventListener("click", function() {
-      post(APV + "statuses/destroy/" + tbox.id.value + ".json", "",
-      function(xhr) {
-        alert(xhr.status);
-      })
+      tweet(tbox.box.value, tbox.id.value, "", "", "", "", "",
+      function(xhr) { alert(xhr.responseText); });
     }, false);
 
     tbox.tbox.appendChild(tbox.box);
     tbox.tbox.appendChild(tbox.id);
     tbox.tbox.appendChild(tbox.subm);
-    tbox.tbox.appendChild(tbox.del);
 
     return tbox.tbox;
   };
@@ -911,6 +1050,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function makeActbar(my) {
+    /*
+      フォローやリストメンバーの管理パネルを作成する
+    */
+
     var actbar = {
       form: ce("form"),
       source: ce("input"),
@@ -939,51 +1082,30 @@ addEventListener("DOMContentLoaded", function() {
     actbar.submit.value = "POST";
 
     actbar.submit.addEventListener("click", function(v) {
+      var f = function(xhr) { alert(xhr.responseText) };
       if (actbar.source.value === "following" ||
       actbar.source.value === my.screen_name + "/following") {
-        if (actbar.add.checked) {
-          post(APV + "friendships/create/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        } else if (actbar.rm.checked) {
-          post(APV + "friendships/destroy/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        }
+
+        if (actbar.add.checked) follow(actbar.target.value, f);
+        else if (actbar.rm.checked) unfollow(actbar.target.value, f);
+
       } else if (actbar.source.value === "followers" ||
       actbar.source.value === my.screen_name + "/followers") {
-        if (actbar.add.checked) {
-          post(APV + "blocks/destroy/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        } else if (actbar.rm.checked) {
-          post(APV + "blocks/create/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        }
+
+        if (actbar.add.checked) unblock(actbar.target.value, f);
+        else if (actbar.rm.checked) block(actbar.target.value, f);
+
       } else if (actbar.source.value === "blocking") {
-        if (actbar.add.checked) {
-          post(APV + "blocks/create/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        } else if (actbar.rm.checked) {
-          post(APV + "blocks/destroy/" + actbar.target.value + ".json", "",
-          function(xhr) {
-            alert(xhr.status);
-          });
-        }
+
+        if (actbar.add.checked) block(actbar.target.value, f);
+        else if (actbar.rm.checked) unblock(actbar.target.value, f);
+
       } else {
+
         post(APV + actbar.source.value + "/members.json",
         "id=" + actbar.target.value +
-        (actbar.rm.checked ? "&_method=DELETE" : ""),
-        function(xhr) {
-          alert(xhr.status);
-        });
+        (actbar.rm.checked ? "&_method=DELETE" : ""), f);
+
       }
     }, false);
 
@@ -1002,6 +1124,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
   function makeCursor(data) {
+    /*
+      ユーザー一覧における「次」「前」のリンクを作成する
+    */
+
     var cursors = ce("ol");
 
     if (data.previous_cursor) {
