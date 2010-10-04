@@ -348,7 +348,7 @@ addEventListener("DOMContentLoaded", function() {
       case (1): {
         switch (hash[0]) {
           case ("search"): {
-            location.replace("http://search.twitter.com/search?" + q);
+            location = "http://search.twitter.com/search?" + q;
           }
           case ("lists"): {
             showLists(APV + my.id +
@@ -370,11 +370,13 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case ("following"): {
-            showUsers(APV + "statuses/friends.json?" + q + "&cursor=-1", my);
+            showUsers(APV + "statuses/friends.json?" + q +
+            "&count=20&cursor=-1", my);
             break;
           }
           case ("followers"): {
-            showUsers(APV + "statuses/followers.json?" + q + "&cursor=-1", my);
+            showUsers(APV + "statuses/followers.json?" + q +
+            "&count=20&cursor=-1", my);
             break;
           }
           case ("mentions"): {
@@ -406,12 +408,12 @@ addEventListener("DOMContentLoaded", function() {
           }
           case ("following"): {
             showUsers(APV + "statuses/friends.json?screen_name=" + hash[0] +
-            "&" + q + "&cursor=-1", my);
+            "&" + q + "&count=20&cursor=-1", my);
             break;
           }
           case ("followers"): {
             showUsers(APV + "statuses/followers.json?screen_name=" + hash[0] +
-            "&" + q + "&cursor=-1", showUsers);
+            "&" + q + "&count=20&cursor=-1", showUsers);
             break;
           }
           case ("lists"): {
@@ -540,6 +542,11 @@ addEventListener("DOMContentLoaded", function() {
       icon: ce("img"),
       icorg: ce("a"),
       url: ce("a"),
+      tweets: ce("a"),
+      following: ce("a"),
+      followers: ce("a"),
+      listed: ce("a"),
+      favorites: ce("a"),
     };
 
     p.box.id = "profile";
@@ -557,15 +564,35 @@ addEventListener("DOMContentLoaded", function() {
       p.url.appendChild(ct(user.url));
     }
 
+    p.tweets.textContent = "Tweets";
+    p.tweets.href = ROOT + user.screen_name;
+
+    p.following.textContent = "Following";
+    p.following.href = ROOT + user.screen_name + "/following";
+
+    p.followers.textContent = "Followers";
+    p.followers.href = ROOT + user.screen_name + "/followers";
+
+    p.listed.textContent = "Listed";
+    p.listed.href = ROOT + user.screen_name + "/lists/memberships";
+
+    p.favorites.textContent = "Favorites";
+    p.favorites.href = ROOT + user.screen_name + "/favorites";
+
     p.box.appendChild(dlize(
+      [ct("ID"), ct(user.id)],
       [ct("Icon"), p.icorg],
       [ct("Name"), ct(user.name)],
       [ct("Location"), ct(user.location)],
       [ct("Web"), p.url],
       [ct("Bio"), ct(user.description)],
-      [ct("Language"), ct(user.lang)],
-      [ct("Time Zone"), ct(user.time_zone)],
-      [ct("ID"), ct(user.id)],
+      [p.tweets, ct(user.statuses_count)],
+      [p.favorites, ct(user.favourites_count)],
+      [p.following, ct(user.friends_count)],
+      [p.followers, ct(user.followers_count)],
+      [p.listed, ct(user.listed_count)],
+      //[ct("Time Zone"), ct(user.time_zone)],
+      //[ct("Language"), ct(user.lang)],
       [ct("Since"), ct(new Date(user.created_at).toLocaleString())]
     ));
 
@@ -608,8 +635,8 @@ addEventListener("DOMContentLoaded", function() {
       unblock(user.id, function(xhr) { alert(xhr.responseText); });
     }, false);
 
-    id("subaction").appendChild(act.follow);
-    id("subaction").appendChild(act.unfollow);
+    if (user.following) id("subaction").appendChild(act.unfollow);
+    else id("subaction").appendChild(act.follow);
     id("subaction").appendChild(act.block);
     id("subaction").appendChild(act.unblock);
 
@@ -655,15 +682,14 @@ addEventListener("DOMContentLoaded", function() {
       タイムラインを表示する
     */
 
-    get(u, page === "profile" ? function(xhr) {
-      tl(xhr);
-      var data = JSON.parse(xhr.responseText);
-      data[0] ? showProfile(data[0].user) :
-      get(APV + "users/show.json?screen_name=" +
-      location.pathname.slice(ROOTLEN).split("/")[0], function(xhr) {
-        showProfile(JSON.parse(xhr.responseText));
-      });
-    } : tl);
+    get(
+      u, page === "profile" ? function(xhr) {
+        tl(xhr);
+        get(APV + "users/show.json?screen_name=" +
+        location.pathname.slice(ROOTLEN).split("/")[0], function(xhr) {
+          showProfile(JSON.parse(xhr.responseText));
+        });
+      } : tl);
 
     function tl(xhr) {
       /*
@@ -762,6 +788,7 @@ addEventListener("DOMContentLoaded", function() {
 
   function tweet(status, id, lat, lon, place_id,
   display_coordinates, source, callback) {
+    confirm("sure?") &&
     post(APV + "statuses/update.xml",
     "status=" + (encodeURIComponent(status) || "") +
     "&in_reply_to_status_id=" + (id || "") +
@@ -771,24 +798,44 @@ addEventListener("DOMContentLoaded", function() {
     "&source=" + (source || ""), callback);
   };
 
+  function fav(id, callback) {
+    confirm("sure?") &&
+    post(APV + "favorites/create/" + id + ".xml", "", callback);
+  };
+
+  function unfav(id, callback) {
+    confirm("sure?") &&
+    post(APV + "favorites/destroy/" + id + ".xml", "", callback);
+  };
+
   function untweet(id, callback) {
+    confirm("sure?") &&
     post(APV + "statuses/destroy/" + id + ".xml", "", callback);
   };
 
   function follow(id, callback) {
+    confirm("sure?") &&
     post(APV + "friendships/create/" + id + ".xml", "", callback);
   };
 
   function unfollow(id, callback) {
+    confirm("sure?") &&
     post(APV + "friendships/destroy/" + id + ".xml", "", callback);
   };
 
   function block(id, callback) {
+    confirm("sure?") &&
     post(APV + "blocks/create/" + id + ".xml", "", callback);
   };
 
   function unblock(id, callback) {
+    confirm("sure?") &&
     post(APV + "blocks/destroy/" + id + ".xml", "", callback);
+  };
+
+  function logout(callback) {
+    confirm("sure?") &&
+    post("/sessions/destroy/", "", callback);
   };
 
 
@@ -866,11 +913,14 @@ addEventListener("DOMContentLoaded", function() {
     act.fav.appendChild(ct(t.favorited ? "unfav" : "fav"));
     act.fav.addEventListener("click", function(v) {
       var star = v.target;
-      post(APV + "favorites/" + (star.favorited ? "destroy" : "create") + "/" +
-      t.id + ".json", "", function(xhr) {
-        star.favorited = !star.favorited;
-        star.className = "fav " + star.favorited;
-        star.textContent = star.favorited ? "unfav" : "fav";
+      star.favorited ? unfav(t.id, function(xhr) {
+        star.favorited = false;
+        star.className = "fav false";
+        star.textContent = "fav";
+      }) : fav(t.id, function(xhr) {
+        star.favorited = true;
+        star.className = "fav true";
+        star.textContent = "unfav";
       });
     }, false);
 
@@ -895,11 +945,9 @@ addEventListener("DOMContentLoaded", function() {
     if (my.id === t.user.id) {
       act.del.appendChild(ct("Delete"));
       act.del.addEventListener("click", function(v) {
-        if (confirm("Delete Sure?")) {
-          untweet(t.id, function(xhr) {
-            act.bar.parentNode.parentNode.removeChild(act.bar.parentNode);
-          });
-        }
+        untweet(t.id, function(xhr) {
+          act.bar.parentNode.style.display = "none";
+        });
       }, false);
 
       act.bar.appendChild(listize(act.del));
@@ -974,13 +1022,10 @@ addEventListener("DOMContentLoaded", function() {
     g.blocking.href = ROOT + "blocking";
     g.blocking.appendChild(ct("Blocking"));
 
-    g.logout.onclick = function() {
-      if (confirm("logout Sure?")) {
-        post("/sessions/destroy", "", function(xhr) { location = ROOT; });
-      }
-      return false;
-    };
     g.logout.appendChild(ct("logout"));
+    g.logout.addEventListener("click", function() {
+      logout(function(xhr) { location = ROOT; });
+    }, false);
 
     g.bar.appendChild(listize(
       g.home,
