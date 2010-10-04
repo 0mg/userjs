@@ -349,6 +349,7 @@ addEventListener("DOMContentLoaded", function() {
         switch (hash[0]) {
           case ("search"): {
             location = "http://search.twitter.com/search?" + q;
+            break;
           }
           case ("lists"): {
             showLists(APV + my.id +
