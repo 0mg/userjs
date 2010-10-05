@@ -44,7 +44,7 @@ addEventListener("DOMContentLoaded", function() {
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
   function id(s) { return document.getElementById(s); };
-  function get(u, f) {
+  function get(u, f, b) {
     /*
       Twitter API 専用 XHR GET
     */
@@ -54,7 +54,7 @@ addEventListener("DOMContentLoaded", function() {
     xhr.onreadystatechange = function() {
       if (this.readyState === 4) {
         if (this.status === 200) f(this);
-        else alert(this.responseText);
+        else (b || function(x) { alert(x.responseText); })(this);
       }
     };
     xhr.send(null);
@@ -71,7 +71,7 @@ addEventListener("DOMContentLoaded", function() {
       xhr.onreadystatechange = function() {
         if (this.readyState === 4) {
           if (this.status === 200) f(this);
-          else alert(this.responseText);
+          else (b || function(x) { alert(x.responseText); })(this);
         }
       };
       xhr.send(q + "&post_authenticity_token=" + auth);
@@ -393,8 +393,9 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           default: {
-            showTL(APV + "statuses/user_timeline.json?screen_name=" + hash[0] +
-            "&" + q, my, "profile");
+            showProfile(hash[0], my);
+            showTL(APV + "statuses/user_timeline.json?screen_name=" +
+            hash[0] + "&" + q, my);
             break;
           }
         }
@@ -440,7 +441,7 @@ addEventListener("DOMContentLoaded", function() {
       }
       case (3): {
         if (hash[1] === "status" || hash[1] === "statuses") {
-          showTL(APV + "statuses/show/" + hash[2] + ".json", my, "profile");
+          showTL(APV + "statuses/show/" + hash[2] + ".json", my);
         } else switch (hash[2]) {
           case ("members"):
           case ("subscribers"): {
@@ -533,170 +534,195 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showProfile(user) {
+  function showProfile(u, my) {
     /*
-      プロフィールにおける補足項目を表示する
+      プロフィールを表示する
     */
 
-    var p = {
-      box: ce("dl"),
-      icon: ce("img"),
-      icorg: ce("a"),
-      url: ce("a"),
-      tweets: ce("a"),
-      following: ce("a"),
-      followers: ce("a"),
-      listed: ce("a"),
-      favorites: ce("a"),
-    };
+    get(APV + "users/show.json?screen_name=" + u, function(xhr) {
+      var user = JSON.parse(xhr.responseText);
 
-    p.box.id = "profile";
+      var p = {
+        box: ce("dl"),
+        icon: ce("img"),
+        icorg: ce("a"),
+        url: ce("a"),
+        tweets: ce("a"),
+        following: ce("a"),
+        followers: ce("a"),
+        listed: ce("a"),
+        favorites: ce("a"),
+      };
 
-    p.icon.className = "icon";
-    p.icon.alt = user.name;
-    p.icon.width = "73";
-    p.icon.src = user.profile_image_url.replace(/_normal\./, "_bigger.");
+      p.box.id = "profile";
 
-    p.icorg.appendChild(p.icon);
-    p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
+      p.icon.className = "icon";
+      p.icon.alt = user.name;
+      p.icon.width = "73";
+      p.icon.src = user.profile_image_url.replace(/_normal\./, "_bigger.");
 
-    if (user.url) {
-      p.url.href = user.url;
-      p.url.appendChild(ct(user.url));
-    }
+      p.icorg.appendChild(p.icon);
+      p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
 
-    p.tweets.textContent = "Tweets";
-    p.tweets.href = ROOT + user.screen_name;
-
-    p.following.textContent = "Following";
-    p.following.href = ROOT + user.screen_name + "/following";
-
-    p.followers.textContent = "Followers";
-    p.followers.href = ROOT + user.screen_name + "/followers";
-
-    p.listed.textContent = "Listed";
-    p.listed.href = ROOT + user.screen_name + "/lists/memberships";
-
-    p.favorites.textContent = "Favorites";
-    p.favorites.href = ROOT + user.screen_name + "/favorites";
-
-    p.box.appendChild(dlize(
-      [ct("ID"), ct(user.id)],
-      [ct("Icon"), p.icorg],
-      [ct("Name"), ct(user.name)],
-      [ct("Location"), ct(user.location)],
-      [ct("Web"), p.url],
-      [ct("Bio"), ct(user.description)],
-      [p.tweets, ct(user.statuses_count)],
-      [p.favorites, ct(user.favourites_count)],
-      [p.following, ct(user.friends_count)],
-      [p.followers, ct(user.followers_count)],
-      [p.listed, ct(user.listed_count)],
-      //[ct("Time Zone"), ct(user.time_zone)],
-      //[ct("Language"), ct(user.lang)],
-      [ct("Since"), ct(new Date(user.created_at).toLocaleString())]
-    ));
-
-    id("side").appendChild(p.box);
-
-    var sub = {
-      screen_name: ce("a"),
-    };
-
-    sub.screen_name.className = "screen_name";
-    sub.screen_name.href = ROOT + user.screen_name;
-    sub.screen_name.appendChild(ct(user.screen_name));
-
-    id("subtitle").appendChild(sub.screen_name);
-
-    var act = {
-      follow: ce("button"),
-      unfollow: ce("button"),
-      block: ce("button"),
-      unblock: ce("button"),
-    };
-
-    act.follow.appendChild(ct("Follow"));
-    act.follow.addEventListener("click", function() {
-      follow(user.id, function(xhr) { alert(xhr.responseText); });
-    }, false);
-
-    act.unfollow.appendChild(ct("Unfollow"));
-    act.unfollow.addEventListener("click", function() {
-      unfollow(user.id, function(xhr) { alert(xhr.responseText); });
-    }, false);
-
-    act.block.appendChild(ct("Block"));
-    act.block.addEventListener("click", function() {
-      block(user.id, function(xhr) { alert(xhr.responseText); });
-    }, false);
-
-    act.unblock.appendChild(ct("Unblock"));
-    act.unblock.addEventListener("click", function() {
-      unblock(user.id, function(xhr) { alert(xhr.responseText); });
-    }, false);
-
-    if (user.following) id("subaction").appendChild(act.unfollow);
-    else id("subaction").appendChild(act.follow);
-    id("subaction").appendChild(act.block);
-    id("subaction").appendChild(act.unblock);
-
-    /* color */
-
-    document.body.style.backgroundColor =
-    "#" + user.profile_background_color;
-
-    if (user.profile_use_background_image) {
-      document.body.style.backgroundImage =
-      "url(" + user.profile_background_image_url + ")";
-      if (!user.profile_background_tile) {
-        document.body.style.backgroundRepeat = "no-repeat";
+      if (user.url) {
+        p.url.href = user.url;
+        p.url.appendChild(ct(user.url));
       }
-    } else {
-      document.body.style.backgroundImage = "none";
-    }
 
-    id("subtitle").style.backgroundColor =
-    id("side").style.backgroundColor =
-    user.profile_sidebar_fill_color ?
-    "#" + user.profile_sidebar_fill_color :
-    "transparent";
+      p.tweets.textContent = "Tweets";
+      p.tweets.href = ROOT + user.screen_name;
 
-    id("subtitle").style.borderBottom =
-    id("side").style.borderLeft =
-    "1px solid #" + user.profile_sidebar_border_color;
+      p.following.textContent = "Following";
+      p.following.href = ROOT + user.screen_name + "/following";
 
-    document.getElementsByTagName("style")[0].textContent +=
-    "body { color: #" + user.profile_text_color + "; }" +
-    "a { color: #" + user.profile_link_color + "; }";
+      p.followers.textContent = "Followers";
+      p.followers.href = ROOT + user.screen_name + "/followers";
 
-    /* /color */
+      p.listed.textContent = "Listed";
+      p.listed.href = ROOT + user.screen_name + "/lists/memberships";
 
+      p.favorites.textContent = "Favorites";
+      p.favorites.href = ROOT + user.screen_name + "/favorites";
+
+      p.box.appendChild(dlize(
+        [ct("ID"), ct(user.id)],
+        [ct("Icon"), p.icorg],
+        [ct("Name"), ct(user.name)],
+        [ct("Location"), ct(user.location)],
+        [ct("Web"), p.url],
+        [ct("Bio"), ct(user.description)],
+        [p.tweets, ct(user.statuses_count)],
+        [p.favorites, ct(user.favourites_count)],
+        [p.following, ct(user.friends_count)],
+        [p.followers, ct(user.followers_count)],
+        [p.listed, ct(user.listed_count)],
+        //[ct("Time Zone"), ct(user.time_zone)],
+        //[ct("Language"), ct(user.lang)],
+        [ct("Since"), ct(new Date(user.created_at).toLocaleString())]
+      ));
+
+      id("side").appendChild(p.box);
+
+      var sub = {
+        screen_name: ce("a"),
+      };
+
+      sub.screen_name.className = "screen_name";
+      sub.screen_name.href = ROOT + user.screen_name;
+      sub.screen_name.appendChild(ct(user.screen_name));
+
+      id("subtitle").appendChild(sub.screen_name);
+
+      var act = {
+        follow: ce("button"),
+        block: ce("button"),
+        lists: ce("ul"),
+      };
+
+      get(APV + "friendships/show.json?target_id=" + user.id, function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        var ship = data.relationship.source;
+
+        act.follow.following = ship.following;
+        act.follow.textContent = act.follow.following ? "Unfollow" : "Follow";
+        act.follow.addEventListener("click", function() {
+          act.follow.following ?
+          unfollow(user.id, function(xhr) {
+            act.follow.following = false;
+            act.follow.textContent = "Follow";
+          }) :
+          follow(user.id, function(xhr) {
+            act.follow.following = true;
+            act.follow.textContent = "Unfollow";
+          });
+        }, false);
+
+        act.block.blocking = ship.blocking;
+        act.block.textContent = act.block.blocking ? "Unblock" : "Block";
+        act.block.addEventListener("click", function() {
+          act.block.blocking ?
+          unblock(user.id, function(xhr) {
+            act.follow.following = false;
+            act.follow.textContent = "Follow";
+            act.follow.style.display = "";
+            act.block.blocking = false;
+            act.block.textContent = "Block";
+          }) :
+          block(user.id, function(xhr) {
+            act.follow.style.display = "none";
+            act.block.blocking = true;
+            act.block.textContent = "Unblock";
+          });
+        }, false);
+
+        if (ship.blocking) act.follow.style.display = "none";
+
+        id("subaction").appendChild(act.follow);
+        id("subaction").appendChild(act.block);
+      });
+
+      get(APV + my.id + "/lists.json", function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        var lists = data.lists;
+
+        lists.forEach(function(l) {
+          var list = ce("li");
+          list.style.display = "none";
+          list.textContent = l.full_name;
+          act.lists.appendChild(list);
+
+          get(APV + l.full_name + "/members/" + user.id + ".json",
+          function() {
+            list.style.display = "";
+          }, function() {});
+        });
+
+        id("subaction").appendChild(act.lists);
+      });
+
+      /* color */
+
+      document.body.style.backgroundColor =
+      "#" + user.profile_background_color;
+
+      if (user.profile_use_background_image) {
+        document.body.style.backgroundImage =
+        "url(" + user.profile_background_image_url + ")";
+        if (!user.profile_background_tile) {
+          document.body.style.backgroundRepeat = "no-repeat";
+        }
+      } else {
+        document.body.style.backgroundImage = "none";
+      }
+
+      id("subtitle").style.backgroundColor =
+      id("side").style.backgroundColor =
+      user.profile_sidebar_fill_color ?
+      "#" + user.profile_sidebar_fill_color :
+      "transparent";
+
+      id("subtitle").style.borderBottom =
+      id("side").style.borderLeft =
+      "1px solid #" + user.profile_sidebar_border_color;
+
+      document.getElementsByTagName("style")[0].textContent +=
+      "body { color: #" + user.profile_text_color + "; }" +
+      "a { color: #" + user.profile_link_color + "; }";
+
+      /* /color */
+    });
   };
 
 
 
 
 
-  function showTL(u, my, page) {
+  function showTL(u, my) {
     /*
       タイムラインを表示する
     */
 
-    get(
-      u, page === "profile" ? function(xhr) {
-        tl(xhr);
-        get(APV + "users/show.json?screen_name=" +
-        location.pathname.slice(ROOTLEN).split("/")[0], function(xhr) {
-          showProfile(JSON.parse(xhr.responseText));
-        });
-      } : tl);
-
-    function tl(xhr) {
-      /*
-        タイムラインを作成する
-      */
-
+    get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
 
       var timeline = ce("ol");
@@ -744,7 +770,15 @@ addEventListener("DOMContentLoaded", function() {
 
         entry.date.className = "created_at";
         entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
-        entry.date.appendChild(ct(new Date(t.created_at)));
+        entry.date.appendChild(ct(
+          (function(n, p) {
+            var g = new Date(0, 0, 0, 0, 0, 0, n - p);
+            return g.getHours() ? g.getHours() + " hours ago" :
+            g.getMinutes() ? g.getMinutes() + " minutes ago" :
+            g.getSeconds() ? g.getSeconds() + " seconds ago" :
+            p.toLocaleString()
+          })(new Date, new Date(t.created_at))
+        ));
 
         entry.src.className = "source";
         entry.src.innerHTML = t.source;
@@ -774,7 +808,7 @@ addEventListener("DOMContentLoaded", function() {
         past.a.href = "?page=2&max_id=" + data[0].id;
         id("content").appendChild(past);
       }
-    };
+    });
   };
 
 
@@ -917,11 +951,11 @@ addEventListener("DOMContentLoaded", function() {
       star.favorited ? unfav(t.id, function(xhr) {
         star.favorited = false;
         star.className = "fav false";
-        star.textContent = "fav";
+        star.textContent = "Fav";
       }) : fav(t.id, function(xhr) {
         star.favorited = true;
         star.className = "fav true";
-        star.textContent = "unfav";
+        star.textContent = "Unfav";
       });
     }, false);
 
