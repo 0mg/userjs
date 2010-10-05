@@ -773,9 +773,9 @@ addEventListener("DOMContentLoaded", function() {
         entry.date.appendChild(ct(
           (function(n, p) {
             var g = new Date(0, 0, 0, 0, 0, 0, n - p);
-            return g.getHours() ? g.getHours() + " hours ago" :
-            g.getMinutes() ? g.getMinutes() + " minutes ago" :
-            g.getSeconds() ? g.getSeconds() + " seconds ago" :
+            return n - p < 60000 ? g.getSeconds() + " seconds ago" :
+            n - p < 60000 * 60 ? g.getMinutes() + " minutes ago" :
+            n - p < 60000 * 60 * 24 ? g.getHours() + " hours ago" :
             p.toLocaleString()
           })(new Date, new Date(t.created_at))
         ));
@@ -1022,7 +1022,7 @@ addEventListener("DOMContentLoaded", function() {
       lists: ce("a"),
       listed: ce("a"),
       blocking: ce("a"),
-      logout: ce("button")
+      logout: ce("button"),
     };
 
     g.bar.id = "globalbar";
