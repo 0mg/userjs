@@ -498,7 +498,7 @@ addEventListener("DOMContentLoaded", function() {
 
       ul.appendChild(makeCursor(data));
 
-      id("content").appendChild(ul);
+      id("main").appendChild(ul);
     });
   };
 
@@ -529,8 +529,8 @@ addEventListener("DOMContentLoaded", function() {
         ul.appendChild(li);
       });
 
-      id("content").appendChild(ul);
-      id("content").appendChild(makeCursor(data));
+      id("main").appendChild(ul);
+      id("cursor").appendChild(makeCursor(data));
     });
   };
 
@@ -573,19 +573,19 @@ addEventListener("DOMContentLoaded", function() {
         p.url.appendChild(ct(user.url));
       }
 
-      p.tweets.textContent = "Tweets";
+      p.tweets.appendChild(ct("Tweets"));
       p.tweets.href = ROOT + user.screen_name;
 
-      p.following.textContent = "Following";
+      p.following.appendChild(ct("Following"));
       p.following.href = ROOT + user.screen_name + "/following";
 
-      p.followers.textContent = "Followers";
+      p.followers.appendChild(ct("Followers"));
       p.followers.href = ROOT + user.screen_name + "/followers";
 
-      p.listed.textContent = "Listed";
+      p.listed.appendChild(ct("Listed"));
       p.listed.href = ROOT + user.screen_name + "/lists/memberships";
 
-      p.favorites.textContent = "Favorites";
+      p.favorites.appendChild(ct("Favorites"));
       p.favorites.href = ROOT + user.screen_name + "/favorites";
 
       p.box.appendChild(dlize(
@@ -637,7 +637,8 @@ addEventListener("DOMContentLoaded", function() {
         var ship = data.relationship.source;
 
         act.follow.following = ship.following;
-        act.follow.textContent = act.follow.following ? "Unfollow" : "Follow";
+        act.follow.appendChild(ct(act.follow.following ?
+        "Unfollow" : "Follow"));
         act.follow.addEventListener("click", function() {
           act.follow.following ?
           unfollow(user.id, function(xhr) {
@@ -651,7 +652,7 @@ addEventListener("DOMContentLoaded", function() {
         }, false);
 
         act.block.blocking = ship.blocking;
-        act.block.textContent = act.block.blocking ? "Unblock" : "Block";
+        act.block.appendChild(ct(act.block.blocking ? "Unblock" : "Block"));
         act.block.addEventListener("click", function() {
           act.block.blocking ?
           unblock(user.id, function(xhr) {
@@ -680,7 +681,7 @@ addEventListener("DOMContentLoaded", function() {
 
         lists.forEach(function(l) {
           var list = ce("button");
-          list.textContent = l.full_name;
+          list.appendChild(ct(l.full_name));
           list.style.display = "none";
           act.lists.appendChild(list);
 
@@ -826,7 +827,7 @@ addEventListener("DOMContentLoaded", function() {
         timeline.appendChild(entry.entry);
       });
 
-      id("content").appendChild(timeline);
+      id("main").appendChild(timeline);
 
       if (data.length) {
         var past = ce("li");
@@ -834,7 +835,7 @@ addEventListener("DOMContentLoaded", function() {
         past.a.appendChild(ct("past"));
         past.appendChild(past.a);
         past.a.href = "?page=2&max_id=" + data[0].id;
-        id("content").appendChild(past);
+        id("cursor").appendChild(past);
       }
     });
   };
@@ -921,30 +922,26 @@ addEventListener("DOMContentLoaded", function() {
       content: ce("div"),
       subtitle: ce("h2"),
       subaction: ce("div"),
+      submain: ce("div"),
+      subcursor: ce("ul"),
       side: ce("div"),
       footer: ce("div")
     };
 
     fw.header.id = "header";
     fw.content.id = "content";
-    fw.side.id = "side";
-    fw.footer.id = "footer";
     fw.subtitle.id = "subtitle";
     fw.subaction.id = "subaction";
     fw.subaction.className = "user-action";
-
-    var logo = {
-      h1: ce("h1"),
-      a: ce("a"),
-    };
-    logo.a.href = ROOT;
-    logo.a.appendChild(ct("tw-"));
-    logo.h1.id = "logo";
-    logo.h1.appendChild(logo.a);
-    fw.header.appendChild(logo.h1);
+    fw.submain.id = "main";
+    fw.subcursor.id = "cursor";
+    fw.side.id = "side";
+    fw.footer.id = "footer";
 
     fw.content.appendChild(fw.subtitle);
     fw.content.appendChild(fw.subaction);
+    fw.content.appendChild(fw.submain);
+    fw.content.appendChild(fw.subcursor);
 
     document.body.appendChild(fw.header);
     document.body.appendChild(fw.side);
@@ -1237,33 +1234,33 @@ addEventListener("DOMContentLoaded", function() {
       ユーザー一覧における「次」「前」のリンクを作成する
     */
 
-    var cursors = ce("ol");
+    var cursor = {
+      cursor: ce("ol"),
+      next: ce("li"),
+      prev: ce("li"),
+      next_a: ce("a"),
+      prev_a: ce("a"),
+    };
 
     if (data.previous_cursor) {
-      var previous = ce("li");
+      cursor.prev_a.href = "?cursor=" + data.previous_cursor;
+      cursor.prev_a.appendChild(ct("Prev"));
 
-      previous.a = ce("a");
-      previous.a.href = "?cursor=" + data.previous_cursor;
-      previous.a.appendChild(ct("previous"));
+      cursor.prev.appendChild(cursor.prev_a);
 
-      previous.appendChild(previous.a);
-
-      cursors.appendChild(previous);
+      cursor.cursor.appendChild(cursor.prev);
     }
 
     if (data.next_cursor) {
-      var next = ce("li");
+      cursor.next_a.href = "?cursor=" + data.next_cursor;
+      cursor.next_a.appendChild(ct("Next"));
 
-      next.a = ce("a");
-      next.a.href = "?cursor=" + data.next_cursor;
-      next.a.appendChild(ct("next"));
+      cursor.next.appendChild(cursor.next_a);
 
-      next.appendChild(next.a);
-
-      cursors.appendChild(next);
+      cursor.cursor.appendChild(cursor.next);
     }
 
-    return cursors;
+    return cursor.cursor;
   };
 
 
