@@ -59,10 +59,11 @@ addEventListener("DOMContentLoaded", function() {
     };
     xhr.send(null);
   };
-  function post(u, q, f) {
+  function post(u, q, f, b) {
     /*
       Twitter API 専用 XHR POST
     */
+    confirm("sure?") &&
     auth(function(auth) {
       xhr = new XMLHttpRequest;
       xhr.open("POST", u, true);
@@ -316,7 +317,10 @@ addEventListener("DOMContentLoaded", function() {
         margin-right: 1ex;\
       }\
       .tweet-action .fav.true {\
-        background-color: #ff0;\
+        background-color: #0f0;\
+      }\
+      .user-action .list.true {\
+        background-color: #0f0;\
       }\
     '));
 
@@ -614,10 +618,19 @@ addEventListener("DOMContentLoaded", function() {
       id("subtitle").appendChild(sub.screen_name);
 
       var act = {
+        foblo: ce("div"),
         follow: ce("button"),
         block: ce("button"),
-        lists: ce("ul"),
+        spam: ce("button"),
+        lists: ce("div"),
       };
+
+      act.follow.className = "follow";
+      act.block.className = "block";
+      act.spam.className = "spam";
+
+      id("subaction").appendChild(act.foblo);
+      id("subaction").appendChild(act.lists);
 
       get(APV + "friendships/show.json?target_id=" + user.id, function(xhr) {
         var data = JSON.parse(xhr.responseText);
@@ -657,8 +670,8 @@ addEventListener("DOMContentLoaded", function() {
 
         if (ship.blocking) act.follow.style.display = "none";
 
-        id("subaction").appendChild(act.follow);
-        id("subaction").appendChild(act.block);
+        act.foblo.appendChild(act.follow);
+        act.foblo.appendChild(act.block);
       });
 
       get(APV + my.id + "/lists.json", function(xhr) {
@@ -666,18 +679,33 @@ addEventListener("DOMContentLoaded", function() {
         var lists = data.lists;
 
         lists.forEach(function(l) {
-          var list = ce("li");
-          list.style.display = "none";
+          var list = ce("button");
           list.textContent = l.full_name;
+          list.style.display = "none";
           act.lists.appendChild(list);
+
+          function toggle() {
+            (list.membering ? unlisting : listing)(l.full_name, user.id,
+            function(xhr) {
+              list.membering = !list.membering;
+              list.className = "list " + list.membering;
+            });
+          };
 
           get(APV + l.full_name + "/members/" + user.id + ".json",
           function() {
+            list.membering = true;
+            list.className = "list " + list.membering;
+            list.addEventListener("click", toggle, false);
             list.style.display = "";
-          }, function() {});
+          },
+          function() {
+            list.membering = false;
+            list.className = "list " + list.membering;
+            list.addEventListener("click", toggle, false);
+            list.style.display = "";
+          });
         });
-
-        id("subaction").appendChild(act.lists);
       });
 
       /* color */
@@ -833,43 +861,43 @@ addEventListener("DOMContentLoaded", function() {
     "&source=" + (source || ""), callback);
   };
 
+  function untweet(id, callback) {
+    post(APV + "statuses/destroy/" + id + ".xml", "", callback);
+  };
+
   function fav(id, callback) {
-    confirm("sure?") &&
     post(APV + "favorites/create/" + id + ".xml", "", callback);
   };
 
   function unfav(id, callback) {
-    confirm("sure?") &&
     post(APV + "favorites/destroy/" + id + ".xml", "", callback);
   };
 
-  function untweet(id, callback) {
-    confirm("sure?") &&
-    post(APV + "statuses/destroy/" + id + ".xml", "", callback);
-  };
-
   function follow(id, callback) {
-    confirm("sure?") &&
     post(APV + "friendships/create/" + id + ".xml", "", callback);
   };
 
   function unfollow(id, callback) {
-    confirm("sure?") &&
     post(APV + "friendships/destroy/" + id + ".xml", "", callback);
   };
 
   function block(id, callback) {
-    confirm("sure?") &&
     post(APV + "blocks/create/" + id + ".xml", "", callback);
   };
 
   function unblock(id, callback) {
-    confirm("sure?") &&
     post(APV + "blocks/destroy/" + id + ".xml", "", callback);
   };
 
+  function listing(list, id, callback) {
+    post(APV + list + "/members.xml", "id=" + id, callback);
+  };
+
+  function unlisting(list, id, callback) {
+    post(APV + list + "/members.xml", "_method=DELETE&id=" + id, callback);
+  };
+
   function logout(callback) {
-    confirm("sure?") &&
     post("/sessions/destroy/", "", callback);
   };
 
@@ -903,6 +931,7 @@ addEventListener("DOMContentLoaded", function() {
     fw.footer.id = "footer";
     fw.subtitle.id = "subtitle";
     fw.subaction.id = "subaction";
+    fw.subaction.className = "user-action";
 
     var logo = {
       h1: ce("h1"),
