@@ -496,9 +496,8 @@ addEventListener("DOMContentLoaded", function() {
         ul.appendChild(li);
       });
 
-      ul.appendChild(makeCursor(data));
-
       id("main").appendChild(ul);
+      id("cursor").appendChild(makeCursor(data));
     });
   };
 
