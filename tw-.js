@@ -13,7 +13,7 @@ var props = function(o) {
   return s.sort().join("\n");
 };
 
-/* もともとのページのスクリプトを無効化する */
+/* 元ページのスクリプトを無効化する */
 opera.addEventListener("BeforeScript", function(v) {
   v.preventDefault();
 }, false);
@@ -21,13 +21,12 @@ opera.addEventListener("BeforeExternalScript", function(v) {
   v.preventDefault();
 }, false);
 
-/* オリジナルなページに書き換える */
+/* UserJS を適用する */
 addEventListener("DOMContentLoaded", function() {
 
   /* グローバル定数 */
 
   var ROOT = "/-/"; // HOMEPATH in URL
-  var ROOTLEN = ROOT.length;
 
   var APV = 1; // API VERSION in API URL
   APV = "/" + APV + "/";
@@ -35,11 +34,9 @@ addEventListener("DOMContentLoaded", function() {
   /* 頻繁に行う処理を関数化したもの */
 
   var JSON;
-  if (!JSON) {
-    JSON = {
-      "parse": function(s) { return eval("(" + s + ")"); }
-    };
-  }
+  JSON = JSON || {
+    "parse": function(s) { return eval("(" + s + ")"); }
+  };
 
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
@@ -127,12 +124,13 @@ addEventListener("DOMContentLoaded", function() {
       } else if (/(.*)@(\w+)(.*)/.test(s)) {
         return RegExp.$1 + '@<a href="' + ROOT + RegExp.$2 + '">' + RegExp.$2 +
         '</a>' + RegExp.$3;
+      } else if (/&#x?\d+/.test(s)) {
+        return s;
       } else if (/(.*)(#\w+)(.*)/.test(s)) {
         return RegExp.$1 + '<a href="' + ROOT + 'search/?q=' +
         encodeURIComponent(RegExp.$2) + '">' + RegExp.$2 + '</a>' +
         RegExp.$3;
-      }
-      return s;
+      } else return s;
     }).join(" ");
   };
 
@@ -149,7 +147,7 @@ addEventListener("DOMContentLoaded", function() {
   function main() {
     /*
       ログインしていないならログイン画面に跳ばす
-      ログイン中ならページ描画を開始する
+      ログイン中ならページを構築する
     */
 
     if (~document.cookie.indexOf("auth_token=")) {
@@ -243,23 +241,23 @@ addEventListener("DOMContentLoaded", function() {
         vertical-align: top;\
         font-size: 2ex;\
       }\
-      #side:before {\
-        content: ".";\
-        line-height: 0.1;\
-        visibility: hidden;\
+      #content {\
+        float: left;\
+        width: 500px;\
+        max-width: 100%;\
+        background: #ddd;\
       }\
       #side {\
-        float: right;\
+        float: left;\
         width: 249px;\
         max-width: 100%;\
         background-color: #ccf;\
         font-size: smaller;\
       }\
-      #content {\
-        float: right;\
-        width: 500px;\
-        max-width: 100%;\
-        background: #ddd;\
+      #side:before {\
+        content: ".";\
+        line-height: 0.1;\
+        visibility: hidden;\
       }\
       #footer {\
         clear: both;\
@@ -281,7 +279,7 @@ addEventListener("DOMContentLoaded", function() {
       #timeline {\
       }\
       .tweet {\
-        background: #f9f9f9;\
+        background: #fcfcfc;\
         position: relative;\
         list-style: none;\
         padding: 1ex 1ex 1ex 60px;\
@@ -339,13 +337,14 @@ addEventListener("DOMContentLoaded", function() {
 
   function getPage(my) {
     /*
-      URL パスにしたがって適切な内容を全体に表示する
+      URL パスによって適切な内容をページ全体に描画する
     */
 
-    var key = location.pathname.slice(ROOTLEN).replace(/[/]+$/, "");
+    var key = location.pathname.slice(ROOT.length).replace(/[/]+$/, "");
     var hash = key.split("/");
     var q = location.search.slice(1);
     structPage();
+    showSubTitle(key);
     showGlobalBar(my);
     showTweetBox();
     switch (hash.length) {
@@ -397,7 +396,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           default: {
-            showProfile(hash[0], my);
+            showProfile(key, my);
             showTL(APV + "statuses/user_timeline.json?screen_name=" +
             hash[0] + "&" + q, my);
             break;
@@ -408,6 +407,7 @@ addEventListener("DOMContentLoaded", function() {
       case (2): {
         switch (hash[1]) {
           case ("favorites"): {
+            showProfile(key, my);
             showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
             "&cursor=-1", my);
             break;
@@ -536,13 +536,32 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
+  function showSubTitle(key) {
+    /*
+      現在地を表示
+    */
+    var sub = document.createDocumentFragment();
+
+    key.split("/").forEach(function(name, i, key) {
+      var dir = ce("a");
+      dir.href = ROOT + key.slice(0, i + 1).join("/");
+      dir.appendChild(ct(name));
+      i && sub.appendChild(ct("/"));
+      sub.appendChild(dir);
+    });
+
+    id("subtitle").appendChild(sub);
+  };
+
+
+
 
   function showProfile(u, my) {
     /*
       プロフィールを表示する
     */
 
-    get(APV + "users/show.json?screen_name=" + u, function(xhr) {
+    get(APV + "users/show.json?screen_name=" + u.split("/")[0], function(xhr) {
       var user = JSON.parse(xhr.responseText);
 
       var p = {
@@ -605,16 +624,6 @@ addEventListener("DOMContentLoaded", function() {
       ));
 
       id("side").appendChild(p.box);
-
-      var sub = {
-        screen_name: ce("a"),
-      };
-
-      sub.screen_name.className = "screen_name";
-      sub.screen_name.href = ROOT + user.screen_name;
-      sub.screen_name.appendChild(ct(user.screen_name));
-
-      id("subtitle").appendChild(sub.screen_name);
 
       var act = {
         foblo: ce("div"),
@@ -681,7 +690,6 @@ addEventListener("DOMContentLoaded", function() {
         lists.forEach(function(l) {
           var list = ce("button");
           list.appendChild(ct(l.full_name));
-          list.style.display = "none";
           act.lists.appendChild(list);
 
           function toggle() {
@@ -697,13 +705,11 @@ addEventListener("DOMContentLoaded", function() {
             list.membering = true;
             list.className = "list " + list.membering;
             list.addEventListener("click", toggle, false);
-            list.style.display = "";
           },
           function() {
             list.membering = false;
             list.className = "list " + list.membering;
             list.addEventListener("click", toggle, false);
-            list.style.display = "";
           });
         });
       });
@@ -851,7 +857,6 @@ addEventListener("DOMContentLoaded", function() {
 
   function tweet(status, id, lat, lon, place_id,
   display_coordinates, source, callback) {
-    confirm("sure?") &&
     post(APV + "statuses/update.xml",
     "status=" + (encodeURIComponent(status) || "") +
     "&in_reply_to_status_id=" + (id || "") +
@@ -943,8 +948,8 @@ addEventListener("DOMContentLoaded", function() {
     fw.content.appendChild(fw.subcursor);
 
     document.body.appendChild(fw.header);
-    document.body.appendChild(fw.side);
     document.body.appendChild(fw.content);
+    document.body.appendChild(fw.side);
     document.body.appendChild(fw.footer);
   };
 
@@ -1178,7 +1183,7 @@ addEventListener("DOMContentLoaded", function() {
 
     actbar.source.type = "text";
     actbar.source.value =
-    location.pathname.slice(ROOTLEN).match(/[^/]+(?:[/][^/]+)?/);
+    location.pathname.slice(ROOT.length).match(/[^/]+(?:[/][^/]+)?/);
     actbar.target.type = "text";
     actbar.add.type = "radio";
     actbar.add.checked = true;
