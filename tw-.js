@@ -121,15 +121,15 @@ addEventListener("DOMContentLoaded", function() {
       if (/(.*)((?:https?:\/\/|javascript:|data:).*)/.test(s)) {
         return RegExp.$1 + '<a href="' + encodeURI(decodeURI(RegExp.$2)) +
         '">' + RegExp.$2 + '</a>';
-      } else if (/(.*)@(\w+)(.*)/.test(s)) {
-        return RegExp.$1 + '@<a href="' + ROOT + RegExp.$2 + '">' + RegExp.$2 +
-        '</a>' + RegExp.$3;
       } else if (/&#x?\d+/.test(s)) {
         return s;
-      } else if (/(.*)(#\w+)(.*)/.test(s)) {
-        return RegExp.$1 + '<a href="' + ROOT + 'search/?q=' +
-        encodeURIComponent(RegExp.$2) + '">' + RegExp.$2 + '</a>' +
-        RegExp.$3;
+      } else if (/@\w+|#\w+/.test(s)) {
+        return s.replace(/@(\w+(?:\/\w+)?)/g,
+        '@<a href="' + ROOT + '$1">$1</a>').
+        replace(/#\w+/g, function(h) {
+          return '<a href="' + ROOT + 'search?q=' +
+          encodeURIComponent(h) + '">' + h + '</a>'
+        });
       } else return s;
     }).join(" ");
   };
@@ -355,6 +355,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case ("lists"): {
+            showListPanel(my);
             showLists(APV + my.id +
             "/lists.json?" + q + "&cursor=-1", my);
             showLists(APV + my.id +
@@ -469,9 +470,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-
   /* Content */
-
 
 
 
@@ -480,7 +479,6 @@ addEventListener("DOMContentLoaded", function() {
     /*
       ユーザー一覧を表示する
     */
-
     id("side").appendChild(makeActbar(my));
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -504,12 +502,10 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-
   function showLists(u, my) {
     /*
       リスト一覧を表示する
     */
-
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var lists = data.lists;
@@ -551,6 +547,63 @@ addEventListener("DOMContentLoaded", function() {
     });
 
     id("subtitle").appendChild(sub);
+  };
+
+
+
+
+  function showListPanel(my) {
+    /*
+      リスト管理パネル
+    */
+    var p = {
+      panel: ce("div"),
+      name: ce("input"),
+      rename: ce("input"),
+      desc: ce("input"),
+      pri: ce("input"),
+      create: ce("button"),
+      update: ce("button"),
+      del: ce("button"),
+    };
+    p.pri.type = "checkbox";
+    p.pri.checked = true;
+
+    p.create.appendChild(ct("Create"));
+    p.update.appendChild(ct("Update"));
+    p.del.appendChild(ct("Delete"));
+
+    p.create.addEventListener("click", function() {
+      createList(my.id, p.name.value, p.pri.checked ? "private" : "public",
+      p.desc.value, function(xhr) {
+        alert(xhr.responseText);
+      });
+    }, false);
+
+    p.update.addEventListener("click", function() {
+      updateList(my.id, p.name.value, p.rename.value,
+      p.pri.checked ? "private" : "public", p.desc.value, function(xhr) {
+        alert(xhr.responseText);
+      });
+    }, false);
+
+    p.del.addEventListener("click", function() {
+      deleteList(my.id, p.name.value, function(xhr) {
+        alert(xhr.responseText);
+      });
+    }, false);
+
+    p.panel.appendChild(dlize(
+      [ct("name"), p.name],
+      [ct("rename"), p.rename],
+      [ct("description"), p.desc],
+      [ct("private"), p.pri]
+    ));
+    p.panel.appendChild(p.create);
+    p.panel.appendChild(p.update);
+    p.panel.appendChild(p.del);
+
+    id("side").appendChild(p.panel);
   };
 
 
@@ -894,6 +947,20 @@ addEventListener("DOMContentLoaded", function() {
     post(APV + "blocks/destroy/" + id + ".xml", "", callback);
   };
 
+function createList(me, name, mode, description, callback) {
+    post(APV + me + "/lists.xml",
+    "name=" + name + "&mode=" + mode + "&description=" + description, callback);
+  };
+
+  function updateList(me, id, name, mode, description, callback) {
+    post(APV + me + "/lists/" + id + ".xml",
+    "name=" + name + "&mode=" + mode + "&description=" + description, callback);
+  };
+
+  function deleteList(me, id, callback) {
+    post(APV + me + "/lists/" + id + ".xml", "_method=DELETE", callback);
+  };
+
   function listing(list, id, callback) {
     post(APV + list + "/members.xml", "id=" + id, callback);
   };
@@ -1027,18 +1094,7 @@ addEventListener("DOMContentLoaded", function() {
 
   function showGlobalBar(my) {
     /*
-      常時表示メニュー を表示する
-    */
-    id("header").appendChild(makeGlobalBar(my));
-  };
-
-
-
-
-
-  function makeGlobalBar(my) {
-    /*
-      常時表示メニュー を作成する
+      常時表示メニュー
     */
     var g = {
       bar: ce("ul"),
@@ -1078,10 +1134,10 @@ addEventListener("DOMContentLoaded", function() {
     g.followers.href = ROOT + "followers";
     g.followers.appendChild(ct("Followers:" + my.followers_count));
 
-    g.lists.href = ROOT + my.screen_name + "/lists";
+    g.lists.href = ROOT + "lists";
     g.lists.appendChild(ct("Lists"));
 
-    g.listed.href = ROOT + my.screen_name + "/lists/memberships";
+    g.listed.href = ROOT + "lists/memberships";
     g.listed.appendChild(ct("Listed:" + my.listed_count));
 
     g.blocking.href = ROOT + "blocking";
@@ -1105,7 +1161,7 @@ addEventListener("DOMContentLoaded", function() {
       g.blocking,
       g.logout
     ));
-    return g.bar;
+    id("header").appendChild(g.bar);
   };
 
 
