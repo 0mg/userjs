@@ -628,19 +628,22 @@ addEventListener("DOMContentLoaded", function() {
       var p = {
         box: ce("dl"),
         member: ce("a"),
+        suber: ce("a"),
       };
 
       p.member.href = ROOT + hash.join("/").slice(1) + "/members";
       p.member.appendChild(ct("Members"));
 
+      p.suber.href = ROOT + hash.join("/").slice(1) + "/subscribers";
+      p.suber.appendChild(ct("Subscribers"));
+
       p.box.appendChild(dlize(
         [ct("Name"), ct(data.name)],
+        [ct("Full Name"), ct(data.full_name)],
         [ct("Description"), ct(data.description)],
         [p.member, ct(data.member_count)],
+        [p.suber, ct(data.subscriber_count)],
         [ct("Mode"), ct(data.mode)],
-        //[ct("Slug"), ct(data.slug)],
-        //[ct("URI"), ct(data.uri)],
-        //[ct("Following"), ct(data.following)],
         [ct("ID"), ct(data.id)]
       ));
       id("side").appendChild(p.box);
