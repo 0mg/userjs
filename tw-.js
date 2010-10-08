@@ -345,9 +345,9 @@ addEventListener("DOMContentLoaded", function() {
       URL パスによって適切な内容をページ全体に描画する
     */
 
-    var key = location.pathname.slice(ROOT.length).replace(/[/]+$/, "");
+    var key = location.pathname.substring(ROOT.length).replace(/[/]+$/, "");
     var hash = key.split("/");
-    var q = location.search.slice(1);
+    var q = location.search.substring(1);
     structPage();
     showSubTitle(key);
     showGlobalBar(my);
@@ -525,7 +525,7 @@ addEventListener("DOMContentLoaded", function() {
 
         name.className = l.mode;
 
-        link.href = ROOT + l.full_name.slice(1);
+        link.href = ROOT + l.full_name.substring(1);
         link.appendChild(ct(l.full_name));
 
         name.appendChild(link);
@@ -633,10 +633,10 @@ addEventListener("DOMContentLoaded", function() {
         suber: ce("a"),
       };
 
-      p.member.href = ROOT + hash.join("/").slice(1) + "/members";
+      p.member.href = ROOT + hash.join("/").substring(1) + "/members";
       p.member.appendChild(ct("Members"));
 
-      p.suber.href = ROOT + hash.join("/").slice(1) + "/subscribers";
+      p.suber.href = ROOT + hash.join("/").substring(1) + "/subscribers";
       p.suber.appendChild(ct("Subscribers"));
 
       p.box.appendChild(dlize(
@@ -1309,7 +1309,7 @@ addEventListener("DOMContentLoaded", function() {
     };
 
     act.source.value =
-    location.pathname.slice(ROOT.length).match(/[^/]+(?:[/][^/]+)?/);
+    location.pathname.substring(ROOT.length).match(/[^/]+(?:[/][^/]+)?/);
     act.add.appendChild(ct("Add"));
     act.del.appendChild(ct("Delete"));
 
