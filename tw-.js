@@ -1000,6 +1000,17 @@ addEventListener("DOMContentLoaded", function() {
       past.a.href = "?page=2&max_id=" + data[0].id;
       id("cursor").appendChild(past);
     }
+
+    var links = Array.prototype.slice.call(timeline.getElementsByTagName("a"));
+    resolveURL(links, function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      links.forEach(function(a) {
+        if (a.parentNode.className === "text" && data[a.href]) {
+          a.textContent = data[a.href];
+          a.href = data[a.href];
+        }
+      });
+    });
   };
 
 
@@ -1011,6 +1022,11 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
+  function resolveURL(links, callback) {
+    get(APV + "urls/resolve.json?" + [""].concat(links.map(function(a) {
+      return encodeURIComponent(a);
+    })).join("&urls[]="), callback);
+  };
 
   function tweet(status, id, lat, lon, place_id,
   display_coordinates, source, callback) {
