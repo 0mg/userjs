@@ -118,8 +118,8 @@ addEventListener("DOMContentLoaded", function() {
       自動リンク for innerHTML
     */
     return text.match(RegExp("(?:https?://|javascript:|data:)\\S*|" +
-    "&#x?\\d+;|#\\w+|@\\w+(?:/\\w+)?|[\\S\\s]", "g")).map(function(s) {
-      if (s.length === 1) {
+    "&#x?\\d+;|#\\w+|@\\w+(?:/\\w+)?|[\\S\\s]|", "g")).map(function(s) {
+      if (s.length <= 1) {
         return s;
       } else if (/^[hjd]/.test(s)) {
         return '<a href="' + encodeURI(decodeURI(s)) +
@@ -363,8 +363,6 @@ addEventListener("DOMContentLoaded", function() {
             showListPanel(my);
             showLists(APV + my.id +
             "/lists.json?" + q + "&cursor=-1", my);
-            showLists(APV + my.id +
-            "/lists/subscriptions.json?" + q, my);
             break;
           }
           case ("inbox"): {
@@ -431,12 +429,17 @@ addEventListener("DOMContentLoaded", function() {
           case ("lists"): {
             hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
             showLists(APV + hash[0] + "/lists.json?" + q, my);
-            showLists(APV + hash[0] + "/lists/subscriptions.json?" + q, my);
             break;
           }
           case ("memberships"): {
             if (hash[0] === "lists") {
               showLists(APV + hash.join("/") + ".json?" + q, my);
+            }
+            break;
+          }
+          case ("subscriptions"): {
+            if (hash[0] === "lists") {
+              showLists(APV + my.id + "/lists/subscriptions.json?" + q, my);
             }
             break;
           }
@@ -464,6 +467,13 @@ addEventListener("DOMContentLoaded", function() {
             if (hash[1] === "lists") {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
               showLists(APV + hash.join("/") + ".json?" + q, my);
+            }
+            break;
+          }
+          case ("subscriptions"): {
+            if (hash[1] === "lists") {
+              hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
+              showLists(APV + hash[0] + "/lists/subscriptions.json?" + q, my);
             }
             break;
           }
@@ -694,6 +704,9 @@ addEventListener("DOMContentLoaded", function() {
         following: ce("a"),
         followers: ce("a"),
         listed: ce("a"),
+        lists: ce("ul"),
+        listsmy: ce("a"),
+        listsub: ce("a"),
         favorites: ce("a"),
       };
 
@@ -721,6 +734,14 @@ addEventListener("DOMContentLoaded", function() {
       p.followers.appendChild(ct("Followers"));
       p.followers.href = ROOT + user.screen_name + "/followers";
 
+      p.listsmy.appendChild(ct("Lists"));
+      p.listsmy.href = ROOT + user.screen_name + "/lists";
+
+      p.listsub.appendChild(ct("Subscriptions"));
+      p.listsub.href = ROOT + user.screen_name + "/lists/subscriptions";
+
+      p.lists.appendChild(listize(p.listsmy, p.listsub));
+
       p.listed.appendChild(ct("Listed"));
       p.listed.href = ROOT + user.screen_name + "/lists/memberships";
 
@@ -739,6 +760,7 @@ addEventListener("DOMContentLoaded", function() {
         [p.following, ct(user.friends_count)],
         [p.followers, ct(user.followers_count)],
         [p.listed, ct(user.listed_count)],
+        [ct("Lists"), p.lists],
         [ct("ID"), ct(user.id)],
         [ct("Time Zone"), ct(user.time_zone)],
         [ct("Language"), ct(user.lang)],
@@ -1196,6 +1218,7 @@ addEventListener("DOMContentLoaded", function() {
       following: ce("a"),
       followers: ce("a"),
       lists: ce("a"),
+      listsub: ce("a"),
       listed: ce("a"),
       blocking: ce("a"),
       logout: ce("button"),
@@ -1227,6 +1250,9 @@ addEventListener("DOMContentLoaded", function() {
     g.lists.href = ROOT + "lists";
     g.lists.appendChild(ct("Lists"));
 
+    g.listsub.href = ROOT + "lists/subscriptions";
+    g.listsub.appendChild(ct("Subscriptions"));
+
     g.listed.href = ROOT + "lists/memberships";
     g.listed.appendChild(ct("Listed:" + my.listed_count));
 
@@ -1247,6 +1273,7 @@ addEventListener("DOMContentLoaded", function() {
       g.following,
       g.followers,
       g.lists,
+      g.listsub,
       g.listed,
       g.blocking,
       g.logout
