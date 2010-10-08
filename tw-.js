@@ -220,6 +220,15 @@ addEventListener("DOMContentLoaded", function() {
         line-height: 1;\
         padding: 0.4ex;\
       }\
+      dl {\
+        padding: 2ex;\
+      }\
+      dt {\
+        font-weight: bold;\
+      }\
+      dd {\
+        margin: 0 0 1em 1em;\
+      }\
       #header {\
         background: #fcf;\
       }\
@@ -267,14 +276,8 @@ addEventListener("DOMContentLoaded", function() {
         width: 35em;\
         height: 7em;\
       }\
-      #profile {\
-        padding: 2ex;\
-      }\
-      #profile dt {\
-        font-weight: bold;\
-      }\
-      #profile dd {\
-        margin: 0 0 1em 1em;\
+      #lists .private::after {\
+        content: " (" attr(class) ")";\
       }\
       #timeline {\
       }\
@@ -397,7 +400,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           default: {
-            showProfile(key, my);
+            outlineProfile(key, my);
             showTL(APV + "statuses/user_timeline.json?screen_name=" +
             hash[0] + "&" + q, my);
             break;
@@ -408,7 +411,7 @@ addEventListener("DOMContentLoaded", function() {
       case (2): {
         switch (hash[1]) {
           case ("favorites"): {
-            showProfile(key, my);
+            outlineProfile(key, my);
             showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
             "&cursor=-1", my);
             break;
@@ -437,8 +440,9 @@ addEventListener("DOMContentLoaded", function() {
           }
           default: {
             hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
+            outlineList(hash, my);
             showTL(APV + hash[0] + "/lists/" + hash[1] +
-            "/statuses.json?" + q, showTL);
+            "/statuses.json?" + q, my);
             break;
           }
         }
@@ -508,23 +512,29 @@ addEventListener("DOMContentLoaded", function() {
     */
     get(u, function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      var lists = data.lists;
 
-      var ul = ce("ul");
+      var lists = ce("dl");
+      lists.id = "lists";
 
-      lists.forEach(function(l) {
-        var li = ce("li");
-        var a = ce("a");
+      data.lists.forEach(function(l) {
+        var name = ce("dt");
+        var link = ce("a");
+        var desc = ce("dd");
 
-        a.href = ROOT + l.full_name.slice(1);
-        a.appendChild(ct(l.full_name));
+        name.className = l.mode;
 
-        li.appendChild(a);
+        link.href = ROOT + l.full_name.slice(1);
+        link.appendChild(ct(l.full_name));
 
-        ul.appendChild(li);
+        name.appendChild(link);
+
+        desc.appendChild(ct(l.description));
+
+        lists.appendChild(name);
+        lists.appendChild(desc);
       });
 
-      id("main").appendChild(ul);
+      id("main").appendChild(lists);
       id("cursor").appendChild(makeCursor(data));
     });
   };
@@ -609,12 +619,65 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showProfile(u, my) {
+  function outlineList(hash, my) {
+    /*
+      リスト情報を表示する
+    */
+    get(APV + hash[0] + "/lists/" + hash[1] + ".json", function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      var p = {
+        box: ce("dl"),
+        member: ce("a"),
+      };
+
+      p.member.href = ROOT + hash.join("/").slice(1) + "/members";
+      p.member.appendChild(ct("Members"));
+
+      p.box.appendChild(dlize(
+        [ct("Name"), ct(data.name)],
+        [ct("Description"), ct(data.description)],
+        [p.member, ct(data.member_count)],
+        [ct("Mode"), ct(data.mode)],
+        //[ct("Slug"), ct(data.slug)],
+        //[ct("URI"), ct(data.uri)],
+        //[ct("Following"), ct(data.following)],
+        [ct("ID"), ct(data.id)]
+      ));
+      id("side").appendChild(p.box);
+
+      var b = {
+        follow: ce("button"),
+      };
+
+      b.follow.following = data.following;
+      b.follow.className = "follow " + b.follow.following;
+      b.follow.addEventListener("click", function() {
+        b.follow.following ? unfollowList(data.full_name, function(xhr) {
+          b.follow.textContent = "Follow";
+          b.follow.following = !b.follow.following;
+          b.follow.className = "follow " + b.follow.following;
+        }) :
+        followList(data.full_name, function(xhr) {
+          b.follow.textContent = "Unfollow";
+          b.follow.following = !b.follow.following;
+          b.follow.className = "follow " + b.follow.following;
+        });
+      }, false);
+      b.follow.appendChild(ct(data.following ? "Unfollow" : "Follow"));
+
+      id("subaction").appendChild(b.follow);
+    });
+  };
+
+
+
+
+  function outlineProfile(key, my) {
     /*
       プロフィールを表示する
     */
 
-    get(APV + "users/show.json?screen_name=" + u.split("/")[0], function(xhr) {
+    get(APV + "users/show.json?screen_name=" + key, function(xhr) {
       var user = JSON.parse(xhr.responseText);
 
       var p = {
@@ -660,7 +723,7 @@ addEventListener("DOMContentLoaded", function() {
       p.favorites.href = ROOT + user.screen_name + "/favorites";
 
       p.box.appendChild(dlize(
-        [ct("ID"), ct(user.id)],
+        [ct("Screen Name"), ct(user.screen_name)],
         [ct("Icon"), p.icorg],
         [ct("Name"), ct(user.name)],
         [ct("Location"), ct(user.location)],
@@ -671,8 +734,9 @@ addEventListener("DOMContentLoaded", function() {
         [p.following, ct(user.friends_count)],
         [p.followers, ct(user.followers_count)],
         [p.listed, ct(user.listed_count)],
-        //[ct("Time Zone"), ct(user.time_zone)],
-        //[ct("Language"), ct(user.lang)],
+        [ct("ID"), ct(user.id)],
+        [ct("Time Zone"), ct(user.time_zone)],
+        [ct("Language"), ct(user.lang)],
         [ct("Since"), ct(new Date(user.created_at).toLocaleString())]
       ));
 
@@ -742,7 +806,7 @@ addEventListener("DOMContentLoaded", function() {
 
         lists.forEach(function(l) {
           var list = ce("button");
-          list.appendChild(ct(l.full_name));
+          list.appendChild(ct((l.mode === "private" ? "-" : "+") + l.slug));
           act.lists.appendChild(list);
 
           function toggle() {
@@ -808,94 +872,104 @@ addEventListener("DOMContentLoaded", function() {
     /*
       タイムラインを表示する
     */
-
     get(u, function(xhr) {
-      var data = JSON.parse(xhr.responseText);
-
-      var timeline = ce("ol");
-      timeline.id = "timeline";
-
-      [].concat(data).forEach(function(t) {
-        var entry = {
-          entry: ce("li"),
-          name: ce("a"),
-          nick: ce("span"),
-          icon: ce("img"),
-          reid: ce("a"),
-          text: ce("p"),
-          date: ce("a"),
-          src: ce("span")
-        };
-
-        t.user = t.user || t.sender;
-        t.source = t.source || "?";
-
-        entry.entry.className = "tweet";
-
-        entry.name.className = "screen_name";
-        entry.name.href = ROOT + t.user.screen_name;
-        entry.name.appendChild(ct(t.user.screen_name));
-
-        entry.nick.className = "name";
-        entry.nick.appendChild(ct(t.user.name));
-
-        entry.icon.className = "icon";
-        entry.icon.alt = t.user.name;
-        entry.icon.width = "48";
-        entry.icon.src = t.user.profile_image_url;
-
-        entry.reid.className = "in_reply_to";
-        if (t.in_reply_to_status_id) {
-          entry.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
-          t.in_reply_to_status_id;
-          entry.reid.appendChild(ct("in reply to " +
-          t.in_reply_to_screen_name));
-        }
-
-        entry.text.className = "text";
-        entry.text.innerHTML = linker(t.text);
-
-        entry.date.className = "created_at";
-        entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
-        entry.date.appendChild(ct(
-          (function(n, p) {
-            var g = new Date(0, 0, 0, 0, 0, 0, n - p);
-            return n - p < 60000 ? g.getSeconds() + " seconds ago" :
-            n - p < 60000 * 60 ? g.getMinutes() + " minutes ago" :
-            n - p < 60000 * 60 * 24 ? g.getHours() + " hours ago" :
-            p.toLocaleString()
-          })(new Date, new Date(t.created_at))
-        ));
-
-        entry.src.className = "source";
-        entry.src.innerHTML = t.source;
-
-        entry.entry.innerHTML =
-        entry.name.outerHTML +
-        entry.icon.outerHTML +
-        entry.nick.outerHTML +
-        entry.reid.outerHTML +
-        entry.text.outerHTML +
-        '<div class="meta">' +
-        entry.date.outerHTML + " via " + entry.src.outerHTML +
-        '</div>';
-
-        entry.entry.appendChild(makeTwAct(t, my));
-
-        timeline.appendChild(entry.entry);
-      });
-
-      id("main").appendChild(timeline);
-
-      if (data.length) {
-        var past = ce("li");
-        past.a = ce("a");
-        past.a.appendChild(ct("past"));
-        past.appendChild(past.a);
-        past.a.href = "?page=2&max_id=" + data[0].id;
-        id("cursor").appendChild(past);
-      }
+      makeTL(xhr, u, my);
     });
+  };
+
+
+
+
+
+  function makeTL(xhr, u, my) {
+    /*
+      タイムラインを表示する
+    */
+    var data = JSON.parse(xhr.responseText);
+
+    var timeline = ce("ol");
+    timeline.id = "timeline";
+
+    [].concat(data).forEach(function(t) {
+      var entry = {
+        entry: ce("li"),
+        name: ce("a"),
+        nick: ce("span"),
+        icon: ce("img"),
+        reid: ce("a"),
+        text: ce("p"),
+        date: ce("a"),
+        src: ce("span")
+      };
+
+      t.user = t.user || t.sender;
+      t.source = t.source || "?";
+
+      entry.entry.className = "tweet";
+
+      entry.name.className = "screen_name";
+      entry.name.href = ROOT + t.user.screen_name;
+      entry.name.appendChild(ct(t.user.screen_name));
+
+      entry.nick.className = "name";
+      entry.nick.appendChild(ct(t.user.name));
+
+      entry.icon.className = "icon";
+      entry.icon.alt = t.user.name;
+      entry.icon.width = "48";
+      entry.icon.src = t.user.profile_image_url;
+
+      entry.reid.className = "in_reply_to";
+      if (t.in_reply_to_status_id) {
+        entry.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
+        t.in_reply_to_status_id;
+        entry.reid.appendChild(ct("in reply to " +
+        t.in_reply_to_screen_name));
+      }
+
+      entry.text.className = "text";
+      entry.text.innerHTML = linker(t.text);
+
+      entry.date.className = "created_at";
+      entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
+      entry.date.appendChild(ct(
+        (function(n, p) {
+          var g = new Date(0, 0, 0, 0, 0, 0, n - p);
+          return n - p < 60000 ? g.getSeconds() + " seconds ago" :
+          n - p < 60000 * 60 ? g.getMinutes() + " minutes ago" :
+          n - p < 60000 * 60 * 24 ? g.getHours() + " hours ago" :
+          p.toLocaleString()
+        })(new Date, new Date(t.created_at))
+      ));
+
+      entry.src.className = "source";
+      entry.src.innerHTML = t.source;
+
+      entry.entry.innerHTML =
+      entry.name.outerHTML +
+      entry.icon.outerHTML +
+      entry.nick.outerHTML +
+      entry.reid.outerHTML +
+      entry.text.outerHTML +
+      '<div class="meta">' +
+      entry.date.outerHTML + " via " + entry.src.outerHTML +
+      '</div>';
+
+      entry.entry.appendChild(makeTwAct(t, my));
+
+      timeline.appendChild(entry.entry);
+    });
+
+    id("main").appendChild(timeline);
+
+    if (data.length) {
+      var past = ce("li");
+      past.a = ce("a");
+      past.a.appendChild(ct("past"));
+      past.appendChild(past.a);
+      past.a.href = "?page=2&max_id=" + data[0].id;
+      id("cursor").appendChild(past);
+    }
   };
 
 
@@ -947,7 +1021,15 @@ addEventListener("DOMContentLoaded", function() {
     post(APV + "blocks/destroy/" + id + ".xml", "", callback);
   };
 
-function createList(me, name, mode, description, callback) {
+  function followList(full_name, callback) {
+    post(APV + full_name + "/subscribers.xml", "", callback);
+  };
+
+  function unfollowList(full_name, callback) {
+    post(APV + full_name + "/subscribers.xml", "_method=DELETE", callback);
+  };
+
+  function createList(me, name, mode, description, callback) {
     post(APV + me + "/lists.xml",
     "name=" + name + "&mode=" + mode + "&description=" + description, callback);
   };
@@ -1173,18 +1255,6 @@ function createList(me, name, mode, description, callback) {
       常時表示ツイート投稿フォーム を表示する
     */
 
-    id("header").appendChild(makeTweetBox());
-  };
-
-
-
-
-
-  function makeTweetBox() {
-    /*
-      常時表示ツイート投稿フォーム を作成する
-    */
-
     var tbox = {
       tbox: ce("div"),
       box: ce("textarea"),
@@ -1208,7 +1278,7 @@ function createList(me, name, mode, description, callback) {
     tbox.tbox.appendChild(tbox.id);
     tbox.tbox.appendChild(tbox.subm);
 
-    return tbox.tbox;
+    id("header").appendChild(tbox.tbox);
   };
 
 
