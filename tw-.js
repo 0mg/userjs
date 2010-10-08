@@ -41,12 +41,12 @@ addEventListener("DOMContentLoaded", function() {
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
   function id(s) { return document.getElementById(s); };
-  function get(u, f, b) {
+  function get(url, f, b) {
     /*
       Twitter API 専用 XHR GET
     */
     var xhr = new XMLHttpRequest;
-    xhr.open("GET", u, true);
+    xhr.open("GET", url, true);
     xhr.setRequestHeader("X-PHX", "true");
     xhr.onreadystatechange = function() {
       if (this.readyState === 4) {
@@ -56,14 +56,14 @@ addEventListener("DOMContentLoaded", function() {
     };
     xhr.send(null);
   };
-  function post(u, q, f, b) {
+  function post(url, q, f, b) {
     /*
       Twitter API 専用 XHR POST
     */
     confirm("sure?") &&
     auth(function(auth) {
       xhr = new XMLHttpRequest;
-      xhr.open("POST", u, true);
+      xhr.open("POST", url, true);
       xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
       xhr.setRequestHeader("X-PHX", "true");
       xhr.onreadystatechange = function() {
@@ -117,21 +117,23 @@ addEventListener("DOMContentLoaded", function() {
     /*
       自動リンク for innerHTML
     */
-    return text.split(/\s/).map(function(s) {
-      if (/(.*)((?:https?:\/\/|javascript:|data:).*)/.test(s)) {
-        return RegExp.$1 + '<a href="' + encodeURI(decodeURI(RegExp.$2)) +
-        '">' + RegExp.$2 + '</a>';
-      } else if (/&#x?\d+/.test(s)) {
+    return text.match(RegExp("(?:https?:\\/\\/|javascript:|data:)\\S*|" +
+    "&#x?\\d+;|#\\w+|@\\w+(?:\\/\\w+)?|[\\S\\s]", "g")).map(function(s) {
+      if (s.length === 1) {
         return s;
-      } else if (/@\w+|#\w+/.test(s)) {
-        return s.replace(/@(\w+(?:\/\w+)?)/g,
-        '@<a href="' + ROOT + '$1">$1</a>').
-        replace(/#\w+/g, function(h) {
-          return '<a href="' + ROOT + 'search?q=' +
-          encodeURIComponent(h) + '">' + h + '</a>'
-        });
-      } else return s;
-    }).join(" ");
+      } else if (/^[hjd]/.test(s)) {
+        return '<a href="' + encodeURI(decodeURI(s)) +
+        '">' + s + '</a>';
+      } else if (/^@/.test(s)) {
+        var path = s.substring(1);
+        return '@<a href="' + ROOT + path + '">' + path + '</a>';
+      } else if (/^#/.test(s)) {
+        return '<a href="' + ROOT + 'search?q=' + encodeURIComponent(s) +
+        '">' + s + '</a>'
+      } else {
+        return s;
+      }
+    }).join("");
   };
 
 
@@ -400,7 +402,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           default: {
-            outlineProfile(key, my);
+            outlineProfile(hash[0], my);
             showTL(APV + "statuses/user_timeline.json?screen_name=" +
             hash[0] + "&" + q, my);
             break;
@@ -411,7 +413,7 @@ addEventListener("DOMContentLoaded", function() {
       case (2): {
         switch (hash[1]) {
           case ("favorites"): {
-            outlineProfile(key, my);
+            outlineProfile(hash[0], my);
             showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
             "&cursor=-1", my);
             break;
@@ -479,12 +481,12 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showUsers(u, my) {
+  function showUsers(url, my) {
     /*
       ユーザー一覧を表示する
     */
     id("side").appendChild(makeActbar(my));
-    get(u, function(xhr) {
+    get(url, function(xhr) {
       var data = JSON.parse(xhr.responseText);
       data.users = data.users || data;
 
@@ -506,11 +508,11 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showLists(u, my) {
+  function showLists(url, my) {
     /*
       リスト一覧を表示する
     */
-    get(u, function(xhr) {
+    get(url, function(xhr) {
       var data = JSON.parse(xhr.responseText);
 
       var lists = ce("dl");
@@ -675,12 +677,12 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function outlineProfile(key, my) {
+  function outlineProfile(screen_name, my) {
     /*
       プロフィールを表示する
     */
 
-    get(APV + "users/show.json?screen_name=" + key, function(xhr) {
+    get(APV + "users/show.json?screen_name=" + screen_name, function(xhr) {
       var user = JSON.parse(xhr.responseText);
 
       var p = {
@@ -871,12 +873,12 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function showTL(u, my) {
+  function showTL(url, my) {
     /*
       タイムラインを表示する
     */
-    get(u, function(xhr) {
-      makeTL(xhr, u, my);
+    get(url, function(xhr) {
+      makeTL(xhr, url, my);
     });
   };
 
@@ -884,7 +886,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  function makeTL(xhr, u, my) {
+  function makeTL(xhr, url, my) {
     /*
       タイムラインを表示する
     */
@@ -901,6 +903,7 @@ addEventListener("DOMContentLoaded", function() {
         icon: ce("img"),
         reid: ce("a"),
         text: ce("p"),
+        meta: ce("div"),
         date: ce("a"),
         src: ce("span")
       };
@@ -933,6 +936,8 @@ addEventListener("DOMContentLoaded", function() {
       entry.text.className = "text";
       entry.text.innerHTML = linker(t.text);
 
+      entry.meta.className = "meta";
+
       entry.date.className = "created_at";
       entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
       entry.date.appendChild(ct(
@@ -948,16 +953,16 @@ addEventListener("DOMContentLoaded", function() {
       entry.src.className = "source";
       entry.src.innerHTML = t.source;
 
-      entry.entry.innerHTML =
-      entry.name.outerHTML +
-      entry.icon.outerHTML +
-      entry.nick.outerHTML +
-      entry.reid.outerHTML +
-      entry.text.outerHTML +
-      '<div class="meta">' +
-      entry.date.outerHTML + " via " + entry.src.outerHTML +
-      '</div>';
+      entry.meta.appendChild(entry.date);
+      entry.meta.appendChild(ct(" via "));
+      entry.meta.appendChild(entry.src);
 
+      entry.entry.appendChild(entry.name);
+      entry.entry.appendChild(entry.icon);
+      entry.entry.appendChild(entry.nick);
+      entry.entry.appendChild(entry.reid);
+      entry.entry.appendChild(entry.text);
+      entry.entry.appendChild(entry.meta);
       entry.entry.appendChild(makeTwAct(t, my));
 
       timeline.appendChild(entry.entry);
@@ -1258,30 +1263,32 @@ addEventListener("DOMContentLoaded", function() {
       常時表示ツイート投稿フォーム を表示する
     */
 
-    var tbox = {
-      tbox: ce("div"),
-      box: ce("textarea"),
+    var t = {
+      box: ce("div"),
+      status: ce("textarea"),
       id: ce("input"),
-      subm: ce("button"),
+      update: ce("button"),
     };
 
-    tbox.tbox.id = "update";
+    t.status.id = "status";
+    t.id.id = "in_reply_to_status_id";
+    t.update.id = "update";
 
-    tbox.box.id = "status";
+    t.status.addEventListener("keyup", function() {
+      t.update.disabled = this.value.length > 140;
+    }, false);
 
-    tbox.id.id = "in_reply_to_status_id";
-
-    tbox.subm.appendChild(ct("Tweet"));
-    tbox.subm.addEventListener("click", function() {
-      tweet(tbox.box.value, tbox.id.value, "", "", "", "", "",
+    t.update.appendChild(ct("Tweet"));
+    t.update.addEventListener("click", function() {
+      tweet(t.status.value, t.id.value, "", "", "", "", "",
       function(xhr) { alert(xhr.responseText); });
     }, false);
 
-    tbox.tbox.appendChild(tbox.box);
-    tbox.tbox.appendChild(tbox.id);
-    tbox.tbox.appendChild(tbox.subm);
+    t.box.appendChild(t.status);
+    t.box.appendChild(t.id);
+    t.box.appendChild(t.update);
 
-    id("header").appendChild(tbox.tbox);
+    id("header").appendChild(t.box);
   };
 
 
