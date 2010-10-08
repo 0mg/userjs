@@ -1293,69 +1293,66 @@ addEventListener("DOMContentLoaded", function() {
       フォローやリストメンバーの管理パネルを作成する
     */
 
-    var actbar = {
-      form: ce("form"),
+    var act = {
+      bar: ce("div"),
       source: ce("input"),
       target: ce("input"),
-      add: ce("input"),
-      rm: ce("input"),
-      submit: ce("input")
+      add: ce("button"),
+      del: ce("button"),
     };
 
-    actbar.add.label = ce("label");
-    actbar.rm.label = ce("label");
-
-    actbar.add.label.appendChild(actbar.add);
-    actbar.add.label.appendChild(ct("add"));
-    actbar.rm.label.appendChild(actbar.rm);
-    actbar.rm.label.appendChild(ct("delete"));
-
-    actbar.source.type = "text";
-    actbar.source.value =
+    act.source.value =
     location.pathname.slice(ROOT.length).match(/[^/]+(?:[/][^/]+)?/);
-    actbar.target.type = "text";
-    actbar.add.type = "radio";
-    actbar.add.checked = true;
-    actbar.rm.type = "radio";
-    actbar.submit.type = "button";
-    actbar.submit.value = "POST";
+    act.add.appendChild(ct("Add"));
+    act.del.appendChild(ct("Delete"));
 
-    actbar.submit.addEventListener("click", function(v) {
+    act.add.addEventListener("click", function(v) {
       var f = function(xhr) { alert(xhr.responseText) };
-      if (actbar.source.value === "following" ||
-      actbar.source.value === my.screen_name + "/following") {
+      if (act.source.value === "following" ||
+      act.source.value === my.screen_name + "/following") {
+        follow(act.target.value, f);
 
-        if (actbar.add.checked) follow(actbar.target.value, f);
-        else if (actbar.rm.checked) unfollow(actbar.target.value, f);
+      } else if (act.source.value === "followers" ||
+      act.source.value === my.screen_name + "/followers") {
+        unblock(act.target.value, f);
 
-      } else if (actbar.source.value === "followers" ||
-      actbar.source.value === my.screen_name + "/followers") {
+      } else if (act.source.value === "blocking") {
+        block(act.target.value, f);
 
-        if (actbar.add.checked) unblock(actbar.target.value, f);
-        else if (actbar.rm.checked) block(actbar.target.value, f);
-
-      } else if (actbar.source.value === "blocking") {
-
-        if (actbar.add.checked) block(actbar.target.value, f);
-        else if (actbar.rm.checked) unblock(actbar.target.value, f);
-
-      } else {
-
-        post(APV + actbar.source.value + "/members.json",
-        "id=" + actbar.target.value +
-        (actbar.rm.checked ? "&_method=DELETE" : ""), f);
+      } else if (~act.source.value.indexOf("/")) {
+        listing("@" + act.source.value.match(/^@?(.+)/)[1],
+        act.target.value, f);
 
       }
     }, false);
 
-    actbar.form.appendChild(ct("source: "));
-    actbar.form.appendChild(actbar.source);
-    actbar.form.appendChild(ct("target: "));
-    actbar.form.appendChild(actbar.target);
-    actbar.form.appendChild(actbar.add.label);
-    actbar.form.appendChild(actbar.rm.label);
-    actbar.form.appendChild(actbar.submit);
-    return actbar.form;
+    act.del.addEventListener("click", function(v) {
+      var f = function(xhr) { alert(xhr.responseText) };
+      if (act.source.value === "following" ||
+      act.source.value === my.screen_name + "/following") {
+        unfollow(act.target.value, f);
+
+      } else if (act.source.value === "followers" ||
+      act.source.value === my.screen_name + "/followers") {
+        block(act.target.value, f);
+
+      } else if (act.source.value === "blocking") {
+        unblock(act.target.value, f);
+
+      } else if (~act.source.value.indexOf("/")) {
+        unlisting("@" + act.source.value.match(/^@?(.+)/)[1],
+        act.target.value, f);
+
+      }
+    }, false);
+
+    act.bar.appendChild(ct("source: "));
+    act.bar.appendChild(act.source);
+    act.bar.appendChild(ct("target: "));
+    act.bar.appendChild(act.target);
+    act.bar.appendChild(act.add);
+    act.bar.appendChild(act.del);
+    return act.bar;
   };
 
 
