@@ -117,8 +117,8 @@ addEventListener("DOMContentLoaded", function() {
     /*
       自動リンク for innerHTML
     */
-    return text.match(RegExp("(?:https?:\\/\\/|javascript:|data:)\\S*|" +
-    "&#x?\\d+;|#\\w+|@\\w+(?:\\/\\w+)?|[\\S\\s]", "g")).map(function(s) {
+    return text.match(RegExp("(?:https?://|javascript:|data:)\\S*|" +
+    "&#x?\\d+;|#\\w+|@\\w+(?:/\\w+)?|[\\S\\s]", "g")).map(function(s) {
       if (s.length === 1) {
         return s;
       } else if (/^[hjd]/.test(s)) {
