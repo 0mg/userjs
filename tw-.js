@@ -158,7 +158,7 @@ addEventListener("DOMContentLoaded", function() {
     resolveURL: function(links, callback) {
       X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(a) {
         return encodeURIComponent(a);
-      })).join("&urls[]="), callback);
+      })).join("&urls[]=").substring(1), callback);
     },
 
     tweet: function(status, id, lat, lon, place_id, display_coordinates,
@@ -385,6 +385,7 @@ addEventListener("DOMContentLoaded", function() {
 
       document.appendChild(html);
     },
+
     structPage: function() {
     /*
       ページ全体の HTML 構造をセット
@@ -646,7 +647,22 @@ addEventListener("DOMContentLoaded", function() {
       */
       var that = this;
       X.get(url, function(xhr) {
+        // タイムラインを構築する
         that.makeTL(xhr, url, my);
+
+        // 短縮 URL 展開
+        var links =
+        document.evaluate('.//p[@class="text"]//a[starts-with(@href,"h")]',
+        D.id("timeline"), null, 7, null);
+        for (var urls = [], i = 0; i < links.snapshotLength; ++i) {
+          urls.push(links.snapshotItem(i));
+        }
+        urls.length && API.resolveURL(urls, function(xhr) {
+          var data = JSON.parse(xhr.responseText);
+          urls.forEach(function(a) {
+            a.textContent = a.href = data[a.href].replace(/\/$/, "");
+          });
+        });
       });
     },
 
@@ -739,20 +755,6 @@ addEventListener("DOMContentLoaded", function() {
         past.a.href = "?page=2&max_id=" + data[0].id;
         D.id("cursor").appendChild(past);
       }
-
-      API.resolveURL(Array.prototype.slice.
-      call(timeline.getElementsByTagName("a")),
-      function(xhr) {
-        var data = JSON.parse(xhr.responseText);
-        Array.prototype.slice.call(timeline.getElementsByTagName("a")).
-        forEach(function(a) {
-          if (!a.href.indexOf("http://gyazo.com/")) return;
-          if (a.parentNode.className === "text" && data[a.href]) {
-            a.textContent = data[a.href];
-            a.href = data[a.href];
-          }
-        });
-      });
     },
 
     misc: {
