@@ -487,7 +487,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             default: {
-              content.showTL(APV + "statuses/user_timeline.json?screen_name=" +
+              content.showTL(APV +
+              "statuses/user_timeline.json?include_rts=true&screen_name=" +
               hash[0] + "&" + q, my);
               outline.showProfileOutline(hash[0], my);
               break;
@@ -660,7 +661,9 @@ addEventListener("DOMContentLoaded", function() {
         urls.length && API.resolveURL(urls, function(xhr) {
           var data = JSON.parse(xhr.responseText);
           urls.forEach(function(a) {
-            a.textContent = a.href = data[a.href].replace(/\/$/, "");
+            if (data[a.href]) {
+              a.textContent = a.href = data[a.href].replace(/\/$/, "");
+            }
           });
         });
       });
@@ -685,6 +688,7 @@ addEventListener("DOMContentLoaded", function() {
           src: D.ce("span")
         };
 
+        t = t.retweeted_status || t;
         t.user = t.user || t.sender;
         t.source = t.source || "?";
 
