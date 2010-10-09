@@ -271,16 +271,6 @@ addEventListener("DOMContentLoaded", function() {
           font-family: "Lucida Console" sans-serif;\
           font-size: 1.8ex;\
           background-attachment: fixed;\
-          background-color: #' + my.profile_background_color + ';' +
-
-          (my.profile_use_background_image ?
-            'background-image: url(' + my.profile_background_image_url + ');' +
-            (my.profile_background_tile ? '' :
-            'background-repeat: no-repeat;') : '') +
-          'color: #' + my.profile_text_color + ';\
-        }\
-        a {\
-          color: #' + my.profile_link_color + ';\
         }\
         a:hover {\
           text-decoration: underline;\
@@ -455,8 +445,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("lists"): {
-              panel.showListPanel(my);
               content.showLists(APV + "lists.json?" + q + "&cursor=-1", my);
+              panel.showListPanel(my);
               break;
             }
             case ("inbox"): {
@@ -496,9 +486,9 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             default: {
-              outline.showProfileOutline(hash[0], my);
               content.showTL(APV + "statuses/user_timeline.json?screen_name=" +
               hash[0] + "&" + q, my);
+              outline.showProfileOutline(hash[0], my);
               break;
             }
           }
@@ -520,34 +510,34 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("favorites"): {
-              outline.showProfileOutline(hash[0], my, 3);
               content.showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
               "&cursor=-1", my);
+              outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("following"): {
-              outline.showProfileOutline(hash[0], my, 3);
               content.showUsers(APV + "statuses/friends.json?screen_name=" +
               hash[0] + "&" + q + "&count=20&cursor=-1", my);
+              outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("followers"): {
-              outline.showProfileOutline(hash[0], my, 3);
               content.showUsers(APV + "statuses/followers.json?screen_name=" +
               hash[0] + "&" + q + "&count=20&cursor=-1", my);
+              outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("lists"): {
-              outline.showProfileOutline(hash[0], my, 3);
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
               content.showLists(APV + hash[0] + "/lists.json?" + q, my);
+              outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             default: {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-              outline.showListOutline(hash);
               content.showTL(APV + hash[0] + "/lists/" + hash[1] +
               "/statuses.json?" + q, my);
+              outline.showListOutline(hash);
               break;
             }
           }
@@ -556,28 +546,29 @@ addEventListener("DOMContentLoaded", function() {
         case (3): {
           if (hash[1] === "status" || hash[1] === "statuses") {
             content.showTL(APV + "statuses/show/" + hash[2] + ".json", my);
+            outline.showProfileOutline(hash[0], my, 1);
           } else switch (hash[2]) {
             case ("members"):
             case ("subscribers"): {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-              outline.showListOutline(hash, 3);
               content.showUsers(APV + hash.join("/") + ".json?" + q, my);
+              outline.showListOutline(hash, 3);
               break;
             }
             case ("memberships"): {
               if (hash[1] === "lists") {
                 hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-                outline.showProfileOutline(hash[0], my, 3);
                 content.showLists(APV + hash.join("/") + ".json?" + q, my);
+                outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
             case ("subscriptions"): {
               if (hash[1] === "lists") {
                 hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-                outline.showProfileOutline(hash[0], my, 3);
                 content.showLists(APV + hash[0] + "/lists/subscriptions.json?" +
                 q, my);
+                outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
@@ -614,6 +605,7 @@ addEventListener("DOMContentLoaded", function() {
         that.misc.showCursor(data);
       });
     },
+
     showLists: function(url, my) {
       /*
         リスト一覧を表示する
@@ -906,19 +898,15 @@ addEventListener("DOMContentLoaded", function() {
 
       b.follow.following = data.following;
       b.follow.className = "follow " + b.follow.following;
+      b.follow.appendChild(D.ct(data.following ? "Unfollow" : "Follow"));
       b.follow.addEventListener("click", function() {
-        b.follow.following ? API.unfollowList(data.full_name, function(xhr) {
-          b.follow.textContent = "Follow";
+        (b.follow.following ?
+        API.unfollowList : API.followList)(data.full_name, function(xhr) {
           b.follow.following = !b.follow.following;
           b.follow.className = "follow " + b.follow.following;
-        }) :
-        API.followList(data.full_name, function(xhr) {
-          b.follow.textContent = "Unfollow";
-          b.follow.following = !b.follow.following;
-          b.follow.className = "follow " + b.follow.following;
+          b.follow.textContent = b.follow.following ? "Unfollow" : "Follow";
         });
       }, false);
-      b.follow.appendChild(D.ct(data.following ? "Unfollow" : "Follow"));
 
       D.id("subaction").appendChild(b.follow);
     },
@@ -943,15 +931,11 @@ addEventListener("DOMContentLoaded", function() {
       act.fav.favorited = t.favorited;
       act.fav.appendChild(D.ct(t.favorited ? "unfav" : "fav"));
       act.fav.addEventListener("click", function(v) {
-        var star = v.target;
-        star.favorited ? API.unfav(t.id, function(xhr) {
-          star.favorited = false;
-          star.className = "fav false";
-          star.textContent = "Fav";
-        }) : API.fav(t.id, function(xhr) {
-          star.favorited = true;
-          star.className = "fav true";
-          star.textContent = "Unfav";
+        (act.fav.favorited ?
+        API.unfav : API.fav)(t.id, function(xhr) {
+          act.fav.favorited = !act.fav.favorited;
+          act.fav.className = "fav " + act.fav.favorited;
+          act.fav.textContent = act.fav.favorited ? "Unfav" : "Fav";
         });
       }, false);
 
