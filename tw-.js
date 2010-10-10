@@ -131,7 +131,7 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          return '<a href="' + encodeURI(decodeURI(encodeURI(s))) +
+          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(s)))) +
           '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
