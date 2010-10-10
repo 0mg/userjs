@@ -3,16 +3,6 @@
 // @include http://api.twitter.com/-/*
 // ==/UserScript==
 
-/* デバッグ用の特別な関数 */
-var props = function(o) {
-  if (!o) return;
-  var s = [];
-  for (var p in o) {
-    s.push(p + " : " + o[p]);
-  }
-  return s.sort().join("\n");
-};
-
 /* 元ページのスクリプトを無効化する */
 opera.addEventListener("BeforeScript", function(v) {
   v.preventDefault();
@@ -23,6 +13,16 @@ opera.addEventListener("BeforeExternalScript", function(v) {
 
 /* UserJS を適用する */
 addEventListener("DOMContentLoaded", function() {
+
+  /* デバッグ用の特別な関数 */
+  props = function(o) {
+    if (!o) return;
+    var s = [];
+    for (var p in o) {
+      s.push(p + " : " + o[p]);
+    }
+    return s.sort().join("\n");
+  };
 
   /* グローバル定数 */
 
@@ -43,6 +43,33 @@ addEventListener("DOMContentLoaded", function() {
     ce: function(s) { return document.createElement(s); },
     ct: function(s) { return document.createTextNode(s); },
     id: function(s) { return document.getElementById(s); },
+    listize: function() {
+      /*
+        引数を li 要素に変換する
+      */
+      var f = D.cf();
+      Array.prototype.forEach.call(arguments, function(o) {
+        var li = D.ce("li");
+        li.appendChild(o);
+        f.appendChild(li);
+      });
+      return f;
+    },
+    dlize: function() {
+      /*
+        引数を dt, dd 要素に変換する
+      */
+      var f = D.cf();
+      Array.prototype.forEach.call(arguments, function(o) {
+        var dt = D.ce("dt");
+        var dd = D.ce("dd");
+        dt.appendChild(o[0]);
+        dd.appendChild(o[1]);
+        f.appendChild(dt);
+        f.appendChild(dd);
+      });
+      return f;
+    },
   };
 
   var X = {
@@ -94,34 +121,7 @@ addEventListener("DOMContentLoaded", function() {
     },
   };
 
-  var tool = {
-    listize: function() {
-      /*
-        引数を li 要素に変換する
-      */
-      var f = D.cf();
-      Array.prototype.forEach.call(arguments, function(o) {
-        var li = D.ce("li");
-        li.appendChild(o);
-        f.appendChild(li);
-      });
-      return f;
-    },
-    dlize: function() {
-      /*
-        引数を dt, dd 要素に変換する
-      */
-      var f = D.cf();
-      Array.prototype.forEach.call(arguments, function(o) {
-        var dt = D.ce("dt");
-        var dd = D.ce("dd");
-        dt.appendChild(o[0]);
-        dd.appendChild(o[1]);
-        f.appendChild(dt);
-        f.appendChild(dd);
-      });
-      return f;
-    },
+  var T = {
     linker: function(text) {
       /*
         自動リンク for innerHTML
@@ -131,7 +131,7 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          return '<a href="' + encodeURI(decodeURI(s)) +
+          return '<a href="' + encodeURI(decodeURI(encodeURI(s))) +
           '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
@@ -173,7 +173,15 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     untweet: function(id, callback) {
-      X.post(APV + "statuses/destroy/" + id + ".xml", "", callback);
+      X.post(APV + "statuses/destroy/" + id + ".json", "", callback);
+    },
+
+    retweet: function(id, callback) {
+      X.post(APV + "statuses/retweet/" + id + ".json", "", callback);
+    },
+
+    deleteMessage: function(id, callback) {
+      X.post(APV + "direct_messages/destroy/" + id + ".xml", "", callback);
     },
 
     fav: function(id, callback) {
@@ -350,6 +358,9 @@ addEventListener("DOMContentLoaded", function() {
         .tweet .name {\
           color: #999;\
         }\
+        .tweet .in_reply_to {\
+          font-size: smaller;\
+        }\
         .tweet .icon {\
           position: absolute;\
           left: 1ex;\
@@ -365,11 +376,17 @@ addEventListener("DOMContentLoaded", function() {
         .tweet .source * {\
           color: inherit;\
         }\
-        .tweet-action li {\
+        .tweet-action {\
+          font-size: smaller;\
+        }\
+        .tweet-action > * {\
           display: inline-block;\
           margin-right: 1ex;\
         }\
         .tweet-action .fav.true {\
+          background-color: #0f0;\
+        }\
+        .tweet-action .retweet.true {\
           background-color: #0f0;\
         }\
         .user-action .list.true {\
@@ -675,7 +692,15 @@ addEventListener("DOMContentLoaded", function() {
       var timeline = D.ce("ol");
       timeline.id = "timeline";
 
-      [].concat(data).forEach(function(t) {
+      [].concat(data).forEach(function(data) {
+        var t = data;
+
+        var isDM = "sender" in t && "recipient" in t;
+        var isRT = "retweeted_status" in t;
+
+        if (isDM) t.user = t.sender;
+        if (isRT) t = t.retweeted_status;
+
         var entry = {
           entry: D.ce("li"),
           name: D.ce("a"),
@@ -687,10 +712,6 @@ addEventListener("DOMContentLoaded", function() {
           date: D.ce("a"),
           src: D.ce("span")
         };
-
-        t = t.retweeted_status || t;
-        t.user = t.user || t.sender;
-        t.source = t.source || "?";
 
         entry.entry.className = "tweet";
 
@@ -713,14 +734,21 @@ addEventListener("DOMContentLoaded", function() {
           entry.reid.appendChild(D.ct("in reply to " +
           t.in_reply_to_screen_name));
         }
+        if (isDM) {
+          entry.reid.href = ROOT + t.recipient_screen_name;
+          entry.reid.appendChild(D.ct("d " +
+          t.recipient_screen_name));
+        }
 
         entry.text.className = "text";
-        entry.text.innerHTML = tool.linker(t.text);
+        entry.text.innerHTML = T.linker(t.text);
 
         entry.meta.className = "meta";
 
         entry.date.className = "created_at";
-        entry.date.href = ROOT + t.user.screen_name + "/status/" + t.id;
+        entry.date.href =
+        isDM ? "?count=1&max_id=" + t.id :
+        ROOT + t.user.screen_name + "/status/" + t.id;
         entry.date.appendChild(D.ct(
           (function(n, p) {
             var g = new Date(0, 0, 0, 0, 0, 0, n - p);
@@ -735,7 +763,9 @@ addEventListener("DOMContentLoaded", function() {
         entry.src.innerHTML = t.source;
 
         entry.meta.appendChild(entry.date);
+        isDM ||
         entry.meta.appendChild(D.ct(" via "));
+        isDM ||
         entry.meta.appendChild(entry.src);
 
         entry.entry.appendChild(entry.name);
@@ -744,7 +774,7 @@ addEventListener("DOMContentLoaded", function() {
         entry.entry.appendChild(entry.reid);
         entry.entry.appendChild(entry.text);
         entry.entry.appendChild(entry.meta);
-        entry.entry.appendChild(panel.makeTwAct(t, my));
+        entry.entry.appendChild(panel.makeTwAct(data, my));
 
         timeline.appendChild(entry.entry);
       });
@@ -752,11 +782,9 @@ addEventListener("DOMContentLoaded", function() {
       D.id("main").appendChild(timeline);
 
       if (data.length) {
-        var past = D.ce("li");
-        past.a = D.ce("a");
-        past.a.appendChild(D.ct("past"));
-        past.appendChild(past.a);
-        past.a.href = "?page=2&max_id=" + data[0].id;
+        var past = D.ce("a");
+        past.appendChild(D.ct("past"));
+        past.href = "?page=2&max_id=" + data[0].id;
         D.id("cursor").appendChild(past);
       }
     },
@@ -800,6 +828,126 @@ addEventListener("DOMContentLoaded", function() {
 
 
   var panel = {
+    makeTwAct: function(t, my) {
+      /*
+        ツイートに対する操作
+        fav, reply, delete などのボタンを作成
+      */
+      var isDM = "sender" in t && "recipient" in t;
+      var isRT = "retweeted_status" in t;
+      var isMyRT = isRT && t.user.id === my.id;
+      var isYourRT = isRT && !isMyRT;
+      var isYourRTtoMe = isYourRT &&
+                         !t.text.indexOf("RT @" + my.screen_name + ":");
+      var isYourTweetRTedByMe = "current_user_retweet" in t;
+
+      if (isDM) t.user = t.sender;
+
+      var act = {
+        bar: D.ce("div"),
+        fav: D.ce("button"),
+        rep: D.ce("a"),
+        del: D.ce("button"),
+        rt: D.ce("button")
+      };
+
+      //act.bar.appendChild(D.ct(isMyRT ? "このツイートはあなたがしたRTです" : isYourRTtoMe ? "これはあなたへのRTです" : isYourTweetRTedByMe ? "このツイートはあなたからRTされました" : isYourRT ? "これはこのユーザーがしたRTです" : "ただのツイートです"));
+
+      act.bar.className = "tweet-action";
+
+      act.fav.className = "fav " + t.favorited;
+      act.fav.favorited = t.favorited;
+      act.fav.appendChild(D.ct(t.favorited ? "unfav" : "fav"));
+      act.fav.addEventListener("click", function() {
+        (act.fav.favorited ? API.unfav : API.fav)(t.id, function(xhr) {
+          act.fav.favorited = !act.fav.favorited;
+          act.fav.className = "fav " + act.fav.favorited;
+          act.fav.textContent = act.fav.favorited ? "Unfav" : "Fav";
+        });
+      }, false);
+
+      act.rep.className = "reply";
+      act.rep.href = "javascript:;";
+      act.rep.appendChild(D.ct("Reply"));
+
+      if (isDM) {
+        act.rep.addEventListener("click", function() {
+          var status = D.id("status");
+          status.value = "d " + t.user.screen_name + " " + status.value;
+          status.focus();
+        }, false)
+      } else {
+        act.rep.addEventListener("click", function() {
+          var status = D.id("status");
+          var repid = D.id("in_reply_to_status_id");
+
+          status.value = "@" + t.user.screen_name + " " + status.value;
+          repid.value = t.id;
+
+          status.focus();
+        }, false);
+      }
+
+      act.rt.className = "retweet " + (isMyRT || isYourTweetRTedByMe);
+      act.rt.isMyRT = isMyRT;
+      act.rt.isYourTweetRTedByMe = isYourTweetRTedByMe;
+      act.rt.appendChild(D.ct(
+        (isMyRT || isYourTweetRTedByMe) ? "UnReTweet" : "ReTweet"
+      ));
+      act.rt.addEventListener("click", function() {
+        if (act.rt.isMyRT) {
+          API.untweet(t.id, function(xhr) {
+            var data = JSON.parse(xhr.responseText);
+            act.bar.parentNode.style.display = "none";
+          });
+        } else if (act.rt.isYourTweetRTedByMe) {
+          API.untweet(t.current_user_retweet.id, function(xhr) {
+            var data = JSON.parse(xhr.responseText);
+            act.rt.isYourTweetRTedByMe = false;
+            act.rt.className = "retweet false";
+            act.rt.textContent = "ReTweet";
+          });
+        } else {
+          API.retweet(t.id, function(xhr) {
+            var data = JSON.parse(xhr.responseText);
+            act.rt.isYourTweetRTedByMe = true;
+            act.rt.className = "retweet true";
+            act.rt.textContent = "UnReTweet";
+            t.current_user_retweet = data;
+          });
+        }
+      }, false);
+
+      if (!isDM) act.bar.appendChild(act.fav);
+      act.bar.appendChild(act.rep);
+      if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isYourRTtoMe) {
+        act.bar.appendChild(act.rt);
+      }
+
+      if (isDM) {
+        act.del.appendChild(D.ct("Delete"));
+        act.del.addEventListener("click", function() {
+          API.deleteMessage(t.id, function(xhr) {
+            act.bar.parentNode.style.display = "none";
+          });
+        }, false);
+        act.bar.appendChild(act.del);
+
+      } else if (((t.user.id === my.id) && !isMyRT) || isYourRTtoMe) {
+        act.del.appendChild(D.ct("Delete"));
+        act.del.addEventListener("click", function() {
+          API.untweet(isYourRTtoMe ? t.retweeted_status.id : t.id,
+          function(xhr) {
+            act.bar.parentNode.style.display = "none";
+          });
+        }, false);
+
+        act.bar.appendChild(act.del);
+      }
+
+      return act.bar;
+    },
+
     showFollowPanel: function(user) {
       /*
         ユーザーをフォローしたりリストに追加したりするボタン
@@ -917,67 +1065,6 @@ addEventListener("DOMContentLoaded", function() {
       D.id("subaction").appendChild(b.follow);
     },
 
-    makeTwAct: function(t, my) {
-      /*
-        ツイートに対する操作
-        fav, reply, delete などボタンをツイート内に設置する
-      */
-
-      var act = {
-        bar: D.ce("ul"),
-        fav: D.ce("button"),
-        rep: D.ce("a"),
-        del: D.ce("button"),
-        rt: D.ce("button")
-      };
-
-      act.bar.className = "tweet-action";
-
-      act.fav.className = "fav " + t.favorited;
-      act.fav.favorited = t.favorited;
-      act.fav.appendChild(D.ct(t.favorited ? "unfav" : "fav"));
-      act.fav.addEventListener("click", function(v) {
-        (act.fav.favorited ?
-        API.unfav : API.fav)(t.id, function(xhr) {
-          act.fav.favorited = !act.fav.favorited;
-          act.fav.className = "fav " + act.fav.favorited;
-          act.fav.textContent = act.fav.favorited ? "Unfav" : "Fav";
-        });
-      }, false);
-
-      act.rep.className = "reply";
-      act.rep.href = "javascript:;";
-      act.rep.appendChild(D.ct("Reply"));
-      act.rep.addEventListener("click", function() {
-        var status = D.id("status");
-        var repid = D.id("in_reply_to_status_id");
-
-        status.value = "@" + t.user.screen_name + " " + status.value;
-        repid.value = t.id;
-
-        D.id("status").focus();
-      }, false);
-
-      act.bar.appendChild(tool.listize(
-        act.fav,
-        act.rep
-      ));
-
-      if (my.id === t.user.id) {
-        act.del.appendChild(D.ct("Delete"));
-        act.del.addEventListener("click", function(v) {
-          API.untweet(t.id, function(xhr) {
-            act.bar.parentNode.style.display = "none";
-          });
-        }, false);
-
-        act.bar.appendChild(tool.listize(act.del));
-      };
-
-      return act.bar;
-    },
-
-
     showGlobalBar: function(my) {
       /*
         常時表示メニュー
@@ -1038,7 +1125,7 @@ addEventListener("DOMContentLoaded", function() {
         API.logout(function(xhr) { location = ROOT; });
       }, false);
 
-      g.bar.appendChild(tool.listize(
+      g.bar.appendChild(D.listize(
         g.home,
         g.profile,
         g.replies,
@@ -1195,7 +1282,7 @@ addEventListener("DOMContentLoaded", function() {
         });
       }, false);
 
-      p.panel.appendChild(tool.dlize(
+      p.panel.appendChild(D.dlize(
         [D.ct("name"), p.name],
         [D.ct("rename"), p.rename],
         [D.ct("description"), p.desc],
@@ -1298,7 +1385,7 @@ addEventListener("DOMContentLoaded", function() {
       p.suber.href = ROOT + list.uri.substring(1) + "/subscribers";
       p.suber.appendChild(D.ct("Subscribers"));
 
-      p.box.appendChild(tool.dlize(
+      p.box.appendChild(D.dlize(
         [D.ct("Name"), D.ct(list.name)],
         [D.ct("Full Name"), D.ct(list.full_name)],
         [D.ct("Description"), D.ct(list.description)],
@@ -1386,7 +1473,7 @@ addEventListener("DOMContentLoaded", function() {
       p.favorites.appendChild(D.ct("Favorites"));
       p.favorites.href = ROOT + user.screen_name + "/favorites";
 
-      p.box.appendChild(tool.dlize(
+      p.box.appendChild(D.dlize(
         [D.ct("Screen Name"), D.ct(user.screen_name)],
         [D.ct("Icon"), p.icorg],
         [D.ct("Name"), D.ct(user.name)],
