@@ -263,6 +263,7 @@ addEventListener("DOMContentLoaded", function() {
       var style = D.ce("style");
       var body = D.ce("body");
 
+      html.lang = "ja"; // Opera 10.5x Fonts Fix
       html.style.height = "100%";
 
       title.appendChild(D.ct("tw-"));
@@ -1035,7 +1036,7 @@ addEventListener("DOMContentLoaded", function() {
 
         lists.forEach(function(l) {
           var list = D.ce("button");
-          list.appendChild(D.ct((l.mode === "private" ? "-" : "+") + l.slug));
+          list.textContent = (l.mode === "private" ? "-" : "+") + l.slug;
           act.lists.appendChild(list);
 
           function toggle() {
@@ -1046,17 +1047,14 @@ addEventListener("DOMContentLoaded", function() {
             });
           };
 
+          function setList(xhr) {
+            list.membering = xhr.status === 200;
+            list.className = "list " + list.membering;
+            list.addEventListener("click", toggle, false);
+          };
+
           X.get(APV + l.full_name + "/members/" + user.id + ".json",
-          function() {
-            list.membering = true;
-            list.className = "list " + list.membering;
-            list.addEventListener("click", toggle, false);
-          },
-          function() {
-            list.membering = false;
-            list.className = "list " + list.membering;
-            list.addEventListener("click", toggle, false);
-          });
+          setList, setList);
         });
       });
     },
