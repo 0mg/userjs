@@ -33,6 +33,15 @@ addEventListener("DOMContentLoaded", function() {
 
   /* 頻繁に行う処理を関数化したもの */
 
+  Element.prototype.__appendChild__ = Element.prototype.appendChild;
+  Element.prototype.appendChild = function() {
+    var returnValue;
+    for (var i = 0; i < arguments.length; ++i) {
+      returnValue = this.__appendChild__(arguments[i]);
+    }
+    return returnValue;
+  };
+
   var JSON;
   JSON = JSON || {
     "parse": function(s) { return eval("(" + s + ")"); }
@@ -43,6 +52,8 @@ addEventListener("DOMContentLoaded", function() {
     ce: function(s) { return document.createElement(s); },
     ct: function(s) { return document.createTextNode(s); },
     id: function(s) { return document.getElementById(s); },
+    tag: function(s) { return document.getElementsByTagName(s)[0]; },
+    tags: function(s) { return document.getElementsByTagName(s); },
     listize: function() {
       /*
         引数を li 要素に変換する
@@ -61,12 +72,16 @@ addEventListener("DOMContentLoaded", function() {
       */
       var f = D.cf();
       Array.prototype.forEach.call(arguments, function(o) {
-        var dt = D.ce("dt");
-        var dd = D.ce("dd");
-        dt.appendChild(o[0]);
-        dd.appendChild(o[1]);
-        f.appendChild(dt);
-        f.appendChild(dd);
+        if (o[0]) {
+          var dt = D.ce("dt");
+          dt.appendChild(o[0]);
+          f.appendChild(dt);
+        }
+        if (o[1]) {
+          var dd = D.ce("dd");
+          dd.appendChild(o[1]);
+          f.appendChild(dd);
+        }
       });
       return f;
     },
@@ -112,7 +127,7 @@ addEventListener("DOMContentLoaded", function() {
       /*
         Twitter 認証トークン取得
       */
-      this.get("/about/contact", function(xhr) {
+      this.get("/settings/password", function(xhr) {
         var data = xhr.responseText;
         var key = '<input name="authenticity_token" value="';
         var auth = data.substr(data.indexOf(key) + key.length, 40);
@@ -131,8 +146,10 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(s)))) +
-          '">' + s + '</a>';
+          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(
+            s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/,
+            ROOT + "$1")
+          )))) + '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -155,6 +172,20 @@ addEventListener("DOMContentLoaded", function() {
 
 
   var API = {
+    updateProfileBackgroundImage: function(image, tile, callback) {
+    },
+
+    updateProfileColors: function(background_color, text_color, link_color,
+    sidebar_fill_color, sidebar_border_color, callback) {
+      X.post(APV + "account/update_profile_colors.xml", 
+        "profile_background_color=" + background_color +
+        "&profile_text_color=" + text_color +
+        "&profile_link_color=" + link_color +
+        "&profile_sidebar_fill_color=" + sidebar_fill_color +
+        "&profile_sidebar_border_color=" + sidebar_border_color,
+      callback);
+    },
+
     resolveURL: function(links, callback) {
       X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(a) {
         return encodeURIComponent(a);
@@ -525,6 +556,12 @@ addEventListener("DOMContentLoaded", function() {
         }
         case (2): {
           switch (hash[1]) {
+            case ("design"): {
+              if (hash[0] === "settings") {
+                content.customizeDesign(my);
+                break;
+              }
+            }
             case ("memberships"): {
               if (hash[0] === "lists") {
                 content.showLists(APV + path + ".json?" + q, my);
@@ -617,8 +654,108 @@ addEventListener("DOMContentLoaded", function() {
     },
   };
 
-
   var content = {
+    customizeDesign: function(my) {
+      content.showTL(APV + "statuses/user_timeline.json", my);
+      outline.showProfileOutline(my.screen_name, my, 2);
+      outline.changeDesign(my);
+
+      var profile = {
+        form: D.ce("dl"),
+        background: {
+          image: D.ce("input"),
+          tile_outer: D.ce("label"),
+          tile: D.ce("input"),
+          color: D.ce("input"),
+        },
+        text_color: D.ce("input"),
+        link_color: D.ce("input"),
+        sidebar: {
+          fill_color: D.ce("input"),
+          border_color: D.ce("input"),
+        },
+        update: D.ce("button"),
+      };
+
+      profile.background.image.type = "file";
+      profile.background.tile.type = "checkbox";
+
+      profile.background.tile.checked = my.profile_background_tile;
+      profile.background.color.value = my.profile_background_color;
+      profile.text_color.value = my.profile_text_color;
+      profile.link_color.value = my.profile_link_color;
+      profile.sidebar.fill_color.value = my.profile_sidebar_fill_color;
+      profile.sidebar.border_color.value = my.profile_sidebar_border_color;
+      profile.update.appendChild(D.ct("Update"));
+
+      profile.background.tile.addEventListener("change", function(v) {
+        document.body.style.backgroundRepeat =
+        v.target.checked ? "repeat" : "no-repeat";
+      }, false);
+
+      profile.form.addEventListener("keyup", function(v) {
+        if (parseInt(v.target.value, 16).toString(16).length !== 6) return;
+        switch (v.target) {
+          case (profile.background.color): {
+            document.body.style.backgroundColor = "#" + v.target.value;
+            break;
+          }
+          case (profile.text_color): {
+            document.body.style.color = "#" + v.target.value;
+            break;
+          }
+          case (profile.link_color): {
+            Array.prototype.forEach.call(document.links, function(a) {
+              a.style.color = "#" + v.target.value;
+            });
+            break;
+          }
+          case (profile.sidebar.fill_color): {
+            D.id("side").style.backgroundColor = "#" + v.target.value;
+            break;
+          }
+          case (profile.sidebar.border_color): {
+            D.id("subtitle").style.borderColor =
+            D.id("side").style.borderColor = v.target.value;
+            break;
+          }
+        }
+      }, true);
+
+      profile.update.addEventListener("click", function() {
+        var f = function(xhr) {
+          alert(xhr.responseText);
+        };
+        if (profile.background.image.value) {
+          API.updateProfileBackgroundImage(profile.background.image.value,
+          profile.background.tile.checked, f);
+        }
+        API.updateProfileColors(
+          profile.background.color.value,
+          profile.text_color.value,
+          profile.link_color.value,
+          profile.sidebar.fill_color.value,
+          profile.sidebar.border_color.value,
+        f);
+      }, false);
+
+      profile.background.tile_outer.appendChild(profile.background.tile);
+      profile.background.tile_outer.appendChild(D.ct("tile"));
+
+      profile.form.appendChild(D.dlize(
+        //[D.ct("background image"), profile.background.image],
+        //[, profile.background.tile_outer],
+        [D.ct("background color"), profile.background.color],
+        [D.ct("text color"), profile.text_color],
+        [D.ct("link color"), profile.link_color],
+        [D.ct("sidebar color"), profile.sidebar.fill_color],
+        [D.ct("sidebar border color"), profile.sidebar.border_color],
+        [profile.update]
+      ));
+
+      D.id("subaction").appendChild(profile.form);
+    },
+
     showUsers: function(url, my) {
       /*
         ユーザー一覧を表示する
@@ -806,6 +943,14 @@ addEventListener("DOMContentLoaded", function() {
         past.appendChild(D.ct("past"));
         past.href = "?page=2&max_id=" + data[0].id;
         D.id("cursor").appendChild(past);
+
+        var link = D.ce("link");
+        link.rel = "next";
+        link.href = past.href;
+        Array.prototype.forEach.call(D.tags("link"), function(e) {
+          if (e.rel === "next") e.parentNode.removeChild(e);
+        });
+        D.tag("head").appendChild(link);
       }
     },
 
@@ -1367,6 +1512,7 @@ addEventListener("DOMContentLoaded", function() {
       "#" + user.profile_text_color : "transparent") + "; }" +
       "a { color: " + (user.profile_link_color ?
       "#" + user.profile_link_color : "transparent") + "; }";
+      return true;
     },
 
     showListOutline: function(hash) {
@@ -1502,8 +1648,8 @@ addEventListener("DOMContentLoaded", function() {
         [p.following, D.ct(user.friends_count)],
         [p.followers, D.ct(user.followers_count)],
         [p.listed, D.ct(user.listed_count)],
-        [p.lists, D.ct("")],
-        [p.listsub, D.ct("")],
+        [p.lists],
+        [p.listsub],
         [D.ct("ID"), D.ct(user.id)],
         [D.ct("Time Zone"), D.ct(user.time_zone)],
         [D.ct("Language"), D.ct(user.lang)],
