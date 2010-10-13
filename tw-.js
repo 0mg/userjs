@@ -694,7 +694,7 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       profile.form.addEventListener("keyup", function(v) {
-        if (parseInt(v.target.value, 16).toString(16).length !== 6) return;
+        if (v.target.value.length !== 6) return;
         switch (v.target) {
           case (profile.background.color): {
             document.body.style.backgroundColor = "#" + v.target.value;
