@@ -33,13 +33,17 @@ addEventListener("DOMContentLoaded", function() {
 
   /* 頻繁に行う処理を関数化したもの */
 
-  Element.prototype.__appendChild__ = Element.prototype.appendChild;
-  Element.prototype.appendChild = function() {
-    var returnValue;
+  Document.prototype.add =
+  DocumentFragment.prototype.add =
+  Element.prototype.add = function() {
     for (var i = 0; i < arguments.length; ++i) {
-      returnValue = this.__appendChild__(arguments[i]);
+      this.appendChild(arguments[i]);
     }
-    return returnValue;
+    return this;
+  };
+  Element.prototype.sa = function(attr, value) {
+    this.setAttribute(attr, value);
+    return this;
   };
 
   var JSON;
@@ -48,43 +52,12 @@ addEventListener("DOMContentLoaded", function() {
   };
 
   var D = {
-    cf: function() { return document.createDocumentFragment(); },
     ce: function(s) { return document.createElement(s); },
     ct: function(s) { return document.createTextNode(s); },
     id: function(s) { return document.getElementById(s); },
     tag: function(s) { return document.getElementsByTagName(s)[0]; },
     tags: function(s) { return document.getElementsByTagName(s); },
-    listize: function() {
-      /*
-        引数を li 要素に変換する
-      */
-      var f = D.cf();
-      Array.prototype.forEach.call(arguments, function(o) {
-        var li = D.ce("li");
-        li.appendChild(o);
-        f.appendChild(li);
-      });
-      return f;
-    },
-    dlize: function() {
-      /*
-        引数を dt, dd 要素に変換する
-      */
-      var f = D.cf();
-      Array.prototype.forEach.call(arguments, function(o) {
-        if (o[0]) {
-          var dt = D.ce("dt");
-          dt.appendChild(o[0]);
-          f.appendChild(dt);
-        }
-        if (o[1]) {
-          var dd = D.ce("dd");
-          dd.appendChild(o[1]);
-          f.appendChild(dd);
-        }
-      });
-      return f;
-    },
+    cf: function() { return document.createDocumentFragment(); },
   };
 
   var X = {
@@ -147,10 +120,9 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(
-            s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/,
-            ROOT + "$1")
-          )))) + '">' + s + '</a>';
+          s = s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/, ROOT + "$1");
+          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(s)))) +
+          '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -298,8 +270,8 @@ addEventListener("DOMContentLoaded", function() {
       html.lang = "ja"; // Opera 10.5x Fonts Fix
       html.style.height = "100%";
 
-      title.appendChild(D.ct("tw-"));
-      style.appendChild(D.ct('\
+      title.add(D.ct("tw-"));
+      style.add(D.ct('\
         * {\
           margin: 0;\
           padding: 0;\
@@ -435,13 +407,7 @@ addEventListener("DOMContentLoaded", function() {
         }\
       '));
 
-      head.appendChild(title);
-      head.appendChild(style);
-
-      html.appendChild(head);
-      html.appendChild(body);
-
-      document.appendChild(html);
+      document.add(html.add(head.add(style, title), body));
     },
 
     structPage: function() {
@@ -470,15 +436,17 @@ addEventListener("DOMContentLoaded", function() {
       fw.side.id = "side";
       fw.footer.id = "footer";
 
-      fw.content.appendChild(fw.subtitle);
-      fw.content.appendChild(fw.subaction);
-      fw.content.appendChild(fw.submain);
-      fw.content.appendChild(fw.subcursor);
-
-      document.body.appendChild(fw.header);
-      document.body.appendChild(fw.content);
-      document.body.appendChild(fw.side);
-      document.body.appendChild(fw.footer);
+      document.body.add(
+        fw.header,
+        fw.content.add(
+          fw.subtitle,
+          fw.subaction,
+          fw.submain,
+          fw.subcursor
+        ),
+        fw.side,
+        fw.footer
+      );
     },
   };
 
@@ -665,7 +633,6 @@ addEventListener("DOMContentLoaded", function() {
         form: D.ce("dl"),
         background: {
           image: D.ce("input"),
-          tile_outer: D.ce("label"),
           tile: D.ce("input"),
           color: D.ce("input"),
         },
@@ -681,14 +648,16 @@ addEventListener("DOMContentLoaded", function() {
       profile.background.image.type = "file";
       profile.background.tile.type = "checkbox";
 
+      /* Default Value */
       profile.background.tile.checked = my.profile_background_tile;
       profile.background.color.value = my.profile_background_color;
       profile.text_color.value = my.profile_text_color;
       profile.link_color.value = my.profile_link_color;
       profile.sidebar.fill_color.value = my.profile_sidebar_fill_color;
       profile.sidebar.border_color.value = my.profile_sidebar_border_color;
-      profile.update.appendChild(D.ct("Update"));
+      profile.update.add(D.ct("Update"));
 
+      /* addEventListener */
       profile.background.tile.addEventListener("change", function(v) {
         document.body.style.backgroundRepeat =
         v.target.checked ? "repeat" : "no-repeat";
@@ -741,21 +710,28 @@ addEventListener("DOMContentLoaded", function() {
         f);
       }, false);
 
-      profile.background.tile_outer.appendChild(profile.background.tile);
-      profile.background.tile_outer.appendChild(D.ct("tile"));
+      profile.form.add(
+        D.ce("dt").add(D.ct("background image")),
+        D.ce("dd").add(profile.background.image),
+        D.ce("dd").add(
+          D.ce("label").add(
+            profile.background.tile, D.ct("tile")
+          )
+        ),
+        D.ce("dt").add(D.ct("background color")),
+        D.ce("dd").add(profile.background.color),
+        D.ce("dt").add(D.ct("text color")),
+        D.ce("dd").add(profile.text_color),
+        D.ce("dt").add(D.ct("link color")),
+        D.ce("dd").add(profile.link_color),
+        D.ce("dt").add(D.ct("sidebar color")),
+        D.ce("dd").add(profile.sidebar.fill_color),
+        D.ce("dt").add(D.ct("sidebar border color")),
+        D.ce("dd").add(profile.sidebar.border_color),
+        D.ce("dt").add(profile.update)
+      );
 
-      profile.form.appendChild(D.dlize(
-        //[D.ct("background image"), profile.background.image],
-        //[, profile.background.tile_outer],
-        [D.ct("background color"), profile.background.color],
-        [D.ct("text color"), profile.text_color],
-        [D.ct("link color"), profile.link_color],
-        [D.ct("sidebar color"), profile.sidebar.fill_color],
-        [D.ct("sidebar border color"), profile.sidebar.border_color],
-        [profile.update]
-      ));
-
-      D.id("subaction").appendChild(profile.form);
+      D.id("subaction").add(profile.form);
     },
 
     showUsers: function(url, my) {
@@ -770,15 +746,16 @@ addEventListener("DOMContentLoaded", function() {
 
         var ul = D.ce("ul");
         data.users && data.users.forEach(function(s) {
-          var li = D.ce("li");
-          var a = D.ce("a");
-          a.href = ROOT + s.screen_name;
-          a.appendChild(D.ct(s.screen_name));
-          li.appendChild(a);
-          ul.appendChild(li);
+          ul.add(
+            D.ce("li").add(
+              D.ce("a").sa("href", ROOT + s.screen_name).add(
+                D.ct(s.screen_name)
+              )
+            )
+          );
         });
 
-        D.id("main").appendChild(ul);
+        D.id("main").add(ul);
         that.misc.showCursor(data);
       });
     },
@@ -795,24 +772,17 @@ addEventListener("DOMContentLoaded", function() {
         lists.id = "lists";
 
         data.lists.forEach(function(l) {
-          var name = D.ce("dt");
-          var link = D.ce("a");
-          var desc = D.ce("dd");
-
-          name.className = l.mode;
-
-          link.href = ROOT + l.full_name.substring(1);
-          link.appendChild(D.ct(l.full_name));
-
-          name.appendChild(link);
-
-          desc.appendChild(D.ct(l.description));
-
-          lists.appendChild(name);
-          lists.appendChild(desc);
+          lists.add(
+            D.ce("dt").sa("class", l.mode).add(
+              D.ce("a").sa("href", ROOT + l.full_name.substring(1)).add(
+                D.ct(l.full_name)
+              )
+            ),
+            D.ce("dd").add(D.ct(l.description))
+          );
         });
 
-        D.id("main").appendChild(lists);
+        D.id("main").add(lists);
         content.misc.showCursor(data);
       });
     },
@@ -859,8 +829,8 @@ addEventListener("DOMContentLoaded", function() {
         if (isDM) t.user = t.sender;
         if (isRT) t = t.retweeted_status;
 
-        var entry = {
-          entry: D.ce("li"),
+        var ent = {
+          ry: D.ce("li"),
           name: D.ce("a"),
           nick: D.ce("span"),
           icon: D.ce("img"),
@@ -871,44 +841,42 @@ addEventListener("DOMContentLoaded", function() {
           src: D.ce("span")
         };
 
-        entry.entry.className = "tweet";
-        if (isRT) entry.entry.className += " retweet";
+        ent.ry.className = "tweet";
+        if (isRT) ent.ry.className += " retweet";
 
-        entry.name.className = "screen_name";
-        entry.name.href = ROOT + t.user.screen_name;
-        entry.name.appendChild(D.ct(t.user.screen_name));
+        ent.name.className = "screen_name";
+        ent.name.href = ROOT + t.user.screen_name;
+        ent.name.add(D.ct(t.user.screen_name));
 
-        entry.nick.className = "name";
-        entry.nick.appendChild(D.ct(t.user.name));
+        ent.nick.className = "name";
+        ent.nick.add(D.ct(t.user.name));
 
-        entry.icon.className = "icon";
-        entry.icon.alt = t.user.name;
-        entry.icon.width = "48";
-        entry.icon.src = t.user.profile_image_url;
+        ent.icon.className = "icon";
+        ent.icon.alt = t.user.name;
+        ent.icon.width = "48";
+        ent.icon.src = t.user.profile_image_url;
 
-        entry.reid.className = "in_reply_to";
+        ent.reid.className = "in_reply_to";
         if (t.in_reply_to_status_id) {
-          entry.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
+          ent.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
           t.in_reply_to_status_id;
-          entry.reid.appendChild(D.ct("in reply to " +
-          t.in_reply_to_screen_name));
+          ent.reid.add(D.ct("in reply to " + t.in_reply_to_screen_name));
         }
         if (isDM) {
-          entry.reid.href = ROOT + t.recipient_screen_name;
-          entry.reid.appendChild(D.ct("d " +
-          t.recipient_screen_name));
+          ent.reid.href = ROOT + t.recipient_screen_name;
+          ent.reid.add(D.ct("d " + t.recipient_screen_name));
         }
 
-        entry.text.className = "text";
-        entry.text.innerHTML = T.linker(t.text);
+        ent.text.className = "text";
+        ent.text.innerHTML = T.linker(t.text);
 
-        entry.meta.className = "meta";
+        ent.meta.className = "meta";
 
-        entry.date.className = "created_at";
-        entry.date.href =
+        ent.date.className = "created_at";
+        ent.date.href =
         isDM ? "?count=1&max_id=" + t.id :
         ROOT + t.user.screen_name + "/status/" + t.id;
-        entry.date.appendChild(D.ct(
+        ent.date.add(D.ct(
           (function(n, p) {
             var g = new Date(0, 0, 0, 0, 0, 0, n - p);
             return n - p < 60000 ? g.getSeconds() + " seconds ago" :
@@ -918,33 +886,34 @@ addEventListener("DOMContentLoaded", function() {
           })(new Date, new Date(t.created_at))
         ));
 
-        entry.src.className = "source";
-        entry.src.innerHTML = t.source;
+        ent.src.className = "source";
+        ent.src.innerHTML = t.source;
 
-        entry.meta.appendChild(entry.date);
-        isDM ||
-        entry.meta.appendChild(D.ct(" via "));
-        isDM ||
-        entry.meta.appendChild(entry.src);
+        ent.meta.add(ent.date);
+        if (!isDM) {
+          ent.meta.add(D.ct(" via "), ent.src);
+        }
 
-        entry.entry.appendChild(entry.name);
-        entry.entry.appendChild(entry.icon);
-        entry.entry.appendChild(entry.nick);
-        entry.entry.appendChild(entry.reid);
-        entry.entry.appendChild(entry.text);
-        entry.entry.appendChild(entry.meta);
-        entry.entry.appendChild(panel.makeTwAct(data, my));
+        ent.ry.add(
+          ent.name,
+          ent.icon,
+          ent.nick,
+          ent.reid,
+          ent.text,
+          ent.meta,
+          panel.makeTwAct(data, my)
+        );
 
-        timeline.appendChild(entry.entry);
+        timeline.add(ent.ry);
       });
 
-      D.id("main").appendChild(timeline);
+      D.id("main").add(timeline);
 
       if (data.length) {
         var past = D.ce("a");
-        past.appendChild(D.ct("past"));
+        past.add(D.ct("past"));
         past.href = "?page=2&max_id=" + data[0].id;
-        D.id("cursor").appendChild(past);
+        D.id("cursor").add(past);
 
         var link = D.ce("link");
         link.rel = "next";
@@ -952,7 +921,7 @@ addEventListener("DOMContentLoaded", function() {
         Array.prototype.forEach.call(D.tags("link"), function(e) {
           if (e.rel === "next") e.parentNode.removeChild(e);
         });
-        D.tag("head").appendChild(link);
+        D.tag("head").add(link);
       }
     },
 
@@ -963,31 +932,33 @@ addEventListener("DOMContentLoaded", function() {
         */
         var cur = {
           sor: D.ce("ol"),
-          next: D.ce("li"),
-          prev: D.ce("li"),
-          next_a: D.ce("a"),
-          prev_a: D.ce("a"),
+          next: D.ce("a"),
+          prev: D.ce("a"),
         };
 
         if (data.previous_cursor) {
-          cur.prev_a.href = "?cursor=" + data.previous_cursor;
-          cur.prev_a.appendChild(D.ct("Prev"));
+          cur.prev.href = "?cursor=" + data.previous_cursor;
+          cur.prev.add(D.ct("Prev"));
 
-          cur.prev.appendChild(cur.prev_a);
-
-          cur.sor.appendChild(cur.prev);
+          cur.sor.add(
+            D.ce("li").add(
+              cur.prev
+            )
+          );
         }
 
         if (data.next_cursor) {
-          cur.next_a.href = "?cursor=" + data.next_cursor;
-          cur.next_a.appendChild(D.ct("Next"));
+          cur.next.href = "?cursor=" + data.next_cursor;
+          cur.next.add(D.ct("Next"));
 
-          cur.next.appendChild(cur.next_a);
-
-          cur.sor.appendChild(cur.next);
+          cur.sor.add(
+            D.ce("li").add(
+              cur.next
+            )
+          );
         }
 
-        D.id("cursor").appendChild(cur.sor);
+        D.id("cursor").add(cur.sor);
       },
     },
   };
@@ -1018,13 +989,13 @@ addEventListener("DOMContentLoaded", function() {
         rt: D.ce("button")
       };
 
-//act.bar.appendChild(D.ct((isRT ? "このツイートは " + t.user.screen_name +" によるRTです" : "これはツイートです")+"。"));act.bar.appendChild(D.ct(""+(isMyRT ? "すなわち、あなたによるRTです" : isRTtoMe ? "あなたへのRTです" : isTweetRTedByMe ? "あなたはこれをRTしています" : isRTRTedByMe ? "あなたもこれをRTしています" :  "")));
+//act.bar.add(D.ct((isRT ? "このツイートは " + t.user.screen_name +" によるRTです" : "これはツイートです")+"。"));act.bar.add(D.ct(""+(isMyRT ? "すなわち、あなたによるRTです" : isRTtoMe ? "あなたへのRTです" : isTweetRTedByMe ? "あなたはこれをRTしています" : isRTRTedByMe ? "あなたもこれをRTしています" :  "")));
 
       act.bar.className = "tweet-action";
 
       act.fav.className = "fav " + t.favorited;
       act.fav.favorited = t.favorited;
-      act.fav.appendChild(D.ct(t.favorited ? "UnFav" : "Fav"));
+      act.fav.add(D.ct(t.favorited ? "UnFav" : "Fav"));
       act.fav.addEventListener("click", function() {
         (act.fav.favorited ? API.unfav : API.fav)(t.id, function(xhr) {
           act.fav.favorited = !act.fav.favorited;
@@ -1035,7 +1006,7 @@ addEventListener("DOMContentLoaded", function() {
 
       act.rep.className = "reply";
       act.rep.href = "javascript:;";
-      act.rep.appendChild(D.ct("Reply"));
+      act.rep.add(D.ct("Reply"));
 
       if (isDM) {
         act.rep.addEventListener("click", function() {
@@ -1058,7 +1029,7 @@ addEventListener("DOMContentLoaded", function() {
       act.rt.className = "retweet " + (isMyRT || isTweetRTedByMe);
       act.rt.isMyRT = isMyRT;
       act.rt.isTweetRTedByMe = isTweetRTedByMe;
-      act.rt.appendChild(D.ct(
+      act.rt.add(D.ct(
         (isMyRT || isTweetRTedByMe) ? "UnReTweet" : "ReTweet"
       ));
       act.rt.addEventListener("click", function() {
@@ -1085,23 +1056,23 @@ addEventListener("DOMContentLoaded", function() {
         }
       }, false);
 
-      if (!isDM) act.bar.appendChild(act.fav);
-      act.bar.appendChild(act.rep);
+      if (!isDM) act.bar.add(act.fav);
+      act.bar.add(act.rep);
       if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isRTtoMe) {
-        act.bar.appendChild(act.rt);
+        act.bar.add(act.rt);
       }
 
       if (isDM) {
-        act.del.appendChild(D.ct("Delete"));
+        act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
           API.deleteMessage(t.id, function(xhr) {
             act.bar.parentNode.style.display = "none";
           });
         }, false);
-        act.bar.appendChild(act.del);
+        act.bar.add(act.del);
 
       } else if (((t.user.id === my.id) && !isMyRT) || isRTtoMe) {
-        act.del.appendChild(D.ct("Delete"));
+        act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
           API.untweet(isRTtoMe ? t.retweeted_status.id : t.id,
           function(xhr) {
@@ -1109,7 +1080,7 @@ addEventListener("DOMContentLoaded", function() {
           });
         }, false);
 
-        act.bar.appendChild(act.del);
+        act.bar.add(act.del);
       }
 
       return act.bar;
@@ -1131,15 +1102,17 @@ addEventListener("DOMContentLoaded", function() {
       act.block.className = "block";
       act.spam.className = "spam";
 
-      D.id("subaction").appendChild(act.foblo);
-      D.id("subaction").appendChild(act.lists);
+      D.id("subaction").add(
+        act.foblo,
+        act.lists
+      );
 
       X.get(APV + "friendships/show.json?target_id=" + user.id, function(xhr) {
         var data = JSON.parse(xhr.responseText);
         var ship = data.relationship.source;
 
         act.follow.following = ship.following;
-        act.follow.appendChild(D.ct(act.follow.following ?
+        act.follow.add(D.ct(act.follow.following ?
         "Unfollow" : "Follow"));
         act.follow.addEventListener("click", function() {
           act.follow.following ?
@@ -1154,7 +1127,7 @@ addEventListener("DOMContentLoaded", function() {
         }, false);
 
         act.block.blocking = ship.blocking;
-        act.block.appendChild(D.ct(act.block.blocking ? "Unblock" : "Block"));
+        act.block.add(D.ct(act.block.blocking ? "Unblock" : "Block"));
         act.block.addEventListener("click", function() {
           act.block.blocking ?
           API.unblock(user.id, function(xhr) {
@@ -1173,8 +1146,10 @@ addEventListener("DOMContentLoaded", function() {
 
         if (ship.blocking) act.follow.style.display = "none";
 
-        act.foblo.appendChild(act.follow);
-        act.foblo.appendChild(act.block);
+        act.foblo.add(
+          act.follow,
+          act.block
+        );
       });
 
       X.get(APV + "lists.json", function(xhr) {
@@ -1184,7 +1159,7 @@ addEventListener("DOMContentLoaded", function() {
         lists.forEach(function(l) {
           var list = D.ce("button");
           list.textContent = (l.mode === "private" ? "-" : "+") + l.slug;
-          act.lists.appendChild(list);
+          act.lists.add(list);
 
           function toggle() {
             (list.membering ? API.unlisting : API.listing)(l.full_name, user.id,
@@ -1216,7 +1191,7 @@ addEventListener("DOMContentLoaded", function() {
 
       b.follow.following = data.following;
       b.follow.className = "follow " + b.follow.following;
-      b.follow.appendChild(D.ct(data.following ? "Unfollow" : "Follow"));
+      b.follow.add(D.ct(data.following ? "Unfollow" : "Follow"));
       b.follow.addEventListener("click", function() {
         (b.follow.following ?
         API.unfollowList : API.followList)(data.full_name, function(xhr) {
@@ -1226,7 +1201,7 @@ addEventListener("DOMContentLoaded", function() {
         });
       }, false);
 
-      D.id("subaction").appendChild(b.follow);
+      D.id("subaction").add(b.follow);
     },
 
     showGlobalBar: function(my) {
@@ -1252,58 +1227,58 @@ addEventListener("DOMContentLoaded", function() {
       g.bar.id = "globalbar";
 
       g.home.href = ROOT;
-      g.home.appendChild(D.ct("Home"));
+      g.home.add(D.ct("Home"));
 
       g.profile.href = ROOT + my.screen_name;
-      g.profile.appendChild(D.ct("Profile:" + my.statuses_count));
+      g.profile.add(D.ct("Profile:" + my.statuses_count));
 
       g.replies.href = ROOT + "mentions";
-      g.replies.appendChild(D.ct("@" + my.screen_name));
+      g.replies.add(D.ct("@" + my.screen_name));
 
       g.inbox.href = ROOT + "inbox";
-      g.inbox.appendChild(D.ct("Messages"));
+      g.inbox.add(D.ct("Messages"));
 
       g.favorites.href = ROOT + "favorites";
-      g.favorites.appendChild(D.ct("Favorites:" + my.favourites_count));
+      g.favorites.add(D.ct("Favorites:" + my.favourites_count));
 
       g.following.href = ROOT + "following";
-      g.following.appendChild(D.ct("Following:" + my.friends_count));
+      g.following.add(D.ct("Following:" + my.friends_count));
 
       g.followers.href = ROOT + "followers";
-      g.followers.appendChild(D.ct("Followers:" + my.followers_count));
+      g.followers.add(D.ct("Followers:" + my.followers_count));
 
       g.lists.href = ROOT + "lists";
-      g.lists.appendChild(D.ct("Lists"));
+      g.lists.add(D.ct("Lists"));
 
       g.listsub.href = ROOT + "lists/subscriptions";
-      g.listsub.appendChild(D.ct("Subscriptions"));
+      g.listsub.add(D.ct("Subscriptions"));
 
       g.listed.href = ROOT + "lists/memberships";
-      g.listed.appendChild(D.ct("Listed:" + my.listed_count));
+      g.listed.add(D.ct("Listed:" + my.listed_count));
 
       g.blocking.href = ROOT + "blocking";
-      g.blocking.appendChild(D.ct("Blocking"));
+      g.blocking.add(D.ct("Blocking"));
 
-      g.logout.appendChild(D.ct("logout"));
+      g.logout.add(D.ct("logout"));
       g.logout.addEventListener("click", function() {
         API.logout(function(xhr) { location = ROOT; });
       }, false);
 
-      g.bar.appendChild(D.listize(
-        g.home,
-        g.profile,
-        g.replies,
-        g.inbox,
-        g.favorites,
-        g.following,
-        g.followers,
-        g.lists,
-        g.listsub,
-        g.listed,
-        g.blocking,
-        g.logout
-      ));
-      D.id("header").appendChild(g.bar);
+      g.bar.add(
+        D.ce("li").add(g.home),
+        D.ce("li").add(g.profile),
+        D.ce("li").add(g.replies),
+        D.ce("li").add(g.inbox),
+        D.ce("li").add(g.favorites),
+        D.ce("li").add(g.following),
+        D.ce("li").add(g.followers),
+        D.ce("li").add(g.lists),
+        D.ce("li").add(g.listsub),
+        D.ce("li").add(g.listed),
+        D.ce("li").add(g.blocking),
+        D.ce("li").add(g.logout)
+      );
+      D.id("header").add(g.bar);
     },
 
     showTweetBox: function() {
@@ -1326,17 +1301,15 @@ addEventListener("DOMContentLoaded", function() {
         t.update.disabled = this.value.replace(/^d \w+ /, "").length > 140;
       }, false);
 
-      t.update.appendChild(D.ct("Tweet"));
+      t.update.add(D.ct("Tweet"));
       t.update.addEventListener("click", function() {
         API.tweet(t.status.value, t.id.value, "", "", "", "", "",
         function(xhr) { alert(xhr.responseText); });
       }, false);
 
-      t.box.appendChild(t.status);
-      t.box.appendChild(t.id);
-      t.box.appendChild(t.update);
+      t.box.add(t.status, t.id, t.update);
 
-      D.id("header").appendChild(t.box);
+      D.id("header").add(t.box);
     },
 
     showHyperPanel: function(my) {
@@ -1353,8 +1326,8 @@ addEventListener("DOMContentLoaded", function() {
 
       act.source.value =
       location.pathname.substring(ROOT.length).match(/[^/]+(?:[/][^/]+)?/);
-      act.add.appendChild(D.ct("Add"));
-      act.del.appendChild(D.ct("Delete"));
+      act.add.add(D.ct("Add"));
+      act.del.add(D.ct("Delete"));
 
       act.add.addEventListener("click", function(v) {
         var f = function(xhr) { alert(xhr.responseText) };
@@ -1394,14 +1367,14 @@ addEventListener("DOMContentLoaded", function() {
         }
       }, false);
 
-      act.bar.appendChild(D.ct("source: "));
-      act.bar.appendChild(act.source);
-      act.bar.appendChild(D.ct("target: "));
-      act.bar.appendChild(act.target);
-      act.bar.appendChild(act.add);
-      act.bar.appendChild(act.del);
+      act.bar.add(D.ct("source: "));
+      act.bar.add(act.source);
+      act.bar.add(D.ct("target: "));
+      act.bar.add(act.target);
+      act.bar.add(act.add);
+      act.bar.add(act.del);
 
-      D.id("side").appendChild(act.bar);
+      D.id("side").add(act.bar);
     },
 
     showListPanel: function(my) {
@@ -1421,9 +1394,9 @@ addEventListener("DOMContentLoaded", function() {
       p.pri.type = "checkbox";
       p.pri.checked = true;
 
-      p.create.appendChild(D.ct("Create"));
-      p.update.appendChild(D.ct("Update"));
-      p.del.appendChild(D.ct("Delete"));
+      p.create.add(D.ct("Create"));
+      p.update.add(D.ct("Update"));
+      p.del.add(D.ct("Delete"));
 
       p.create.addEventListener("click", function() {
         API.createList(my.id, p.name.value,
@@ -1446,17 +1419,21 @@ addEventListener("DOMContentLoaded", function() {
         });
       }, false);
 
-      p.panel.appendChild(D.dlize(
-        [D.ct("name"), p.name],
-        [D.ct("rename"), p.rename],
-        [D.ct("description"), p.desc],
-        [D.ct("private"), p.pri]
-      ));
-      p.panel.appendChild(p.create);
-      p.panel.appendChild(p.update);
-      p.panel.appendChild(p.del);
+      p.panel.add(
+        D.ce("dt").add(D.ct("name")),
+        D.ce("dd").add(p.name),
+        D.ce("dt").add(D.ct("rename")),
+        D.ce("dd").add(p.rename),
+        D.ce("dt").add(D.ct("description")),
+        D.ce("dd").add(p.desc),
+        D.ce("dt").add(D.ct("private")),
+        D.ce("dd").add(p.pri)
+      );
+      p.panel.add(p.create);
+      p.panel.add(p.update);
+      p.panel.add(p.del);
 
-      D.id("side").appendChild(p.panel);
+      D.id("side").add(p.panel);
     },
   };
 
@@ -1472,12 +1449,12 @@ addEventListener("DOMContentLoaded", function() {
       key.split("/").forEach(function(name, i, key) {
         var dir = D.ce("a");
         dir.href = ROOT + key.slice(0, i + 1).join("/");
-        dir.appendChild(D.ct(name));
-        i && sub.appendChild(D.ct("/"));
-        sub.appendChild(dir);
+        dir.add(D.ct(name));
+        i && sub.add(D.ct("/"));
+        sub.add(dir);
       });
 
-      D.id("subtitle").appendChild(sub);
+      D.id("subtitle").add(sub);
     },
 
     changeDesign: function(user) {
@@ -1538,29 +1515,36 @@ addEventListener("DOMContentLoaded", function() {
       /*
         リストの詳細を表示する
       */
-      var p = {
-        box: D.ce("dl"),
-        member: D.ce("a"),
-        suber: D.ce("a"),
+      var li = {
+        st: D.ce("dl"),
+        members: D.ce("a"),
+        followers: D.ce("a"),
       };
 
-      p.member.href = ROOT + list.uri.substring(1) + "/members";
-      p.member.appendChild(D.ct("Members"));
+      li.members.href = ROOT + list.uri.substring(1) + "/members";
+      li.members.add(D.ct("Members"));
 
-      p.suber.href = ROOT + list.uri.substring(1) + "/subscribers";
-      p.suber.appendChild(D.ct("Subscribers"));
+      li.followers.href = ROOT + list.uri.substring(1) + "/subscribers";
+      li.followers.add(D.ct("Subscribers"));
 
-      p.box.appendChild(D.dlize(
-        [D.ct("Name"), D.ct(list.name)],
-        [D.ct("Full Name"), D.ct(list.full_name)],
-        [D.ct("Description"), D.ct(list.description)],
-        [p.member, D.ct(list.member_count)],
-        [p.suber, D.ct(list.subscriber_count)],
-        [D.ct("Mode"), D.ct(list.mode)],
-        [D.ct("ID"), D.ct(list.id)]
-      ));
+      li.st.add(
+        D.ce("dt").add(D.ct("Name")),
+        D.ce("dd").add(D.ct(list.name)),
+        D.ce("dt").add(D.ct("Full Name")),
+        D.ce("dd").add(D.ct(list.full_name)),
+        D.ce("dt").add(D.ct("Description")),
+        D.ce("dd").add(D.ct(list.description)),
+        D.ce("dt").add(li.members),
+        D.ce("dd").add(D.ct(list.member_count)),
+        D.ce("dt").add(li.followers),
+        D.ce("dd").add(D.ct(list.subscriber_count)),
+        D.ce("dt").add(D.ct("Mode")),
+        D.ce("dd").add(D.ct(list.mode)),
+        D.ce("dt").add(D.ct("ID")),
+        D.ce("dd").add(D.ct(list.id))
+      );
 
-      D.id("side").appendChild(p.box);
+      D.id("side").add(li.st);
     },
 
     showProfileOutline: function(screen_name, my) {
@@ -1609,56 +1593,71 @@ addEventListener("DOMContentLoaded", function() {
       p.icon.width = "73";
       p.icon.src = user.profile_image_url.replace(/_normal\./, "_bigger.");
 
-      p.icorg.appendChild(p.icon);
+      p.icorg.add(p.icon);
       p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
 
       if (user.url) {
         p.url.href = user.url;
-        p.url.appendChild(D.ct(user.url));
+        p.url.add(D.ct(user.url));
       }
 
-      p.tweets.appendChild(D.ct("Tweets"));
+      p.tweets.add(D.ct("Tweets"));
       p.tweets.href = ROOT + user.screen_name + "/status";
 
-      p.following.appendChild(D.ct("Following"));
+      p.following.add(D.ct("Following"));
       p.following.href = ROOT + user.screen_name + "/following";
 
-      p.followers.appendChild(D.ct("Followers"));
+      p.followers.add(D.ct("Followers"));
       p.followers.href = ROOT + user.screen_name + "/followers";
 
-      p.lists.appendChild(D.ct("Lists"));
+      p.lists.add(D.ct("Lists"));
       p.lists.href = ROOT + user.screen_name + "/lists";
 
-      p.listsub.appendChild(D.ct("Subscriptions"));
+      p.listsub.add(D.ct("Subscriptions"));
       p.listsub.href = ROOT + user.screen_name + "/lists/subscriptions";
 
-      p.listed.appendChild(D.ct("Listed"));
+      p.listed.add(D.ct("Listed"));
       p.listed.href = ROOT + user.screen_name + "/lists/memberships";
 
-      p.favorites.appendChild(D.ct("Favorites"));
+      p.favorites.add(D.ct("Favorites"));
       p.favorites.href = ROOT + user.screen_name + "/favorites";
 
-      p.box.appendChild(D.dlize(
-        [D.ct("Screen Name"), D.ct(user.screen_name)],
-        [D.ct("Icon"), p.icorg],
-        [D.ct("Name"), D.ct(user.name)],
-        [D.ct("Location"), D.ct(user.location)],
-        [D.ct("Web"), p.url],
-        [D.ct("Bio"), D.ct(user.description)],
-        [p.tweets, D.ct(user.statuses_count)],
-        [p.favorites, D.ct(user.favourites_count)],
-        [p.following, D.ct(user.friends_count)],
-        [p.followers, D.ct(user.followers_count)],
-        [p.listed, D.ct(user.listed_count)],
-        [p.lists],
-        [p.listsub],
-        [D.ct("ID"), D.ct(user.id)],
-        [D.ct("Time Zone"), D.ct(user.time_zone)],
-        [D.ct("Language"), D.ct(user.lang)],
-        [D.ct("Since"), D.ct(new Date(user.created_at).toLocaleString())]
-      ));
+      p.box.add(
+        D.ce("dt").add(D.ct("Screen Name")),
+        D.ce("dd").add(D.ct(user.screen_name)),
+        D.ce("dt").add(D.ct("Icon")),
+        D.ce("dd").add(p.icorg),
+        D.ce("dt").add(D.ct("Name")),
+        D.ce("dd").add(D.ct(user.name)),
+        D.ce("dt").add(D.ct("Location")),
+        D.ce("dd").add(D.ct(user.location)),
+        D.ce("dt").add(D.ct("Web")),
+        D.ce("dd").add(p.url),
+        D.ce("dt").add(D.ct("Bio")),
+        D.ce("dd").add(D.ct(user.description)),
+        D.ce("dt").add(p.tweets),
+        D.ce("dd").add(D.ct(user.statuses_count)),
+        D.ce("dt").add(p.favorites),
+        D.ce("dd").add(D.ct(user.favourites_count)),
+        D.ce("dt").add(p.following),
+        D.ce("dd").add(D.ct(user.friends_count)),
+        D.ce("dt").add(p.followers),
+        D.ce("dd").add(D.ct(user.followers_count)),
+        D.ce("dt").add(p.listed),
+        D.ce("dd").add(D.ct(user.listed_count)),
+        D.ce("dt").add(p.lists),
+        D.ce("dt").add(p.listsub),
+        D.ce("dt").add(D.ct("ID")),
+        D.ce("dd").add(D.ct(user.id)),
+        D.ce("dt").add(D.ct("Time Zone")),
+        D.ce("dd").add(D.ct(user.time_zone)),
+        D.ce("dt").add(D.ct("Language")),
+        D.ce("dd").add(D.ct(user.lang)),
+        D.ce("dt").add(D.ct("Since")),
+        D.ce("dd").add(D.ct(new Date(user.created_at).toLocaleString()))
+      );
 
-      D.id("side").appendChild(p.box);
+      D.id("side").add(p.box);
     },
   };
 
