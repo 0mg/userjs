@@ -67,9 +67,7 @@ if (~document.cookie.indexOf("auth_token=")) {
 
     function onError(xhr, tweet) {
       /* エラー時の処理 */
-      if (window.name = prompt(xhr.responseText, tweet)) {alert(updateStatus);
-        updateStatus();
-      }
+      if (window.name = prompt(xhr.responseText, tweet)) updateStatus();
       else close();
     };
 
