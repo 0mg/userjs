@@ -1,7 +1,15 @@
 // ==UserScript==
 // @name tw-
-// @include http://api.twitter.com/1/api/*
+// @include http://api.twitter.com/-/*
 // ==/UserScript==
+
+/* 元のページのスクリプトを無効にする */
+opera.addEventListener("BeforeScript", function(v) {
+  v.preventDefault();
+}, false);
+opera.addEventListener("BeforeExternalScript", function(v) {
+  v.preventDefault();
+}, false);
 
 /* UserJS を適用する */
 addEventListener("DOMContentLoaded", function() {
@@ -18,7 +26,7 @@ addEventListener("DOMContentLoaded", function() {
 
   /* グローバル定数 */
 
-  var ROOT = "/1/api/"; // HOMEPATH in URL
+  var ROOT = "/-/"; // HOMEPATH in URL
 
   var APV = 1; // API VERSION in API URL
   APV = "/" + APV + "/";
@@ -259,6 +267,7 @@ addEventListener("DOMContentLoaded", function() {
       var style = D.ce("style");
       var body = D.ce("body");
 
+      html.style.height = "100%";
       html.lang = "ja"; // Opera 10.5x Fonts Fix
 
       title.add(D.ct("tw-"));
