@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitter Prompt
-// @include http://api.twitter.com/share?url=www.u.js
+// @include http://api.twitter.com/1/statuses/update
 // @description Tweet via window.prompt
 // ==/UserScript==
 
@@ -9,42 +9,71 @@ if (false) {
 javascript: (function/**/f(s) {
   if (s = prompt('いまどうしてる？', s)) confirm(s.slice(0, 140) +
   '\n\nあと\x20' + (140 - s.length) + '\x20字入力可能') ?
-  open('http://api.twitter.com/share?url=www.u.js', s,
+  open('http://api.twitter.com/1/statuses/update', s,
   'height=1,width=' + innerWidth) : f(s)
 })(encodeURI(decodeURI(location)))
 }
 
 /* Main */
-if (window.name) {
-  opera.addEventListener("BeforeScript", function(v) {
-    v.preventDefault();
-  }, false);
-  opera.addEventListener("BeforeExternalScript", function(v) {
-    v.preventDefault();
-  }, false);
-  window.addEventListener("DOMContentLoaded", function() {
-    var tweet = window.name.slice(0, 140);
-    if (!document.getElementById("status")) {
-      document.documentElement.style.display = "block";
-      window.resizeTo(innerWidth, 320);
-      return;
-    }
-    if (!confirm(tweet + "\n\nこの文をツイートします")) return exit();
-    var xhr = new XMLHttpRequest;
-    xhr.open("POST", "/1/statuses/update.xml", true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("X-PHX", "true");
-    xhr.onreadystatechange = function() {
+if (~document.cookie.indexOf("auth_token=")) {
+  /* ログインしているなら通常処理 */
+  addEventListener("DOMContentLoaded", function() {
+    var tweet = window.name.substring(0, 140);
+    if (!confirm('' + tweet + '\n\nこの文をツイートします')) return;
+
+    /* 認証トークンが含まれる文書を取得 */
+    var getAuth = new XMLHttpRequest;
+    getAuth.open("GET", "/about/contact", true);
+    getAuth.onreadystatechange = function() {
       if (this.readyState < 4) return;
-      if (this.status === 200) exit();
-      else exit(Error(this.getAllResponseHeaders()), tweet);
+      if (this.status === 200) {
+        /*
+          認証トークンが含まれる文書が取得できたら
+          認証トークンが含まれる文書から認証トークンを取り出す
+        */
+        var data = this.responseText;
+        var key = '<input name="authenticity_token" value="';
+        var authtoken = data.substr(data.indexOf(key) + key.length, 40);
+
+        /* ツイートを投稿する */
+        var xhr = new XMLHttpRequest;
+        xhr.open("POST", "update.xml", true);
+        xhr.setRequestHeader("Content-Type",
+        "application/x-www-form-urlencoded");
+        // X-PHX: true は Cookie 認証に必要
+        xhr.setRequestHeader("X-PHX", "true");
+        xhr.onreadystatechange = function() {
+          if (this.readyState < 4) return;
+          // 投稿に成功したらウィンドウを閉じる
+          if (this.status === 200) close();
+          // 投稿に失敗したらエラー処理
+          else onError(this, tweet);
+        };
+        /* ツイート投稿 */
+        xhr.send(
+          // ツイート
+          "status=" + encodeURIComponent(tweet) +
+          // 認証トークン
+          "&post_authenticity_token=" + authtoken
+        );
+
+      } else {
+        /* 認証トークンが取得できなかったらエラー処理へ */
+        onError(this, tweet);
+      }
     };
-    xhr.send("post_authenticity_token=" +
-    document.getElementsByName("authenticity_token")[0].value +
-    "&status=" + encodeURIComponent(tweet));
+    /* 認証トークンが含まれる文書を取りに行く */
+    getAuth.send(null);
+
+    function onError(xhr, tweet) {
+      /* エラー時の処理 */
+      prompt(xhr.responseText, tweet);
+      close();
+    };
+
   }, false);
-  function exit(msg, tweet) {
-    if (msg !== void 0 && tweet !== void 0) prompt(msg, tweet);
-    close();
-  };
+
+} else {
+  /* ログインしていないならログイン画面へ */
+  location = "/login?redirect_after_login=" + encodeURIComponent(location);
 }
