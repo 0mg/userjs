@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Twitter Prompt
-// @include http://api.twitter.com/1/statuses/update
+// @include http://api.twitter.com/1/updateStatus
 // @description Tweet via window.prompt
 // ==/UserScript==
 
@@ -9,7 +9,7 @@ if (false) {
 javascript: (function/**/f(s) {
   if (s = prompt('いまどうしてる？', s)) confirm(s.slice(0, 140) +
   '\n\nあと\x20' + (140 - s.length) + '\x20字入力可能') ?
-  open('http://api.twitter.com/1/statuses/update', s,
+  open('http://api.twitter.com/1/updateStatus', s,
   'height=1,width=' + innerWidth) : f(s)
 })(encodeURI(decodeURI(location)))
 }
@@ -17,9 +17,9 @@ javascript: (function/**/f(s) {
 /* Main */
 if (~document.cookie.indexOf("auth_token=")) {
   /* ログインしているなら通常処理 */
-  addEventListener("DOMContentLoaded", function() {
+  addEventListener("DOMContentLoaded", function updateStatus() {
     var tweet = window.name.substring(0, 140);
-    if (!confirm('' + tweet + '\n\nこの文をツイートします')) return;
+    if (!confirm('' + tweet + '\n\nこの文をツイートします')) return close();
 
     /* 認証トークンが含まれる文書を取得 */
     var getAuth = new XMLHttpRequest;
@@ -37,7 +37,7 @@ if (~document.cookie.indexOf("auth_token=")) {
 
         /* ツイートを投稿する */
         var xhr = new XMLHttpRequest;
-        xhr.open("POST", "update.xml", true);
+        xhr.open("POST", "/1/statuses/update.xml", true);
         xhr.setRequestHeader("Content-Type",
         "application/x-www-form-urlencoded");
         // X-PHX: true は Cookie 認証に必要
@@ -67,8 +67,10 @@ if (~document.cookie.indexOf("auth_token=")) {
 
     function onError(xhr, tweet) {
       /* エラー時の処理 */
-      prompt(xhr.responseText, tweet);
-      close();
+      if (window.name = prompt(xhr.responseText, tweet)) {alert(updateStatus);
+        updateStatus();
+      }
+      else close();
     };
 
   }, false);
