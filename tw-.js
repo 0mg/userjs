@@ -396,14 +396,10 @@ addEventListener("DOMContentLoaded", function() {
           display: inline-block;\
           margin-right: 1ex;\
         }\
-        .tweet-action .fav.true {\
-          background-color: #0f0;\
-        }\
-        .tweet-action .retweet.true {\
-          background-color: #0f0;\
-        }\
-        .user-action .list.true {\
-          background-color: #0f0;\
+        .tweet-action .fav.true::before,\
+        .tweet-action .retweet.true::before,\
+        .user-action .list.true::before {\
+          content: "\u2714";\
         }\
       '));
 
