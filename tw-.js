@@ -1,15 +1,7 @@
 // ==UserScript==
 // @name tw-
-// @include http://api.twitter.com/-/*
+// @include http://api.twitter.com/1/api/*
 // ==/UserScript==
-
-/* 元ページのスクリプトを無効化する */
-opera.addEventListener("BeforeScript", function(v) {
-  v.preventDefault();
-}, false);
-opera.addEventListener("BeforeExternalScript", function(v) {
-  v.preventDefault();
-}, false);
 
 /* UserJS を適用する */
 addEventListener("DOMContentLoaded", function() {
@@ -26,7 +18,7 @@ addEventListener("DOMContentLoaded", function() {
 
   /* グローバル定数 */
 
-  var ROOT = "/-/"; // HOMEPATH in URL
+  var ROOT = "/1/api/"; // HOMEPATH in URL
 
   var APV = 1; // API VERSION in API URL
   APV = "/" + APV + "/";
@@ -268,7 +260,6 @@ addEventListener("DOMContentLoaded", function() {
       var body = D.ce("body");
 
       html.lang = "ja"; // Opera 10.5x Fonts Fix
-      html.style.height = "100%";
 
       title.add(D.ct("tw-"));
       style.add(D.ct('\
@@ -528,8 +519,8 @@ addEventListener("DOMContentLoaded", function() {
             case ("design"): {
               if (hash[0] === "settings") {
                 content.customizeDesign(my);
-                break;
               }
+              break;
             }
             case ("memberships"): {
               if (hash[0] === "lists") {
@@ -878,10 +869,11 @@ addEventListener("DOMContentLoaded", function() {
         ROOT + t.user.screen_name + "/status/" + t.id;
         ent.date.add(D.ct(
           (function(n, p) {
-            var g = new Date(0, 0, 0, 0, 0, 0, n - p);
-            return n - p < 60000 ? g.getSeconds() + " seconds ago" :
-            n - p < 60000 * 60 ? g.getMinutes() + " minutes ago" :
-            n - p < 60000 * 60 * 24 ? g.getHours() + " hours ago" :
+            var g = n - p;
+            var gap = new Date(0, 0, 0, 0, 0, 0, g);
+            return g < 60000 ? gap.getSeconds() + " seconds ago" :
+            g < 60000 * 60 ? gap.getMinutes() + " minutes ago" :
+            g < 60000 * 60 * 24 ? gap.getHours() + " hours ago" :
             p.toLocaleString()
           })(new Date, new Date(t.created_at))
         ));
@@ -890,9 +882,7 @@ addEventListener("DOMContentLoaded", function() {
         ent.src.innerHTML = t.source;
 
         ent.meta.add(ent.date);
-        if (!isDM) {
-          ent.meta.add(D.ct(" via "), ent.src);
-        }
+        if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
 
         ent.ry.add(
           ent.name,
@@ -1009,6 +999,7 @@ addEventListener("DOMContentLoaded", function() {
       act.rep.add(D.ct("Reply"));
 
       if (isDM) {
+        // DM への返信
         act.rep.addEventListener("click", function() {
           var status = D.id("status");
           status.value = "d " + t.user.screen_name + " " + status.value;
@@ -1016,6 +1007,7 @@ addEventListener("DOMContentLoaded", function() {
         }, false)
       } else {
         act.rep.addEventListener("click", function() {
+          // ツイートへの返信
           var status = D.id("status");
           var repid = D.id("in_reply_to_status_id");
 
@@ -1034,12 +1026,14 @@ addEventListener("DOMContentLoaded", function() {
       ));
       act.rt.addEventListener("click", function() {
         if (act.rt.isMyRT) {
+          // 自分が RT した RT を削除する
           API.untweet(t.id, function(xhr) {
             var data = JSON.parse(xhr.responseText);
             act.bar.parentNode.style.display = "none";
           });
         } else if (act.rt.isTweetRTedByMe) {
           API.untweet(t.current_user_retweet.id, function(xhr) {
+            // 自分から RT されたツイートであれば自分の RT を削除する
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = false;
             act.rt.className = "retweet false";
@@ -1047,6 +1041,7 @@ addEventListener("DOMContentLoaded", function() {
           });
         } else {
           API.retweet(t.id, function(xhr) {
+            // RT する
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = true;
             act.rt.className = "retweet true";
@@ -1059,10 +1054,12 @@ addEventListener("DOMContentLoaded", function() {
       if (!isDM) act.bar.add(act.fav);
       act.bar.add(act.rep);
       if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isRTtoMe) {
+        // 自分のツイートでなければ RT ボタンを表示する
         act.bar.add(act.rt);
       }
 
       if (isDM) {
+        // ダイレクトメッセージ用 delete ボタンを表示する
         act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
           API.deleteMessage(t.id, function(xhr) {
@@ -1072,6 +1069,7 @@ addEventListener("DOMContentLoaded", function() {
         act.bar.add(act.del);
 
       } else if (((t.user.id === my.id) && !isMyRT) || isRTtoMe) {
+        // 自分のツイートであれば delete ボタンを表示する
         act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
           API.untweet(isRTtoMe ? t.retweeted_status.id : t.id,
@@ -1088,7 +1086,7 @@ addEventListener("DOMContentLoaded", function() {
 
     showFollowPanel: function(user) {
       /*
-        ユーザーをフォローしたりリストに追加したりするボタン
+        ユーザーをフォローしたりリストに追加したりするボタン一式
       */
       var act = {
         foblo: D.ce("div"),
@@ -1183,7 +1181,7 @@ addEventListener("DOMContentLoaded", function() {
 
     showListFollowPanel: function(data) {
       /*
-        リストをフォローするボタン
+        リストをフォローするボタン一式
       */
       var b = {
         follow: D.ce("button"),
@@ -1381,59 +1379,65 @@ addEventListener("DOMContentLoaded", function() {
       /*
         リスト管理パネル
       */
-      var p = {
-        panel: D.ce("div"),
+      var list = {
+        panel: D.ce("dl"),
         name: D.ce("input"),
         rename: D.ce("input"),
-        desc: D.ce("input"),
-        pri: D.ce("input"),
+        description: D.ce("textarea"),
+        privat: D.ce("input"),
         create: D.ce("button"),
         update: D.ce("button"),
         del: D.ce("button"),
       };
-      p.pri.type = "checkbox";
-      p.pri.checked = true;
+      list.privat.type = "checkbox";
+      list.privat.checked = true;
 
-      p.create.add(D.ct("Create"));
-      p.update.add(D.ct("Update"));
-      p.del.add(D.ct("Delete"));
+      list.create.add(D.ct("Create"));
+      list.update.add(D.ct("Update"));
+      list.del.add(D.ct("Delete"));
 
-      p.create.addEventListener("click", function() {
-        API.createList(my.id, p.name.value,
-        p.pri.checked ? "private" : "public",
-        p.desc.value, function(xhr) {
+      list.create.addEventListener("click", function() {
+        API.createList(my.id, list.name.value,
+        list.privat.checked ? "private" : "public",
+        list.description.value, function(xhr) {
           alert(xhr.responseText);
         });
       }, false);
 
-      p.update.addEventListener("click", function() {
-        API.updateList(my.id, p.name.value, p.rename.value,
-        p.pri.checked ? "private" : "public", p.desc.value, function(xhr) {
+      list.update.addEventListener("click", function() {
+        API.updateList(my.id, list.name.value, list.rename.value,
+        list.privat.checked ? "private" : "public", list.description.value,
+        function(xhr) {
           alert(xhr.responseText);
         });
       }, false);
 
-      p.del.addEventListener("click", function() {
-        API.deleteList(my.id, p.name.value, function(xhr) {
+      list.del.addEventListener("click", function() {
+        API.deleteList(my.id, list.name.value, function(xhr) {
           alert(xhr.responseText);
         });
       }, false);
 
-      p.panel.add(
+      list.panel.add(
         D.ce("dt").add(D.ct("name")),
-        D.ce("dd").add(p.name),
+        D.ce("dd").add(list.name),
         D.ce("dt").add(D.ct("rename")),
-        D.ce("dd").add(p.rename),
+        D.ce("dd").add(list.rename),
         D.ce("dt").add(D.ct("description")),
-        D.ce("dd").add(p.desc),
+        D.ce("dd").add(list.description),
         D.ce("dt").add(D.ct("private")),
-        D.ce("dd").add(p.pri)
+        D.ce("dd").add(
+          D.ce("label").add(list.privat, D.ct("private"))
+        ),
+        D.ce("dt").add(D.ct("apply")),
+        D.ce("dd").add(
+          list.create,
+          list.update,
+          list.del
+        )
       );
-      p.panel.add(p.create);
-      p.panel.add(p.update);
-      p.panel.add(p.del);
 
-      D.id("side").add(p.panel);
+      D.id("side").add(list.panel);
     },
   };
 
