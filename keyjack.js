@@ -2,7 +2,7 @@
 // @name Keyboard Hijack Hijack
 // ==/UserScript==
 
-(function() {
+addEventListener("DOMContentLoaded", function() {
   function keyJack(v) {
     if (v.target instanceof HTMLInputElement ||
     v.target instanceof HTMLTextAreaElement) return;
@@ -11,4 +11,4 @@
   addEventListener("keypress", keyJack, true);
   addEventListener("keydown", keyJack, true);
   addEventListener("keyup", keyJack, true);
-})();
+}, false);
