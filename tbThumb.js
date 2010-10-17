@@ -7,6 +7,6 @@
 addEventListener("DOMContentLoaded", function() {
   Array.prototype.forEach.call(document.getElementsByTagName("img"),
   function(thumb) {
-    if (thumb.className === "image_thumbnail") thumb.onclick();
+    if (thumb.onclick && thumb.className === "image_thumbnail") thumb.onclick();
   });
 }, false);
