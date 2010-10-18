@@ -1,7 +1,6 @@
 // ==UserScript==
 // @name Tumblr Thumbnail Larger
-// @include http://www.tumblr.com/dashboard
-// @include http://www.tumblr.com/dashboard/*
+// @include http://www.tumblr.com/*
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
