@@ -134,6 +134,17 @@ addEventListener("DOMContentLoaded", function() {
         }
       }).join("");
     },
+    gapTime: function(n, p) {
+      /*
+        日時を「 3 分前」などに変換
+      */
+      var g = n - p;
+      var gap = new Date(0, 0, 0, 0, 0, 0, g);
+      return g < 60000 ? gap.getSeconds() + " seconds ago" :
+      g < 60000 * 60 ? gap.getMinutes() + " minutes ago" :
+      g < 60000 * 60 * 24 ? gap.getHours() + " hours ago" :
+      p.toLocaleString()
+    },
   };
 
 
@@ -348,16 +359,25 @@ addEventListener("DOMContentLoaded", function() {
         }\
         #timeline {\
         }\
+        .user,\
         .tweet {\
-          background: #fcfcfc;\
           position: relative;\
           list-style: none;\
+          min-height: 48px;\
           padding: 1ex 1ex 1ex 60px;\
-          margin-bottom: 1px;\
+          border-bottom: 1px solid silver;\
+          background: #fcfcfc;\
         }\
+        .user .name,\
         .tweet .name,\
         .tweet .in_reply_to {\
           margin-left: 1ex;\
+        }\
+        .user .name,\
+        .user .meta,\
+        .tweet .name,\
+        .tweet .meta {\
+          color: #999;\
         }\
         .tweet.retweet::before {\
           content: "RT";\
@@ -367,15 +387,14 @@ addEventListener("DOMContentLoaded", function() {
           color: white;\
           font-weight: bold;\
         }\
+        .user .screen_name,\
         .tweet .screen_name {\
           font-weight: bold;\
-        }\
-        .tweet .name {\
-          color: #999;\
         }\
         .tweet .in_reply_to {\
           font-size: smaller;\
         }\
+        .user .icon,\
         .tweet .icon {\
           position: absolute;\
           left: 1ex;\
@@ -383,10 +402,11 @@ addEventListener("DOMContentLoaded", function() {
           width: 48px;\
           height: 48px;\
         }\
+        .user .meta,\
         .tweet .meta {\
-          color: #999;\
           font-size: smaller;\
         }\
+        .user .created_at,\
         .tweet .created_at,\
         .tweet .source * {\
           color: inherit;\
@@ -741,13 +761,45 @@ addEventListener("DOMContentLoaded", function() {
       X.get(url, function(xhr) {
         var data = JSON.parse(xhr.responseText);
         data.users = data.users || data;
-
         var ul = D.ce("ul");
-        data.users && data.users.forEach(function(s) {
+        ul.id = "users";
+        data.users && data.users.forEach(function(u) {
+          var user = {
+            screen_name: D.ce("a"),
+            icon: D.ce("img"),
+            name: D.ce("span"),
+            description: D.ce("p"),
+            created_at: D.ce("a"),
+          };
+
+          user.screen_name.className = "screen_name";
+          user.screen_name.add(D.ct(u.screen_name));
+          user.screen_name.href = ROOT + u.screen_name;
+
+          user.icon.className = "icon";
+          user.icon.src = u.profile_image_url;
+          user.icon.alt = u.name;
+
+          user.name.className = "name";
+          user.name.add(D.ct(u.name));
+
+          user.description.className = "description";
+          user.description.innerHTML = T.linker(u.description || "");
+
+          user.created_at.className = "created_at";
+          user.created_at.href = u.url;
+          user.created_at.add(
+            D.ct(T.gapTime(new Date, new Date(u.created_at)))
+          );
+
           ul.add(
-            D.ce("li").add(
-              D.ce("a").sa("href", ROOT + s.screen_name).add(
-                D.ct(s.screen_name)
+            D.ce("li").sa("class", "user").add(
+              user.screen_name,
+              user.icon,
+              user.name,
+              user.description,
+              D.ce("span").sa("class", "meta").add(
+                user.created_at
               )
             )
           );
@@ -851,7 +903,6 @@ addEventListener("DOMContentLoaded", function() {
 
         ent.icon.className = "icon";
         ent.icon.alt = t.user.name;
-        ent.icon.width = "48";
         ent.icon.src = t.user.profile_image_url;
 
         ent.reid.className = "in_reply_to";
@@ -875,14 +926,7 @@ addEventListener("DOMContentLoaded", function() {
         isDM ? "?count=1&max_id=" + t.id :
         ROOT + t.user.screen_name + "/status/" + t.id;
         ent.date.add(D.ct(
-          (function(n, p) {
-            var g = n - p;
-            var gap = new Date(0, 0, 0, 0, 0, 0, g);
-            return g < 60000 ? gap.getSeconds() + " seconds ago" :
-            g < 60000 * 60 ? gap.getMinutes() + " minutes ago" :
-            g < 60000 * 60 * 24 ? gap.getHours() + " hours ago" :
-            p.toLocaleString()
-          })(new Date, new Date(t.created_at))
+          T.gapTime(new Date, new Date(t.created_at))
         ));
 
         ent.src.className = "source";
@@ -953,6 +997,14 @@ addEventListener("DOMContentLoaded", function() {
               cur.next
             )
           );
+
+          var link = D.ce("link");
+          link.rel = "next";
+          link.href = cur.next.href;
+          Array.prototype.forEach.call(D.tags("link"), function(e) {
+            if (e.rel === "next") e.parentNode.removeChild(e);
+          });
+          D.tag("head").add(link);
         }
 
         D.id("cursor").add(cur.sor);
