@@ -7,6 +7,9 @@ addEventListener("DOMContentLoaded", function() {
     if (e[i] instanceof HTMLElement) return;
   }
   if (document.styleSheets.length) return;
+  else if (document.documentElement.nodeName === "svg" &&
+           document.documentElement.getAttribute("xmlns") ===
+           "http://www.w3.org/2000/svg") return;
 
   function ce(s) { return document.createElement(s); };
   function ct(s) { return document.createTextNode(s); };
