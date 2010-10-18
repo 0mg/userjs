@@ -100,7 +100,7 @@ addEventListener("DOMContentLoaded", function() {
       /*
         Twitter 認証トークン取得
       */
-      this.get("/settings/password", function(xhr) {
+      this.get("/about/contact", function(xhr) {
         var data = xhr.responseText;
         var key = '<input name="authenticity_token" value="';
         var auth = data.substr(data.indexOf(key) + key.length, 40);
@@ -340,6 +340,8 @@ addEventListener("DOMContentLoaded", function() {
         #status {\
           width: 35em;\
           height: 7em;\
+          max-width: 100%;\
+          max-height: 100%;\
         }\
         #lists .private::after {\
           content: " (private)";\
@@ -707,13 +709,13 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       profile.form.add(
-        D.ce("dt").add(D.ct("background image")),
-        D.ce("dd").add(profile.background.image),
-        D.ce("dd").add(
+        //D.ce("dt").add(D.ct("background image")),
+        //D.ce("dd").add(profile.background.image),
+        /*D.ce("dd").add(
           D.ce("label").add(
             profile.background.tile, D.ct("tile")
           )
-        ),
+        ),*/
         D.ce("dt").add(D.ct("background color")),
         D.ce("dd").add(profile.background.color),
         D.ce("dt").add(D.ct("text color")),
