@@ -121,8 +121,7 @@ addEventListener("DOMContentLoaded", function() {
           return s;
         } else if (/^[hjd]/.test(s)) {
           s = s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/, ROOT + "$1");
-          return '<a href="' + encodeURI(decodeURI(decodeURI(encodeURI(s)))) +
-          '">' + s + '</a>';
+          return '<a href="' + s + '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -325,6 +324,7 @@ addEventListener("DOMContentLoaded", function() {
         }\
         #subtitle {\
           padding: 1ex;\
+          border-bottom: 1px solid transparent;\
         }\
         #content {\
           float: left;\
@@ -338,6 +338,7 @@ addEventListener("DOMContentLoaded", function() {
           max-width: 100%;\
           background-color: #ccf;\
           font-size: 0.8em;\
+          border-left: 1px solid transparent;\
         }\
         #side::before {\
           content: ".";\
@@ -420,6 +421,7 @@ addEventListener("DOMContentLoaded", function() {
         }\
         .tweet-action .fav.true::before,\
         .tweet-action .retweet.true::before,\
+        .user-action .follow.true::before,\
         .user-action .list.true::before {\
           content: "\u2714";\
         }\
@@ -543,6 +545,12 @@ addEventListener("DOMContentLoaded", function() {
         }
         case (2): {
           switch (hash[1]) {
+            case ("tool"): {
+              if (hash[0] === "settings") {
+                outline.showTools(my);
+              }
+              break;
+            }
             case ("design"): {
               if (hash[0] === "settings") {
                 content.customizeDesign(my);
@@ -787,7 +795,7 @@ addEventListener("DOMContentLoaded", function() {
           user.description.innerHTML = T.linker(u.description || "");
 
           user.created_at.className = "created_at";
-          user.created_at.href = u.url;
+          user.created_at.href = u.url || user.screen_name.href;
           user.created_at.add(
             D.ct(T.gapTime(new Date, new Date(u.created_at)))
           );
@@ -799,7 +807,8 @@ addEventListener("DOMContentLoaded", function() {
               user.name,
               user.description,
               D.ce("span").sa("class", "meta").add(
-                user.created_at
+                user.created_at//,
+                //D.ct(" in " + u.location)
               )
             )
           );
@@ -857,7 +866,9 @@ addEventListener("DOMContentLoaded", function() {
           var data = JSON.parse(xhr.responseText);
           urls.forEach(function(a) {
             if (data[a.href]) {
-              a.textContent = a.href = data[a.href].replace(/\/$/, "");
+              a.textContent = a.href =
+              decodeURIComponent(escape(data[a.href])).
+              replace(/\/(?=\?)|\/$/, "");
             }
           });
         });
@@ -1169,18 +1180,18 @@ addEventListener("DOMContentLoaded", function() {
         var ship = data.relationship.source;
 
         act.follow.following = ship.following;
+        act.follow.className = "follow " + act.follow.following;
         act.follow.add(D.ct(act.follow.following ?
         "Unfollow" : "Follow"));
         act.follow.addEventListener("click", function() {
+          function toggle(xhr) {
+            act.follow.following = !act.follow.following;
+            act.follow.className = "follow " + act.follow.following;
+            act.follow.textContent =
+            act.follow.following ? "Unfollow" : "Follow";
+          };
           act.follow.following ?
-          API.unfollow(user.id, function(xhr) {
-            act.follow.following = false;
-            act.follow.textContent = "Follow";
-          }) :
-          API.follow(user.id, function(xhr) {
-            act.follow.following = true;
-            act.follow.textContent = "Unfollow";
-          });
+          API.unfollow(user.id, toggle) : API.follow(user.id, toggle);
         }, false);
 
         act.block.blocking = ship.blocking;
@@ -1543,11 +1554,10 @@ addEventListener("DOMContentLoaded", function() {
       "#" + user.profile_sidebar_fill_color :
       "transparent";
 
-      D.id("subtitle").style.borderBottom =
-      D.id("side").style.borderLeft =
-      "1px solid " +
-      (user.profile_sidebar_border_color ?
-      "#" + user.profile_sidebar_border_color : "transparent");
+      D.id("subtitle").style.borderColor =
+      D.id("side").style.borderColor =
+      user.profile_sidebar_border_color ?
+      "#" + user.profile_sidebar_border_color : "transparent";
 
       document.getElementsByTagName("style")[0].textContent +=
       "body { color: " + (user.profile_text_color ?
@@ -1721,6 +1731,35 @@ addEventListener("DOMContentLoaded", function() {
       );
 
       D.id("side").add(p.box);
+    },
+    showTools: function(my) {
+      var users = D.ce("dl");
+      users.id = "users";
+
+      (function(cursor) {
+        X.get(APV + "followers/ids.json?cursor=" + cursor, function(xhr) {
+          var data = JSON.parse(xhr.responseText);
+
+          data.ids.length && data.ids.forEach(function(user) {
+            var dd = D.ce("dd");
+            users.add(
+              D.ce("dt").add(D.ct(user)),
+              dd
+            );
+            X.get(APV + "friendships/show.json?target_id=" + user,
+            function(xhr) {
+              var data = JSON.parse(xhr.responseText);
+              var me = data.relationship.source;
+
+              dd.add(D.ct(me.following));
+            });
+          });
+
+          data.next_cursor && arguments.callee(data.next_cursor);
+        });
+      })(-1);
+
+      D.id("main").add(users);
     },
   };
 
