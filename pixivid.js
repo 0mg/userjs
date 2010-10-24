@@ -4,13 +4,13 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
-  var id =
+  var profsrc =
   document.evaluate('.//a[@class="avatar_m"]/img/@src[contains(.,"/profile/")]',
   document, null, 2, null).stringValue;
   var menu = document.evaluate('.//ul[@class="person_menu"]',
   document, null, 9, null).singleNodeValue;
-  if (id && menu) {
-    id = id.match(/\/profile\/([^/]+)/)[1];
+  if (profsrc && menu) {
+    var id = profsrc.match(/\/profile\/([^/]+)/)[1];
     var li = document.createElement("li");
     var a = document.createElement("a");
     a.href = "http://drawr.net/" + id;
