@@ -356,7 +356,7 @@ addEventListener("DOMContentLoaded", function() {
           max-height: 100%;\
         }\
         #lists .private::after {\
-          content: " (private)";\
+          content: "private";\
         }\
         #timeline {\
         }\
@@ -368,6 +368,19 @@ addEventListener("DOMContentLoaded", function() {
           padding: 1ex 1ex 1ex 60px;\
           border-bottom: 1px solid silver;\
           background: #fcfcfc;\
+        }\
+        #lists .private::after,\
+        .user.protected .name::after,\
+        .tweet.protected .name::after {\
+          font-size: smaller;\
+          padding: 0.5ex;\
+          background-color: gray;\
+          color: white;\
+          margin-left: 1ex;\
+        }\
+        .user.protected .name::after,\
+        .tweet.protected .name::after {\
+          content: "protected";\
         }\
         .user .name,\
         .tweet .name,\
@@ -773,12 +786,15 @@ addEventListener("DOMContentLoaded", function() {
         ul.id = "users";
         data.users && data.users.forEach(function(u) {
           var user = {
+            root: D.ce("li"),
             screen_name: D.ce("a"),
             icon: D.ce("img"),
             name: D.ce("span"),
             description: D.ce("p"),
             created_at: D.ce("a"),
           };
+
+          user.root.className = "user" + (u["protected"] ? " protected" : "");
 
           user.screen_name.className = "screen_name";
           user.screen_name.add(D.ct(u.screen_name));
@@ -801,7 +817,7 @@ addEventListener("DOMContentLoaded", function() {
           );
 
           ul.add(
-            D.ce("li").sa("class", "user").add(
+            user.root.add(
               user.screen_name,
               user.icon,
               user.name,
