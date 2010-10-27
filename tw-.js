@@ -120,8 +120,10 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          s = s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/, ROOT + "$1");
-          return '<a href="' + s + '">' + s + '</a>';
+          var url =
+          s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/, ROOT + "$1");
+          try { url = decodeURI(url); } catch(e) {}
+          return '<a href="' + encodeURI(url) + '">' + s + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -558,12 +560,6 @@ addEventListener("DOMContentLoaded", function() {
         }
         case (2): {
           switch (hash[1]) {
-            case ("tool"): {
-              if (hash[0] === "settings") {
-                outline.showTools(my);
-              }
-              break;
-            }
             case ("design"): {
               if (hash[0] === "settings") {
                 content.customizeDesign(my);
@@ -1061,6 +1057,7 @@ addEventListener("DOMContentLoaded", function() {
         bar: D.ce("div"),
         fav: D.ce("button"),
         rep: D.ce("a"),
+        link: D.ce("a"),
         del: D.ce("button"),
         rt: D.ce("button")
       };
@@ -1083,6 +1080,18 @@ addEventListener("DOMContentLoaded", function() {
       act.rep.className = "reply";
       act.rep.href = "javascript:;";
       act.rep.add(D.ct("Reply"));
+
+      act.link.className = "link";
+      act.link.href = "javascript:;";
+      act.link.addEventListener("click", function() {
+        var status = D.id("status");
+
+        status.value += " http://m.twitter.com/@" + t.user.screen_name +
+                       "/status/" + t.id;
+
+        status.focus();
+      }, false);
+      act.link.add(D.ct("Link"));
 
       if (isDM) {
         // DM への返信
@@ -1139,6 +1148,7 @@ addEventListener("DOMContentLoaded", function() {
 
       if (!isDM) act.bar.add(act.fav);
       act.bar.add(act.rep);
+      act.bar.add(act.link);
       if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isRTtoMe) {
         // 自分のツイートでなければ RT ボタンを表示する
         act.bar.add(act.rt);
@@ -1747,35 +1757,6 @@ addEventListener("DOMContentLoaded", function() {
       );
 
       D.id("side").add(p.box);
-    },
-    showTools: function(my) {
-      var users = D.ce("dl");
-      users.id = "users";
-
-      (function(cursor) {
-        X.get(APV + "followers/ids.json?cursor=" + cursor, function(xhr) {
-          var data = JSON.parse(xhr.responseText);
-
-          data.ids.length && data.ids.forEach(function(user) {
-            var dd = D.ce("dd");
-            users.add(
-              D.ce("dt").add(D.ct(user)),
-              dd
-            );
-            X.get(APV + "friendships/show.json?target_id=" + user,
-            function(xhr) {
-              var data = JSON.parse(xhr.responseText);
-              var me = data.relationship.source;
-
-              dd.add(D.ct(me.following));
-            });
-          });
-
-          data.next_cursor && arguments.callee(data.next_cursor);
-        });
-      })(-1);
-
-      D.id("main").add(users);
     },
   };
 
