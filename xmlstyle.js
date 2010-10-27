@@ -140,7 +140,7 @@ addEventListener("DOMContentLoaded", function() {
     })(original.all.snapshotItem(i)));
   }
 
-  style.appendChild(ct("\
+  style.appendChild(ct('\
     original {\
       display: none;\
     }\
@@ -165,7 +165,7 @@ addEventListener("DOMContentLoaded", function() {
     comment value {\
       color: silver;\
     }\
-  "));
+  '));
 
   title.appendChild(ct(decodeURI(document.documentURI)));
 

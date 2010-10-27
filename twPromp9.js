@@ -3,6 +3,13 @@
 // @include http://api.twitter.com/1/updateStatus
 // @description Tweet via window.prompt
 // ==/UserScript==
+/*
+  ■開発メモ
+  /1/updateStatus の場合 404 なページが表示されるので美しくない。
+  だが、それを回避するために
+  /1/statuses/update などを @include に指定した場合、非ログイン時に
+  https://api.twitter.com/sessions に跳ばされてしまい、制御不能になってしまう
+*/
 
 /* Bookmarklet */
 if (false) {
