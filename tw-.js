@@ -120,10 +120,12 @@ addEventListener("DOMContentLoaded", function() {
         if (s.length <= 1) {
           return s;
         } else if (/^[hjd]/.test(s)) {
-          var url =
-          s.replace(/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/, ROOT + "$1");
+          var url = s, text = s;
+          if (/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/.test(url)) {
+            text = url = ROOT + RegExp.$1;
+          }
           try { url = decodeURI(url); } catch(e) {}
-          return '<a href="' + encodeURI(url) + '">' + s + '</a>';
+          return '<a href="' + encodeURI(url) + '">' + text + '</a>';
         } else if (/^@/.test(s)) {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -372,6 +374,7 @@ addEventListener("DOMContentLoaded", function() {
           background: #fcfcfc;\
         }\
         #lists .private::after,\
+        #profile.protected .name::after,\
         .user.protected .name::after,\
         .tweet.protected .name::after {\
           font-size: smaller;\
@@ -380,6 +383,7 @@ addEventListener("DOMContentLoaded", function() {
           color: white;\
           margin-left: 1ex;\
         }\
+        #profile.protected .name::after,\
         .user.protected .name::after,\
         .tweet.protected .name::after {\
           content: "protected";\
@@ -437,6 +441,7 @@ addEventListener("DOMContentLoaded", function() {
         .tweet-action .fav.true::before,\
         .tweet-action .retweet.true::before,\
         .user-action .follow.true::before,\
+        .user-action .block.true::before,\
         .user-action .list.true::before {\
           content: "\u2714";\
         }\
@@ -790,7 +795,8 @@ addEventListener("DOMContentLoaded", function() {
             created_at: D.ce("a"),
           };
 
-          user.root.className = "user" + (u["protected"] ? " protected" : "");
+          user.root.className = "user";
+          user.root.className += u["protected"] ? " protected" : "";
 
           user.screen_name.className = "screen_name";
           user.screen_name.add(D.ct(u.screen_name));
@@ -915,6 +921,7 @@ addEventListener("DOMContentLoaded", function() {
         };
 
         ent.ry.className = "tweet";
+        ent.ry.className += t.user["protected"] ? " protected" : "";
         if (isRT) ent.ry.className += " retweet";
 
         ent.name.className = "screen_name";
@@ -1221,6 +1228,7 @@ addEventListener("DOMContentLoaded", function() {
         }, false);
 
         act.block.blocking = ship.blocking;
+        act.block.className = "block " + act.block.blocking;
         act.block.add(D.ct(act.block.blocking ? "Unblock" : "Block"));
         act.block.addEventListener("click", function() {
           act.block.blocking ?
@@ -1229,11 +1237,13 @@ addEventListener("DOMContentLoaded", function() {
             act.follow.textContent = "Follow";
             act.follow.style.display = "";
             act.block.blocking = false;
+            act.block.className = "block " + act.block.blocking;
             act.block.textContent = "Block";
           }) :
           API.block(user.id, function(xhr) {
             act.follow.style.display = "none";
             act.block.blocking = true;
+            act.block.className = "block " + act.block.blocking;
             act.block.textContent = "Unblock";
           });
         }, false);
@@ -1676,6 +1686,7 @@ addEventListener("DOMContentLoaded", function() {
         icon: D.ce("img"),
         icorg: D.ce("a"),
         url: D.ce("a"),
+        bio: D.ce("p"),
         tweets: D.ce("a"),
         following: D.ce("a"),
         followers: D.ce("a"),
@@ -1686,6 +1697,7 @@ addEventListener("DOMContentLoaded", function() {
       };
 
       p.box.id = "profile";
+      p.box.className += user["protected"] ? " protected" : "";
 
       p.icon.className = "icon";
       p.icon.alt = user.name;
@@ -1699,6 +1711,8 @@ addEventListener("DOMContentLoaded", function() {
         p.url.href = user.url;
         p.url.add(D.ct(user.url));
       }
+
+      p.bio.innerHTML = T.linker(user.description);
 
       p.tweets.add(D.ct("Tweets"));
       p.tweets.href = ROOT + user.screen_name + "/status";
@@ -1723,7 +1737,7 @@ addEventListener("DOMContentLoaded", function() {
 
       p.box.add(
         D.ce("dt").add(D.ct("Screen Name")),
-        D.ce("dd").add(D.ct(user.screen_name)),
+        D.ce("dd").sa("class", "name").add(D.ct(user.screen_name)),
         D.ce("dt").add(D.ct("Icon")),
         D.ce("dd").add(p.icorg),
         D.ce("dt").add(D.ct("Name")),
@@ -1733,7 +1747,7 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(D.ct("Web")),
         D.ce("dd").add(p.url),
         D.ce("dt").add(D.ct("Bio")),
-        D.ce("dd").add(D.ct(user.description)),
+        D.ce("dd").add(p.bio),
         D.ce("dt").add(p.tweets),
         D.ce("dd").add(D.ct(user.statuses_count)),
         D.ce("dt").add(p.favorites),
