@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name Yahoo! blog image MIME type fix
-// @include http://*.blogs.yahoo.co.jp/ybi/*
+// @include http://img*.blogs.yahoo.co.jp/ybi/*
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
