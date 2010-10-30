@@ -102,7 +102,7 @@ addEventListener("DOMContentLoaded", function() {
       */
       this.get("/about/contact", function(xhr) {
         var data = xhr.responseText;
-        var key = '<input name="authenticity_token" value="';
+        var key = "authenticity_token = '";
         var auth = data.substr(data.indexOf(key) + key.length, 40);
         f(auth);
       });
@@ -954,7 +954,8 @@ addEventListener("DOMContentLoaded", function() {
         ent.date.className = "created_at";
         ent.date.href =
         isDM ? "?count=1&max_id=" + t.id :
-        ROOT + t.user.screen_name + "/status/" + t.id;
+        //ROOT + t.user.screen_name + "/status/" + t.id;
+        " http://m.twitter.com/@" + t.user.screen_name + "/status/" + t.id;
         ent.date.add(D.ct(
           T.gapTime(new Date, new Date(t.created_at))
         ));
@@ -1064,7 +1065,6 @@ addEventListener("DOMContentLoaded", function() {
         bar: D.ce("div"),
         fav: D.ce("button"),
         rep: D.ce("a"),
-        link: D.ce("a"),
         del: D.ce("button"),
         rt: D.ce("button")
       };
@@ -1087,18 +1087,6 @@ addEventListener("DOMContentLoaded", function() {
       act.rep.className = "reply";
       act.rep.href = "javascript:;";
       act.rep.add(D.ct("Reply"));
-
-      act.link.className = "link";
-      act.link.href = "javascript:;";
-      act.link.addEventListener("click", function() {
-        var status = D.id("status");
-
-        status.value += " http://m.twitter.com/@" + t.user.screen_name +
-                       "/status/" + t.id;
-
-        status.focus();
-      }, false);
-      act.link.add(D.ct("Link"));
 
       if (isDM) {
         // DM への返信
@@ -1155,7 +1143,6 @@ addEventListener("DOMContentLoaded", function() {
 
       if (!isDM) act.bar.add(act.fav);
       act.bar.add(act.rep);
-      act.bar.add(act.link);
       if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isRTtoMe) {
         // 自分のツイートでなければ RT ボタンを表示する
         act.bar.add(act.rt);
