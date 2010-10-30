@@ -39,7 +39,7 @@ if (~document.cookie.indexOf("auth_token=")) {
           認証トークンが含まれる文書から認証トークンを取り出す
         */
         var data = this.responseText;
-        var key = '<input name="authenticity_token" value="';
+        var key = "authenticity_token = '";
         var authtoken = data.substr(data.indexOf(key) + key.length, 40);
 
         /* ツイートを投稿する */
