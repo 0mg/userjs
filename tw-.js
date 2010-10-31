@@ -130,8 +130,8 @@ addEventListener("DOMContentLoaded", function() {
           var path = s.substring(1);
           return '@<a href="' + ROOT + path + '">' + path + '</a>';
         } else if (/^#/.test(s)) {
-          return '<a href="' + ROOT + 'search?q=' + encodeURIComponent(s) +
-          '">' + s + '</a>'
+          return '<a href="http://search.twitter.com/search?q=' +
+          encodeURIComponent(s) + '">' + s + '</a>'
         } else {
           return s;
         }
@@ -1788,7 +1788,7 @@ addEventListener("DOMContentLoaded", function() {
       location =
       "/login?redirect_after_login=" + encodeURIComponent(location);
     }
-  };
+  }
 
 
 
