@@ -11,8 +11,8 @@ addEventListener("DOMContentLoaded", function() {
            document.documentElement.getAttribute("xmlns") ===
            "http://www.w3.org/2000/svg") return;
 
-  function ce(s) { return document.createElement(s); };
-  function ct(s) { return document.createTextNode(s); };
+  function ce(s) { return document.createElement(s); }
+  function ct(s) { return document.createTextNode(s); }
 
   function getXML(node) {
     if (node.nodeType === 7) {
@@ -116,7 +116,7 @@ addEventListener("DOMContentLoaded", function() {
       return element;
 
     }
-  };
+  }
 
   var nsuri = "http://www.w3.org/1999/xhtml";
 
