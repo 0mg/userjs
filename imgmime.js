@@ -13,7 +13,6 @@ addEventListener("DOMContentLoaded", function() {
       img.src = location.href;
       img.width = "0";
       document.body.appendChild(img);
-      alert(img.height);
       if (img.height === 1) {
         document.body.removeChild(document.body.firstChild);
         img.removeAttribute("width");
