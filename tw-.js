@@ -875,7 +875,8 @@ addEventListener("DOMContentLoaded", function() {
 
         // 短縮 URL 展開
         var links =
-        document.evaluate('.//p[@class="text"]//a[starts-with(@href,"h")]',
+        document.evaluate('.//[@class="text"]/' +
+        'a[starts-with(@href,"h")][starts-with(text(),"h")]',
         D.id("timeline"), null, 7, null);
         for (var urls = [], i = 0; i < links.snapshotLength; ++i) {
           urls.push(links.snapshotItem(i));
