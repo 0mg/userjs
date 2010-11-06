@@ -11,7 +11,7 @@ addEventListener("DOMContentLoaded", function() {
     9, null).singleNodeValue;
 
   if (profsrc && menu) {
-    var id = profsrc.split("/").pop();
+    var id = profsrc.substring(27).match(/[-_a-z0-9]+/);
     var li = document.createElement("li");
     var a = document.createElement("a");
 
