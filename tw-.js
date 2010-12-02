@@ -885,9 +885,10 @@ addEventListener("DOMContentLoaded", function() {
           var data = JSON.parse(xhr.responseText);
           urls.forEach(function(a) {
             if (data[a.href]) {
-              a.textContent = a.href =
-              decodeURIComponent(escape(data[a.href])).
-              replace(/\/(?=\?)|\/$/, "");
+              a.textContent =
+              //a.href =
+              decodeURIComponent(escape(data[a.href]))/*.
+              replace(/\/(?=\?)|\/$/, "");*/
             }
           });
         });
@@ -1113,7 +1114,7 @@ addEventListener("DOMContentLoaded", function() {
       act.rt.isMyRT = isMyRT;
       act.rt.isTweetRTedByMe = isTweetRTedByMe;
       act.rt.add(D.ct(
-        (isMyRT || isTweetRTedByMe) ? "UnReTweet" : "ReTweet"
+        (isMyRT || isTweetRTedByMe) ? "UnRT" : "RT"
       ));
       act.rt.addEventListener("click", function() {
         if (act.rt.isMyRT) {
@@ -1128,7 +1129,7 @@ addEventListener("DOMContentLoaded", function() {
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = false;
             act.rt.className = "retweet false";
-            act.rt.textContent = "ReTweet";
+            act.rt.textContent = "RT";
           });
         } else {
           API.retweet(t.id, function(xhr) {
@@ -1136,7 +1137,7 @@ addEventListener("DOMContentLoaded", function() {
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = true;
             act.rt.className = "retweet true";
-            act.rt.textContent = "UnReTweet";
+            act.rt.textContent = "UnRT";
             t.current_user_retweet = data;
           });
         }
@@ -1700,7 +1701,7 @@ addEventListener("DOMContentLoaded", function() {
         p.url.add(D.ct(user.url));
       }
 
-      p.bio.innerHTML = T.linker(user.description);
+      p.bio.innerHTML = user.description ? T.linker(user.description) : "";
 
       p.tweets.add(D.ct("Tweets"));
       p.tweets.href = ROOT + user.screen_name + "/status";
@@ -1731,7 +1732,7 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(D.ct("Name")),
         D.ce("dd").add(D.ct(user.name)),
         D.ce("dt").add(D.ct("Location")),
-        D.ce("dd").add(D.ct(user.location)),
+        D.ce("dd").add(D.ct(user.location || "")),
         D.ce("dt").add(D.ct("Web")),
         D.ce("dd").add(p.url),
         D.ce("dt").add(D.ct("Bio")),
