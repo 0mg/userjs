@@ -940,7 +940,7 @@ addEventListener("DOMContentLoaded", function() {
         ent.reid.className = "in_reply_to";
         if (t.in_reply_to_status_id) {
           ent.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
-          t.in_reply_to_status_id;
+          t.in_reply_to_status_id_str;
           ent.reid.add(D.ct("in reply to " + t.in_reply_to_screen_name));
         }
         if (isDM) {
@@ -955,9 +955,9 @@ addEventListener("DOMContentLoaded", function() {
 
         ent.date.className = "created_at";
         ent.date.href =
-        isDM ? "?count=1&max_id=" + t.id :
+        isDM ? "?count=1&max_id=" + t.id_str :
         //ROOT + t.user.screen_name + "/status/" + t.id;
-        " http://m.twitter.com/@" + t.user.screen_name + "/status/" + t.id;
+        " http://m.twitter.com/@" + t.user.screen_name + "/status/" + t.id_str;
         ent.date.add(D.ct(
           T.gapTime(new Date, new Date(t.created_at))
         ));
@@ -986,7 +986,7 @@ addEventListener("DOMContentLoaded", function() {
       if (data.length) {
         var past = D.ce("a");
         past.add(D.ct("past"));
-        past.href = "?page=2&max_id=" + data[0].id;
+        past.href = "?page=2&max_id=" + data[0].id_str;
         D.id("cursor").add(past);
 
         var link = D.ce("link");
@@ -1055,7 +1055,7 @@ addEventListener("DOMContentLoaded", function() {
       */
       var isDM = "sender" in t && "recipient" in t;
       var isRT = "retweeted_status" in t;
-      var isMyRT = isRT && t.user.id === my.id;
+      var isMyRT = isRT && t.user.id_str === my.id_str;
       var isRTtoMe = isRT &&
                      t.retweeted_status.user.screen_name === my.screen_name;
       var isRTRTedByMe = isRT && false;
@@ -1079,7 +1079,7 @@ addEventListener("DOMContentLoaded", function() {
       act.fav.favorited = t.favorited;
       act.fav.add(D.ct(t.favorited ? "UnFav" : "Fav"));
       act.fav.addEventListener("click", function() {
-        (act.fav.favorited ? API.unfav : API.fav)(t.id, function(xhr) {
+        (act.fav.favorited ? API.unfav : API.fav)(t.id_str, function(xhr) {
           act.fav.favorited = !act.fav.favorited;
           act.fav.className = "fav " + act.fav.favorited;
           act.fav.textContent = act.fav.favorited ? "UnFav" : "Fav";
@@ -1104,7 +1104,7 @@ addEventListener("DOMContentLoaded", function() {
           var repid = D.id("in_reply_to_status_id");
 
           status.value = "@" + t.user.screen_name + " " + status.value;
-          repid.value = t.id;
+          repid.value = t.id_str;
 
           status.focus();
         }, false);
@@ -1119,12 +1119,12 @@ addEventListener("DOMContentLoaded", function() {
       act.rt.addEventListener("click", function() {
         if (act.rt.isMyRT) {
           // 自分が RT した RT を削除する
-          API.untweet(t.id, function(xhr) {
+          API.untweet(t.id_str, function(xhr) {
             var data = JSON.parse(xhr.responseText);
             act.bar.parentNode.style.display = "none";
           });
         } else if (act.rt.isTweetRTedByMe) {
-          API.untweet(t.current_user_retweet.id, function(xhr) {
+          API.untweet(t.current_user_retweet.id_str, function(xhr) {
             // 自分から RT されたツイートであれば自分の RT を削除する
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = false;
@@ -1132,7 +1132,7 @@ addEventListener("DOMContentLoaded", function() {
             act.rt.textContent = "RT";
           });
         } else {
-          API.retweet(t.id, function(xhr) {
+          API.retweet(t.id_str, function(xhr) {
             // RT する
             var data = JSON.parse(xhr.responseText);
             act.rt.isTweetRTedByMe = true;
@@ -1145,7 +1145,7 @@ addEventListener("DOMContentLoaded", function() {
 
       if (!isDM) act.bar.add(act.fav);
       act.bar.add(act.rep);
-      if (!isDM && ((t.user.id !== my.id) || isMyRT) && !isRTtoMe) {
+      if (!isDM && ((t.user.id_str !== my.id_str) || isMyRT) && !isRTtoMe) {
         // 自分のツイートでなければ RT ボタンを表示する
         act.bar.add(act.rt);
       }
@@ -1154,17 +1154,17 @@ addEventListener("DOMContentLoaded", function() {
         // ダイレクトメッセージ用 delete ボタンを表示する
         act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
-          API.deleteMessage(t.id, function(xhr) {
+          API.deleteMessage(t.id_str, function(xhr) {
             act.bar.parentNode.style.display = "none";
           });
         }, false);
         act.bar.add(act.del);
 
-      } else if (((t.user.id === my.id) && !isMyRT) || isRTtoMe) {
+      } else if (((t.user.id_str === my.id_str) && !isMyRT) || isRTtoMe) {
         // 自分のツイートであれば delete ボタンを表示する
         act.del.add(D.ct("Delete"));
         act.del.addEventListener("click", function() {
-          API.untweet(isRTtoMe ? t.retweeted_status.id : t.id,
+          API.untweet(isRTtoMe ? t.retweeted_status.id_str : t.id_str,
           function(xhr) {
             act.bar.parentNode.style.display = "none";
           });
@@ -1197,7 +1197,8 @@ addEventListener("DOMContentLoaded", function() {
         act.lists
       );
 
-      X.get(APV + "friendships/show.json?target_id=" + user.id, function(xhr) {
+      X.get(APV + "friendships/show.json?target_id=" + user.id_str,
+      function(xhr) {
         var data = JSON.parse(xhr.responseText);
         var ship = data.relationship.source;
 
@@ -1213,7 +1214,7 @@ addEventListener("DOMContentLoaded", function() {
             act.follow.following ? "Unfollow" : "Follow";
           };
           act.follow.following ?
-          API.unfollow(user.id, toggle) : API.follow(user.id, toggle);
+          API.unfollow(user.id_str, toggle) : API.follow(user.id_str, toggle);
         }, false);
 
         act.block.blocking = ship.blocking;
@@ -1221,7 +1222,7 @@ addEventListener("DOMContentLoaded", function() {
         act.block.add(D.ct(act.block.blocking ? "Unblock" : "Block"));
         act.block.addEventListener("click", function() {
           act.block.blocking ?
-          API.unblock(user.id, function(xhr) {
+          API.unblock(user.id_str, function(xhr) {
             act.follow.following = false;
             act.follow.textContent = "Follow";
             act.follow.style.display = "";
@@ -1229,7 +1230,7 @@ addEventListener("DOMContentLoaded", function() {
             act.block.className = "block " + act.block.blocking;
             act.block.textContent = "Block";
           }) :
-          API.block(user.id, function(xhr) {
+          API.block(user.id_str, function(xhr) {
             act.follow.style.display = "none";
             act.block.blocking = true;
             act.block.className = "block " + act.block.blocking;
@@ -1255,8 +1256,8 @@ addEventListener("DOMContentLoaded", function() {
           act.lists.add(list);
 
           function toggle() {
-            (list.membering ? API.unlisting : API.listing)(l.full_name, user.id,
-            function(xhr) {
+            (list.membering ? API.unlisting : API.listing)(l.full_name,
+            user.id_str, function(xhr) {
               list.membering = !list.membering;
               list.className = "list " + list.membering;
             });
@@ -1268,7 +1269,7 @@ addEventListener("DOMContentLoaded", function() {
             list.addEventListener("click", toggle, false);
           };
 
-          X.get(APV + l.full_name + "/members/" + user.id + ".json",
+          X.get(APV + l.full_name + "/members/" + user.id_str + ".json",
           setList, setList);
         });
       });
@@ -1492,7 +1493,7 @@ addEventListener("DOMContentLoaded", function() {
       list.del.add(D.ct("Delete"));
 
       list.create.addEventListener("click", function() {
-        API.createList(my.id, list.name.value,
+        API.createList(my.id_str, list.name.value,
         list.privat.checked ? "private" : "public",
         list.description.value, function(xhr) {
           alert(xhr.responseText);
@@ -1500,7 +1501,7 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       list.update.addEventListener("click", function() {
-        API.updateList(my.id, list.name.value, list.rename.value,
+        API.updateList(my.id_str, list.name.value, list.rename.value,
         list.privat.checked ? "private" : "public", list.description.value,
         function(xhr) {
           alert(xhr.responseText);
@@ -1508,7 +1509,7 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       list.del.addEventListener("click", function() {
-        API.deleteList(my.id, list.name.value, function(xhr) {
+        API.deleteList(my.id_str, list.name.value, function(xhr) {
           alert(xhr.responseText);
         });
       }, false);
@@ -1639,7 +1640,7 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(D.ct("Mode")),
         D.ce("dd").add(D.ct(list.mode)),
         D.ce("dt").add(D.ct("ID")),
-        D.ce("dd").add(D.ct(list.id))
+        D.ce("dd").add(D.ct(list.id_str))
       );
 
       D.id("side").add(li.st);
@@ -1750,7 +1751,7 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(p.lists),
         D.ce("dt").add(p.listsub),
         D.ce("dt").add(D.ct("ID")),
-        D.ce("dd").add(D.ct(user.id)),
+        D.ce("dd").add(D.ct(user.id_str)),
         D.ce("dt").add(D.ct("Time Zone")),
         D.ce("dd").add(D.ct(user.time_zone)),
         D.ce("dt").add(D.ct("Language")),
