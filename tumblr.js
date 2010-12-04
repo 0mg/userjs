@@ -7,7 +7,15 @@
 addEventListener("DOMContentLoaded", function() {
   Array.prototype.forEach.call(document.getElementsByTagName("img"),
   function(thumb) {
-    if (thumb.onclick && thumb.className === "image_thumbnail") thumb.onclick();
+    if (thumb.onclick && thumb.className === "image_thumbnail") {
+      thumb.onclick();
+      /* link to original image */
+      thumb.onclick = function() {
+        location.href =
+        document.getElementById(thumb.id.replace(/\D+/, "photo_info_")).
+        getElementsByTagName("a")[0].href;
+      };
+    }
   });
 }, false);
 
