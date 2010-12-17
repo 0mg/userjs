@@ -1780,7 +1780,7 @@ addEventListener("DOMContentLoaded", function() {
       ログイン中ならページを構築する
     */
 
-    if (~document.cookie.indexOf("auth_token=")) {
+    if (/_twitter_sess=[^;]+/(document.cookie).toString().length > 500) {
       X.get(APV + "account/verify_credentials.json", function(xhr) {
         var my = JSON.parse(xhr.responseText);
         init.initDOM(my);
