@@ -3,19 +3,21 @@
 // @include http://api.twitter.com/-/*
 // ==/UserScript==
 
-/* 元のページのスクリプトを無効にする */
 opera.addEventListener("BeforeScript", function(v) {
+  /* 元ページのインラインスクリプトを無効にする */
   v.preventDefault();
 }, false);
 opera.addEventListener("BeforeExternalScript", function(v) {
+  /* 元ページの外部スクリプトを無効にする */
   v.preventDefault();
 }, false);
 
-/* UserJS を適用する */
 addEventListener("DOMContentLoaded", function() {
 
-  /* デバッグ用の特別な関数 */
+  /* UserJS Debug Functions */
+
   var props = function(o) {
+    /* Show Props */
     if (!o) return;
     var s = [];
     for (var p in o) {
@@ -24,14 +26,21 @@ addEventListener("DOMContentLoaded", function() {
     return s.sort().join("\n");
   };
 
-  /* グローバル定数 */
 
-  var ROOT = "/-/"; // HOMEPATH in URL
 
-  var APV = 1; // API VERSION in API URL
+
+  /* CONST VALUE */
+
+  // HOMEPATH (depends on @include)
+  var ROOT = "/" + /[^/]+/(location.pathname) + "/";
+
+  var APV = 1; // API VERSION
   APV = "/" + APV + "/";
 
-  /* 頻繁に行う処理を関数化したもの */
+
+
+
+  /* DOM Methods and Functions */
 
   Document.prototype.add =
   DocumentFragment.prototype.add =
@@ -46,12 +55,7 @@ addEventListener("DOMContentLoaded", function() {
     return this;
   };
 
-  var JSON;
-  JSON = JSON || {
-    "parse": function(s) { return eval("(" + s + ")"); }
-  };
-
-  var D = {
+  var D = { /* DOM Functions */
     ce: function(s) { return document.createElement(s); },
     ct: function(s) { return document.createTextNode(s); },
     id: function(s) { return document.getElementById(s); },
@@ -60,7 +64,17 @@ addEventListener("DOMContentLoaded", function() {
     cf: function() { return document.createDocumentFragment(); },
   };
 
-  var X = {
+
+
+
+  /* JSON Functions */
+
+  var JSON;
+  JSON = JSON || {
+    "parse": function(s) { return eval("(" + s + ")"); }
+  };
+
+  var X = { /* XHR Functions */
     get: function(url, f, b) {
       /*
         Twitter API 専用 XHR GET
@@ -109,7 +123,10 @@ addEventListener("DOMContentLoaded", function() {
     },
   };
 
-  var T = {
+
+
+
+  var T = { /* Text Functions */
     linker: function(text) {
       /*
         自動リンク for innerHTML
@@ -153,12 +170,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  /* API */
-
-
-
-
-  var API = {
+  var API = { /* Twitter API Functions */
     updateProfileBackgroundImage: function(image, tile, callback) {
     },
 
@@ -266,8 +278,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-
-  var init = {
+  var init = { /* ページ初期化 Functions */
     initDOM: function(my) {
       /*
         ページ全体の DOM ツリーを初期化する
@@ -493,7 +504,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  var pre = {
+  var pre = { /* コンテンツ描画直前 Functions */
     startPage: function(my) {
       /*
         URL パスによって適切な内容をページ全体に描画する
@@ -663,7 +674,10 @@ addEventListener("DOMContentLoaded", function() {
     },
   };
 
-  var content = {
+
+
+
+  var content = { /* コンテンツ描画 Functions */
     customizeDesign: function(my) {
       content.showTL(APV + "statuses/user_timeline.json", my);
       outline.showProfileOutline(my.screen_name, my, 2);
@@ -956,7 +970,7 @@ addEventListener("DOMContentLoaded", function() {
         ent.date.className = "created_at";
         ent.date.href =
         isDM ? "?count=1&max_id=" + t.id_str :
-        //ROOT + t.user.screen_name + "/status/" + t.id;
+        //ROOT + t.user.screen_name + "/status/" + t.id_str;
         " http://m.twitter.com/@" + t.user.screen_name + "/status/" + t.id_str;
         ent.date.add(D.ct(
           T.gapTime(new Date, new Date(t.created_at))
@@ -1047,7 +1061,8 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  var panel = {
+
+  var panel = { /* Twitter Action Panel Generators */
     makeTwAct: function(t, my) {
       /*
         ツイートに対する操作
@@ -1539,10 +1554,11 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-  var outline = {
+
+  var outline = { /* アクセサリ情報表示 Functions */
     showSubTitle: function(key) {
       /*
-        現在地を表示
+        パンくずリストを表示
       */
       var sub = D.cf();
 
@@ -1561,7 +1577,6 @@ addEventListener("DOMContentLoaded", function() {
       /*
         配色や背景画像を変える
       */
-
       document.body.style.backgroundColor =
       "#" + user.profile_background_color;
 
@@ -1767,9 +1782,7 @@ addEventListener("DOMContentLoaded", function() {
 
 
 
-
   main();
-
 
 
 
@@ -1777,10 +1790,8 @@ addEventListener("DOMContentLoaded", function() {
   function main() {
     /*
       ログインしていないならログイン画面に跳ばす
-      ログイン中ならページを構築する
     */
-
-    if (/_twitter_sess=[^;]+/(document.cookie).toString().length > 500) {
+    if (/_twitter_sess=[^;]{500}/.test(document.cookie)) {
       X.get(APV + "account/verify_credentials.json", function(xhr) {
         var my = JSON.parse(xhr.responseText);
         init.initDOM(my);
@@ -1792,7 +1803,6 @@ addEventListener("DOMContentLoaded", function() {
       "/login?redirect_after_login=" + encodeURIComponent(location);
     }
   }
-
 
 
 
