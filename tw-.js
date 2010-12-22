@@ -131,12 +131,12 @@ addEventListener("DOMContentLoaded", function() {
       /*
         自動リンク for innerHTML
       */
-      return text.match(RegExp("(?:https?://|javascript:|data:)\\S*|" +
+      return text.match(RegExp("(?:(?:https?|ftp)://|javascript:|data:)\\S*|" +
       "&#x?[a-zA-Z\\d]+;|#\\w+|@\\w+(?:/[-\\w]+)?|[\\S\\s]|", "g")).
       map(function(s) {
         if (s.length <= 1) {
           return s;
-        } else if (/^[hjd]/.test(s)) {
+        } else if (/^[fhjd]/.test(s)) {
           var url = s, text = s;
           if (/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/.test(url)) {
             text = url = ROOT + RegExp.$1;
@@ -374,6 +374,8 @@ addEventListener("DOMContentLoaded", function() {
           content: "private";\
         }\
         #timeline {\
+        }\
+        .expanded_url {\
         }\
         .user,\
         .tweet {\
@@ -887,10 +889,11 @@ addEventListener("DOMContentLoaded", function() {
         // タイムラインを構築する
         that.makeTL(xhr, url, my);
 
-        // 短縮 URL 展開
+        // Expand URL
         var links =
         document.evaluate('.//p[@class="text"]//' +
-        'a[starts-with(@href,"h")][starts-with(text(),"h")]',
+        'a[starts-with(@href,"h") or starts-with(@href,"f")]' +
+        '[starts-with(text(),"h") or starts-with(text(),"f")]',
         D.id("timeline"), null, 7, null);
         for (var urls = [], i = 0; i < links.snapshotLength; ++i) {
           urls.push(links.snapshotItem(i));
@@ -899,10 +902,8 @@ addEventListener("DOMContentLoaded", function() {
           var data = JSON.parse(xhr.responseText);
           urls.forEach(function(a) {
             if (data[a.href]) {
-              a.textContent =
-              //a.href =
-              decodeURIComponent(escape(data[a.href]))/*.
-              replace(/\/(?=\?)|\/$/, "");*/
+              a.className += " expanded_url";
+              a.textContent = decodeURIComponent(escape(data[a.href]));
             }
           });
         });
