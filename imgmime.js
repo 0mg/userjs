@@ -11,7 +11,7 @@ document.body && addEventListener("DOMContentLoaded", function() {
       document.body.firstChild.nodeName.toLowerCase() === "pre"
     ) {
       var img = document.createElement("img");
-      img.src = location.href;
+      img.src = location.pathname;
       img.width = 0;
       document.body.appendChild(img);
       if (img.height === 1) { // img.onload
