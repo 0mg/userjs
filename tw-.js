@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name tw-
 // @include http://api.twitter.com/-/*
+// @description Twitter client
 // ==/UserScript==
 
 opera.addEventListener("BeforeScript", function(v) {
@@ -11,6 +12,8 @@ opera.addEventListener("BeforeExternalScript", function(v) {
   /* 元ページの外部スクリプトを無効にする */
   v.preventDefault();
 }, false);
+
+/* UserJS Body */
 
 addEventListener("DOMContentLoaded", function() {
 
@@ -307,7 +310,7 @@ addEventListener("DOMContentLoaded", function() {
           padding: 1ex;\
           line-height: 1.6;\
           font-family: "Lucida Console" sans-serif;\
-          font-size: 1.8ex;\
+          font-size: 14px;\
           background-attachment: fixed;\
         }\
         a:hover {\
@@ -352,7 +355,7 @@ addEventListener("DOMContentLoaded", function() {
           width: 249px;\
           max-width: 100%;\
           background-color: #ccf;\
-          font-size: 0.8em;\
+          font-size: smaller;\
           border-left: 1px solid transparent;\
         }\
         #side::before {\
@@ -1792,7 +1795,7 @@ addEventListener("DOMContentLoaded", function() {
     /*
       ログインしていないならログイン画面に跳ばす
     */
-    if (/_twitter_sess=[^;]{500}/.test(document.cookie)) {
+    if (/_twitter_sess=[^;]{400}/.test(document.cookie)) {
       X.get(APV + "account/verify_credentials.json", function(xhr) {
         var my = JSON.parse(xhr.responseText);
         init.initDOM(my);
