@@ -4,11 +4,12 @@
 // @description Tweet via window.prompt
 // ==/UserScript==
 /*
-  ■開発メモ
-  /1/updateStatus の場合 404 なページが表示されるので美しくない。
-  だが、それを回避するために
-  /1/statuses/update などを @include に指定した場合、非ログイン時に
-  https://api.twitter.com/sessions に跳ばされてしまい、制御不能になってしまう
+  開発メモ
+  ■@include に指定する URL について
+    /1/updateStatus の場合 404 なページが表示されるので美しくない。
+    だが、それを回避するために
+    /1/statuses/update などを @include に指定した場合、非ログイン時に
+    https://api.twitter.com/sessions に跳ばされてしまい、制御不能になってしまう
 */
 
 /* Bookmarklet */
@@ -22,7 +23,7 @@ javascript: (function/**/f(s) {
 }
 
 /* Main */
-if (~document.cookie.indexOf("auth_token=")) {
+if (/_twitter_sess=[^;]{400}/.test(document.cookie)) {
   /* ログインしているなら通常処理 */
   addEventListener("DOMContentLoaded", function updateStatus() {
     var tweet = window.name.substring(0, 140);
