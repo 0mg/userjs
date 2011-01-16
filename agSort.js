@@ -34,7 +34,7 @@ addEventListener("DOMContentLoaded", function() {
   var problemsList = document.getElementsByTagName("ol")[0];
   var problems = problemsList.getElementsByTagName("li");
 
-  var buttonsList = this.wrapper = document.createElement("ul");
+  var buttonsList = document.createElement("ul");
   var buttons = new function() {
     this.showAll = {};
     this.showActive = {};
