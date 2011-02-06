@@ -62,10 +62,7 @@ addEventListener("DOMContentLoaded", function() {
 		ce: function(s) { return document.createElement(s); },
 		ct: function(s) { return document.createTextNode(s); },
 		id: function(s) { return document.getElementById(s); },
-		tag: function(s) {
-			s = document.getElementsByTagName(s);
-			return s && s[0];
-		},
+		tag: function(s) { return document.getElementsByTagName(s)[0]; },
 		tags: function(s) { return document.getElementsByTagName(s); },
 		cf: function() { return document.createDocumentFragment(); },
 	};
@@ -820,7 +817,7 @@ addEventListener("DOMContentLoaded", function() {
 					};
 
 					user.root.className = "user";
-					user.root.className += u["protected"] ? " protected" : "";
+					if (u["protected"]) user.root.className += " protected";
 
 					user.screen_name.className = "screen_name";
 					user.screen_name.add(D.ct(u.screen_name));
