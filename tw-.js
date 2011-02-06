@@ -243,6 +243,10 @@ addEventListener("DOMContentLoaded", function() {
 			X.post(APV + "blocks/destroy/" + id + ".xml", "", callback);
 		},
 
+		spam: function(id, callback) {
+			X.post(APV + "report_spam.xml", "id=" + id, callback);
+		},
+
 		followList: function(full_name, callback) {
 			X.post(APV + full_name + "/subscribers.xml", "", callback);
 		},
@@ -460,6 +464,7 @@ addEventListener("DOMContentLoaded", function() {
 				.tweet-action .retweet.true::before,\
 				.user-action .follow.true::before,\
 				.user-action .block.true::before,\
+				.user-action .spam.true::before,\
 				.user-action .list.true::before {\
 					content: "\u2714";\
 				}\
@@ -1229,42 +1234,73 @@ addEventListener("DOMContentLoaded", function() {
 				act.follow.add(D.ct(act.follow.following ?
 				"Unfollow" : "Follow"));
 				act.follow.addEventListener("click", function() {
-					function toggle(xhr) {
-						act.follow.following = !act.follow.following;
-						act.follow.className = "follow " + act.follow.following;
-						act.follow.textContent =
-						act.follow.following ? "Unfollow" : "Follow";
-					};
+					function onFollow() {
+						act.follow.following = true;
+						act.follow.className = "follow true";
+						act.follow.textContent = "UnFollow";
+					}
+					function onUnFollow() {
+						act.follow.following = false;
+						act.follow.className = "follow false";
+						act.follow.textContent = "Follow";
+					}
 					act.follow.following ?
-					API.unfollow(user.id_str, toggle) : API.follow(user.id_str, toggle);
+					API.unfollow(user.id_str, onUnFollow) :
+					API.follow(user.id_str, onFollow);
 				}, false);
+
+				function onBlock() {
+					act.follow.following = false;
+					act.follow.className = "follow false";
+					act.follow.textContent = "Follow";
+					act.follow.style.display = "none";
+
+					act.block.blocking = true;
+					act.block.className = "block true";
+					act.block.textContent = "Unblock";
+
+					act.spam.spaming = true;
+					act.spam.className = "spam true";
+					act.spam.textContent = "UnSpam";
+					act.spam.style.display = "none";
+				}
+
+				function onUnBlock() {
+					act.follow.style.display = "";
+
+					act.block.blocking = false;
+					act.block.className = "block false";
+					act.block.textContent = "Block";
+
+					act.spam.spaming = false;
+					act.spam.className = "spam false";
+					act.spam.textContent = "Spam";
+					act.spam.style.display = "";
+				}
 
 				act.block.blocking = ship.blocking;
 				act.block.className = "block " + act.block.blocking;
 				act.block.add(D.ct(act.block.blocking ? "Unblock" : "Block"));
 				act.block.addEventListener("click", function() {
 					act.block.blocking ?
-					API.unblock(user.id_str, function(xhr) {
-						act.follow.following = false;
-						act.follow.textContent = "Follow";
-						act.follow.style.display = "";
-						act.block.blocking = false;
-						act.block.className = "block " + act.block.blocking;
-						act.block.textContent = "Block";
-					}) :
-					API.block(user.id_str, function(xhr) {
-						act.follow.style.display = "none";
-						act.block.blocking = true;
-						act.block.className = "block " + act.block.blocking;
-						act.block.textContent = "Unblock";
-					});
+					API.unblock(user.id_str, onUnBlock) :
+					API.block(user.id_str, onBlock);
 				}, false);
 
-				if (ship.blocking) act.follow.style.display = "none";
+				act.spam.spaming = ship.marked_spam;
+				act.spam.className = "spam " + act.spam.spaming;
+				act.spam.add(D.ct("Spam"));
+				act.spam.addEventListener("click", function() {
+					API.spam(user.id_str, onBlock);
+				}, false);
+
+				if (act.spam.spaming) act.spam.style.display = "none";
+				if (act.block.blocking) act.follow.style.display = "none";
 
 				act.foblo.add(
 					act.follow,
-					act.block
+					act.block,
+					act.spam
 				);
 			});
 
@@ -1273,26 +1309,45 @@ addEventListener("DOMContentLoaded", function() {
 				var lists = data.lists;
 
 				lists.forEach(function(l) {
+
 					var list = D.ce("button");
 					list.textContent = (l.mode === "private" ? "-" : "+") + l.slug;
 					act.lists.add(list);
 
-					function toggle() {
-						(list.membering ? API.unlisting : API.listing)(l.full_name,
-						user.id_str, function(xhr) {
-							list.membering = !list.membering;
-							list.className = "list " + list.membering;
+					function listing() {
+						API.listing(l.full_name, user.id_str, function() {
+							list.membering = true;
+							list.className = "list true";
 						});
-					};
+					}
 
-					function setList(xhr) {
-						list.membering = xhr.status === 200;
-						list.className = "list " + list.membering;
-						list.addEventListener("click", toggle, false);
-					};
+					function unlisting() {
+						API.unlisting(l.full_name, user.id_str, function() {
+							list.membering = false;
+							list.className = "list false";
+						});
+					}
+
+					function addEventToListButton() {
+						list.addEventListener("click", function() {
+							list.membering ? unlisting() : listing();
+						}, false);
+					}
+
+					function isListing() {
+						list.membering = true;
+						list.className = "list true";
+						addEventToListButton();
+					}
+
+					function isNotListing() {
+						list.membering = false;
+						list.className = "list false";
+						addEventToListButton();
+					}
 
 					X.get(APV + l.full_name + "/members/" + user.id_str + ".json",
-					setList, setList);
+					isListing, isNotListing);
 				});
 			});
 		},
