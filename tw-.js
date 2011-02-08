@@ -1848,36 +1848,22 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
-
-
-	main();
-
-
-
-
 	function main() {
 		/*
 			ログインしていないならログイン画面に跳ばす
 		*/
-		//if (/_twitter_sess=[^;]{400}/.test(document.cookie)) {
-		X.head("/lists/memberships", function() {
-			X.get(APV + "account/verify_credentials.json", function(xhr) {
-				var my = JSON.parse(xhr.responseText);
-				init.initDOM(my);
-				init.structPage();
-				pre.startPage(my);
-			});
+		X.get(APV + "account/verify_credentials.json", function(xhr) {
+			var my = JSON.parse(xhr.responseText);
+			init.initDOM(my);
+			init.structPage();
+			pre.startPage(my);
 		}, function() {
 			location =
-			"/login?redirect_after_login=" + encodeURIComponent(location);
+			"http://twitter.com/login?redirect_after_login=" +
+			encodeURIComponent(location);
 		});
-		//} else {
-			//location =
-			//"/login?redirect_after_login=" + encodeURIComponent(location);
-		//}
 	}
 
-
-
+	main();
 
 }, false);
