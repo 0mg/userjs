@@ -13,6 +13,23 @@ opera.addEventListener("BeforeExternalScript", function(v) {
 	v.preventDefault();
 }, false);
 
+
+/* DOM prototype Methods*/
+
+Document.prototype.add =
+DocumentFragment.prototype.add =
+Element.prototype.add = function() {
+	for (var i = 0; i < arguments.length; ++i) {
+		this.appendChild(arguments[i]);
+	}
+	return this;
+};
+Element.prototype.sa = function(attr, value) {
+	this.setAttribute(attr, value);
+	return this;
+};
+
+
 /* UserJS Body */
 
 addEventListener("DOMContentLoaded", function() {
@@ -30,8 +47,6 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
-
-
 	/* CONST VALUE */
 
 	// HOMEPATH (depends on @include)
@@ -40,23 +55,6 @@ addEventListener("DOMContentLoaded", function() {
 	var APV = 1; // API VERSION
 	APV = "/" + APV + "/";
 
-
-
-
-	/* DOM Methods and Functions */
-
-	Document.prototype.add =
-	DocumentFragment.prototype.add =
-	Element.prototype.add = function() {
-		for (var i = 0; i < arguments.length; ++i) {
-			this.appendChild(arguments[i]);
-		}
-		return this;
-	};
-	Element.prototype.sa = function(attr, value) {
-		this.setAttribute(attr, value);
-		return this;
-	};
 
 	var D = { /* DOM Functions */
 		ce: function(s) { return document.createElement(s); },
@@ -68,8 +66,6 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
-
-
 	/* JSON Functions */
 
 	var JSON;
@@ -77,11 +73,13 @@ addEventListener("DOMContentLoaded", function() {
 		"parse": function(s) { return eval("(" + s + ")"); }
 	};
 
-	var X = new function() { /* XHR Functions */
+
+	/* XHR Functions */
+
+	var X = new function() {
+
+		/* Twitter API 専用 XHR GET */
 		function get(url, f, b) {
-			/*
-				Twitter API 専用 XHR GET
-			*/
 			var xhr = new XMLHttpRequest;
 			xhr.open("GET", url, true);
 			xhr.setRequestHeader("X-PHX", "true");
@@ -93,10 +91,22 @@ addEventListener("DOMContentLoaded", function() {
 			};
 			xhr.send(null);
 		}
+
+		/* HEAD */
+		function head(url, f, b) {
+			var xhr = new XMLHttpRequest;
+			xhr.open("HEAD", url, true);
+			xhr.onreadystatechange = function() {
+				if (this.readyState === 4) {
+					if (this.status === 200) f(this);
+					else (b || function(x) { alert(x.responseText); })(this);
+				}
+			};
+			xhr.send(null);
+		}
+
+		/* Twitter API 専用 XHR POST */
 		function post(url, q, f, b) {
-			/*
-				Twitter API 専用 XHR POST
-			*/
 			confirm("sure?") &&
 			auth(function(auth) {
 				xhr = new XMLHttpRequest;
@@ -113,10 +123,9 @@ addEventListener("DOMContentLoaded", function() {
 				xhr.send(q + "&post_authenticity_token=" + auth);
 			});
 		}
+
+		/* Twitter 認証トークン取得 */
 		function auth(f) {
-			/*
-				Twitter 認証トークン取得
-			*/
 			get("/about/contact", function(xhr) {
 				var data = xhr.responseText;
 				var key = "authenticity_token = '";
@@ -124,14 +133,15 @@ addEventListener("DOMContentLoaded", function() {
 				f(auth);
 			});
 		}
+
+		this.head = head;
 		this.get = get;
 		this.post = post;
 	};
 
 
-
-
-	var T = { /* Text Functions */
+	/* Text Functions */
+	var T = {
 		linker: function(text) {
 			/*
 				自動リンク for innerHTML
@@ -173,9 +183,8 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
-
-
-	var API = { /* Twitter API Functions */
+	/* Twitter API Functions */
+	var API = {
 		updateProfileBackgroundImage: function(image, tile, callback) {
 		},
 
@@ -285,13 +294,11 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
+	/* ページ初期化 Functions */
+	var init = {
 
-
-	var init = { /* ページ初期化 Functions */
+		/* ページ全体の DOM ツリーを初期化する */
 		initDOM: function(my) {
-			/*
-				ページ全体の DOM ツリーを初期化する
-			*/
 
 			document.removeChild(document.documentElement);
 
@@ -514,13 +521,11 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
+	/* コンテンツ描画直前 Functions */
+	var pre = {
 
-
-	var pre = { /* コンテンツ描画直前 Functions */
+		/* 描画内容を URL で分岐する */
 		startPage: function(my) {
-			/*
-				URL パスによって適切な内容をページ全体に描画する
-			*/
 			var path = location.pathname.substring(ROOT.length).replace(/[/]+$/, "");
 			var hash = path.split("/");
 			var q = location.search.substring(1);
@@ -687,9 +692,8 @@ addEventListener("DOMContentLoaded", function() {
 	};
 
 
-
-
-	var content = { /* コンテンツ描画 Functions */
+	/* コンテンツ描画 Functions */
+	var content = {
 		customizeDesign: function(my) {
 			content.showTL(APV + "statuses/user_timeline.json", my);
 			outline.showProfileOutline(my.screen_name, my, 2);
@@ -1294,8 +1298,10 @@ addEventListener("DOMContentLoaded", function() {
 					API.spam(user.id_str, onBlock);
 				}, false);
 
-				if (act.spam.spaming) act.spam.style.display = "none";
-				if (act.block.blocking) act.follow.style.display = "none";
+				if (act.block.blocking) {
+					act.follow.style.display = "none";
+					act.spam.style.display = "none";
+				}
 
 				act.foblo.add(
 					act.follow,
@@ -1853,17 +1859,22 @@ addEventListener("DOMContentLoaded", function() {
 		/*
 			ログインしていないならログイン画面に跳ばす
 		*/
-		if (/_twitter_sess=[^;]{400}/.test(document.cookie)) {
+		//if (/_twitter_sess=[^;]{400}/.test(document.cookie)) {
+		X.head("/lists/memberships", function() {
 			X.get(APV + "account/verify_credentials.json", function(xhr) {
 				var my = JSON.parse(xhr.responseText);
 				init.initDOM(my);
 				init.structPage();
 				pre.startPage(my);
 			});
-		} else {
+		}, function() {
 			location =
 			"/login?redirect_after_login=" + encodeURIComponent(location);
-		}
+		});
+		//} else {
+			//location =
+			//"/login?redirect_after_login=" + encodeURIComponent(location);
+		//}
 	}
 
 
