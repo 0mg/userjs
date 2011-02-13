@@ -96,6 +96,7 @@ addEventListener("DOMContentLoaded", function() {
 		function head(url, f, b) {
 			var xhr = new XMLHttpRequest;
 			xhr.open("HEAD", url, true);
+			xhr.setRequestHeader("X-PHX", "true");
 			xhr.onreadystatechange = function() {
 				if (this.readyState === 4) {
 					if (this.status === 200) f(this);
@@ -1334,26 +1335,26 @@ addEventListener("DOMContentLoaded", function() {
 						});
 					}
 
-					function addEventToListButton() {
+					function addEventToListButton(list) {
 						list.addEventListener("click", function() {
 							list.membering ? unlisting() : listing();
 						}, false);
 					}
 
-					function isListing() {
+					function onMembering() {
 						list.membering = true;
 						list.className = "list true";
-						addEventToListButton();
+						addEventToListButton(list);
 					}
 
-					function isNotListing() {
+					function onNotMembering() {
 						list.membering = false;
 						list.className = "list false";
-						addEventToListButton();
+						addEventToListButton(list);
 					}
 
-					X.get(APV + l.full_name + "/members/" + user.id_str + ".json",
-					isListing, isNotListing);
+					X.head(APV + l.full_name + "/members/" + user.id_str + ".json",
+					onMembering, onNotMembering);
 				});
 			});
 		},
