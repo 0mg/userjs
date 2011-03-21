@@ -13,26 +13,24 @@ opera.addEventListener("BeforeExternalScript", function(v) {
 	v.preventDefault();
 }, false);
 
-
-/* DOM prototype Methods*/
-
-Document.prototype.add =
-DocumentFragment.prototype.add =
-Element.prototype.add = function() {
-	for (var i = 0; i < arguments.length; ++i) {
-		this.appendChild(arguments[i]);
-	}
-	return this;
-};
-Element.prototype.sa = function(attr, value) {
-	this.setAttribute(attr, value);
-	return this;
-};
-
-
 /* UserJS Body */
 
 addEventListener("DOMContentLoaded", function() {
+
+	/* DOM prototype Methods*/
+
+	Document.prototype.add =
+	DocumentFragment.prototype.add =
+	Element.prototype.add = function() {
+		for (var i = 0; i < arguments.length; ++i) {
+			this.appendChild(arguments[i]);
+		}
+		return this;
+	};
+	Element.prototype.sa = function(attr, value) {
+		this.setAttribute(attr, value);
+		return this;
+	};
 
 	/* UserJS Debug Functions */
 
@@ -689,7 +687,7 @@ addEventListener("DOMContentLoaded", function() {
 					break;
 				}
 			}
-		},
+		}
 	};
 
 
