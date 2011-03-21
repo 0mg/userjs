@@ -17,7 +17,7 @@
 	addEventListener("DOMContentLoaded", function() {
 		if (wrapper.hasChildNodes()) {
 			style(wrapper);
-			append(wrapper) ||
+			//append(wrapper) ||
 			document.body.insertBefore(wrapper, document.body.firstChild);
 		}
 		function style(wrapper) {

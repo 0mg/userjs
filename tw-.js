@@ -189,7 +189,7 @@ addEventListener("DOMContentLoaded", function() {
 
 		updateProfileColors: function(background_color, text_color, link_color,
 		sidebar_fill_color, sidebar_border_color, callback) {
-			X.post(APV + "account/update_profile_colors.xml", 
+			X.post(APV + "account/update_profile_colors.xml",
 				"profile_background_color=" + background_color +
 				"&profile_text_color=" + text_color +
 				"&profile_link_color=" + link_color +
