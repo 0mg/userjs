@@ -1,45 +1,43 @@
 // ==UserScript==
+// @name SoundCloud Extra Download Links
 // @include http://soundcloud.com/*
+// @description [SoundCloud] add download links for get sound files
 // ==/UserScript==
 
-(function() {
+addEventListener("DOMContentLoaded", function() {
+	var tracks = window.SC.clientDB.getTracks();
 	var wrapper = document.createElement("div");
-	opera.addEventListener("BeforeScript", function(v) {
-		var q = "window.SC.bufferTracks.push";
-		if (v.element.text.indexOf(q) !== 1) return;
-		var track;
-		eval(v.element.text.replace(q, "track = "));
+	for (var i in tracks) {
+		var track = tracks[i];
 		var a = document.createElement("a");
 		a.href = track.streamUrl;
 		a.textContent = track.title;
 		wrapper.appendChild(a);
-	}, false);
-	addEventListener("DOMContentLoaded", function() {
-		if (wrapper.hasChildNodes()) {
-			style(wrapper);
-			//append(wrapper) ||
-			document.body.insertBefore(wrapper, document.body.firstChild);
+	}
+	if (wrapper.hasChildNodes()) {
+		decorate(wrapper);
+		//append(wrapper) ||
+		document.body.insertBefore(wrapper, document.body.firstChild);
+	}
+	function decorate(wrapper) {
+		for (var i = 0; i < wrapper.childNodes.length; ++i) {
+			var a = wrapper.childNodes[i];
+			a.style.display = "inline-block";
+			a.className = "download icon-button";
+			a.innerHTML = "<span>" + a.textContent + "</span>";
 		}
-		function style(wrapper) {
-			for (var i = 0; i < wrapper.childNodes.length; ++i) {
-				var a = wrapper.childNodes[i];
-				a.style.display = "block";
-				a.style.cssFloat = "left";
-				a.className = "download icon-button";
-				a.innerHTML = "<span>" + a.textContent + "</span>";
-			}
-			var clearfix = document.createElement("br");
-			clearfix.style.clear = "both";
-			wrapper.id = "userjs-extra-download-links";
-			wrapper.appendChild(clearfix);
-		}
-		function append(wrapper) {
-			var append_pos = document.getElementById("main-wrapper");
-			if (append_pos) {
-				append_pos.insertBefore(wrapper, append_pos.firstChild);
-				return true;
-			}
-			return false;
-		}
-	}, false);
-})();
+		var clearfix = document.createElement("br");
+		clearfix.style.clear = "both";
+		wrapper.appendChild(clearfix);
+		wrapper.id = "userjs-extra-download-links";
+	}
+	function append(wrapper) {
+		var append_pos = document.getElementById("main-content-inner");
+		if (!append_pos) return false;
+		var prepend = true;
+		prepend ?
+		append_pos.insertBefore(wrapper, append_pos.firstChild) :
+		append_pos.appendChild(wrapper);
+		return true;
+	}
+}, false);
