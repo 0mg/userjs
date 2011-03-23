@@ -16,7 +16,7 @@ addEventListener("DOMContentLoaded", function() {
 	}
 	if (wrapper.hasChildNodes()) {
 		decorate(wrapper);
-		//append(wrapper) ||
+		append(wrapper) ||
 		document.body.insertBefore(wrapper, document.body.firstChild);
 	}
 	function decorate(wrapper) {

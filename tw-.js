@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name tw-
 // @include http://api.twitter.com/-/*
+// @include https://api.twitter.com/-/*
 // @description Twitter client
 // ==/UserScript==
 
