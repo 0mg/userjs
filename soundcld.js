@@ -1,7 +1,5 @@
 // ==UserScript==
-// @name SoundCloud Extra Download Links
 // @include http://soundcloud.com/*
-// @description [SoundCloud] add download links for get sound files
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
