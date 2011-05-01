@@ -291,6 +291,17 @@ addEventListener("DOMContentLoaded", function() {
 		logout: function(callback) {
 			X.post("/sessions/destroy/", "", callback);
 		},
+
+		tco: function(input_url, callback, onError) {
+			X.get("/intent/tweet?url=" + input_url, function(xhr) {
+				var text = xhr.responseText;
+				var output_url =
+				/<input name="shortened_url" type="hidden" value="([^"]+)/(text);
+				output_url = output_url && output_url[1];
+				if (output_url) callback(output_url);
+				else onError(xhr);
+			});
+		}
 	};
 
 
@@ -1468,11 +1479,26 @@ addEventListener("DOMContentLoaded", function() {
 				status: D.ce("textarea"),
 				id: D.ce("input"),
 				update: D.ce("button"),
+				tco: {
+					apply: D.ce("button")
+				}
 			};
+
+			function tcoUrl() {
+				var urls = t.status.value.match(/https?:\/\/\S+/g);
+				urls && urls.forEach(function(input_url) {
+					API.tco(input_url, function(output_url) {
+						t.status.value = t.status.value.replace(input_url, output_url);
+					}, function(xhr) {
+						alert(xhr.responseText);
+					});
+				});
+			}
 
 			t.status.id = "status";
 			t.id.id = "in_reply_to_status_id";
 			t.update.id = "update";
+			t.tco.apply.id = "tco_apply";
 
 			t.status.addEventListener("keyup", function() {
 				t.update.disabled = this.value.replace(/^d \w+ /, "").length > 140;
@@ -1484,7 +1510,10 @@ addEventListener("DOMContentLoaded", function() {
 				function(xhr) { alert(xhr.responseText); });
 			}, false);
 
-			t.box.add(t.status, t.id, t.update);
+			t.tco.apply.add(D.ct("t.co"));
+			t.tco.apply.addEventListener("click", tcoUrl, false);
+
+			t.box.add(t.status, t.id, t.update, t.tco.apply);
 
 			D.id("header").add(t.box);
 		},
@@ -1859,7 +1888,7 @@ addEventListener("DOMContentLoaded", function() {
 			pre.startPage(my);
 		}, function() {
 			location =
-			"http://twitter.com/login?redirect_after_login=" +
+			"/login?redirect_after_login=" +
 			encodeURIComponent(location);
 		});
 	}

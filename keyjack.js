@@ -8,7 +8,7 @@ addEventListener("DOMContentLoaded", function() {
 		if (v.target instanceof HTMLInputElement ||
 		v.target instanceof HTMLTextAreaElement) return;
 		v.stopPropagation();
-		if (v.type === "keypress" && v.keyCode === 107 /* K */) {
+		if (v.type === "keypress" && v.keyCode === 107) { // 107: K
 			if (doublePress) {
 				removeEventListener("keypress", keyJack, true);
 				removeEventListener("keydown", keyJack, true);
