@@ -293,7 +293,8 @@ addEventListener("DOMContentLoaded", function() {
 		},
 
 		tco: function(input_url, callback, onError) {
-			X.get("/intent/tweet?url=" + input_url, function(xhr) {
+			X.get("/intent/tweet?url=" + encodeURIComponent(input_url),
+			function(xhr) {
 				var text = xhr.responseText;
 				var output_url =
 				/<input name="shortened_url" type="hidden" value="([^"]+)/(text);
