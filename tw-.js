@@ -82,11 +82,9 @@ addEventListener("DOMContentLoaded", function() {
 			var xhr = new XMLHttpRequest;
 			xhr.open("GET", url, true);
 			xhr.setRequestHeader("X-PHX", "true");
-			xhr.onreadystatechange = function() {
-				if (this.readyState === 4) {
-					if (this.status === 200) f(this);
-					else (b || function(x) { alert(x.responseText); })(this);
-				}
+			xhr.onload = function() {
+				if (this.status === 200) f(this);
+				else (b || function(x) { alert(x.responseText); })(this);
 			};
 			xhr.send(null);
 		}
@@ -96,11 +94,9 @@ addEventListener("DOMContentLoaded", function() {
 			var xhr = new XMLHttpRequest;
 			xhr.open("HEAD", url, true);
 			xhr.setRequestHeader("X-PHX", "true");
-			xhr.onreadystatechange = function() {
-				if (this.readyState === 4) {
-					if (this.status === 200) f(this);
-					else (b || function(x) { alert(x.responseText); })(this);
-				}
+			xhr.onload = function() {
+				if (this.status === 200) f(this);
+				else (b || function(x) { alert(x.responseText); })(this);
 			};
 			xhr.send(null);
 		}
@@ -114,11 +110,9 @@ addEventListener("DOMContentLoaded", function() {
 				xhr.setRequestHeader("Content-Type",
 				"application/x-www-form-urlencoded");
 				xhr.setRequestHeader("X-PHX", "true");
-				xhr.onreadystatechange = function() {
-					if (this.readyState === 4) {
-						if (this.status === 200) f(this);
-						else (b || function(x) { alert(x.responseText); })(this);
-					}
+				xhr.onload = function() {
+					if (this.status === 200) f(this);
+					else (b || function(x) { alert(x.responseText); })(this);
 				};
 				xhr.send(q + "&post_authenticity_token=" + auth);
 			});
@@ -163,7 +157,7 @@ addEventListener("DOMContentLoaded", function() {
 					return '@<a href="' + ROOT + path + '">' + path + '</a>';
 				} else if (/^#/.test(s)) {
 					return '<a href="http://search.twitter.com/search?q=' +
-					encodeURIComponent(s) + '">' + s + '</a>'
+					encodeURIComponent(s) + '">' + s + '</a>';
 				} else {
 					return s;
 				}
@@ -991,6 +985,7 @@ addEventListener("DOMContentLoaded", function() {
 
 				ent.text.className = "text";
 				ent.text.innerHTML = T.linker(t.text);
+				ent.text.innerHTML = ent.text.innerHTML.replace(/\r\n|\r|\n/g, "<br>");
 
 				ent.meta.className = "meta";
 

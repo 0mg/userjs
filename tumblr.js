@@ -22,7 +22,9 @@ addEventListener("DOMContentLoaded", function() {
 /* dont scroll top when liked post */
 addEventListener("DOMContentLoaded", function() {
   Array.prototype.forEach.call(document.links, function(a) {
-    if (a.className === "like_button ") a.href = "javascript:;";
+    if ((" " + a.className + " ").indexOf(" like_button ") >= 0) {
+    	a.href = "javascript:;";
+    }
   });
 }, false);
 
