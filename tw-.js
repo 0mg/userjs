@@ -150,8 +150,7 @@ addEventListener("DOMContentLoaded", function() {
 					if (/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/.test(url)) {
 						text = url = ROOT + RegExp.$1;
 					}
-					try { url = decodeURI(url); } catch(e) {}
-					return '<a href="' + encodeURI(url) + '">' + text + '</a>';
+					return '<a href="' + url + '">' + text + '</a>';
 				} else if (/^@/.test(s)) {
 					var path = s.substring(1);
 					return '@<a href="' + ROOT + path + '">' + path + '</a>';
@@ -958,8 +957,12 @@ addEventListener("DOMContentLoaded", function() {
 				};
 
 				ent.ry.className = "tweet";
+				ent.ry.className += " screen_name-" + t.user.screen_name;
 				if (t.user["protected"]) ent.ry.className += " protected";
 				if (isRT) ent.ry.className += " retweet";
+				if (/[RQ]T:? *@\w+:?/.test(t.text)) {
+					ent.ry.className += " quote";
+				}
 
 				ent.name.className = "screen_name";
 				ent.name.href = ROOT + t.user.screen_name;
@@ -1398,6 +1401,7 @@ addEventListener("DOMContentLoaded", function() {
 				profile: D.ce("a"),
 				replies: D.ce("a"),
 				inbox: D.ce("a"),
+				sent: D.ce("a"),
 				favorites: D.ce("a"),
 				following: D.ce("a"),
 				followers: D.ce("a"),
@@ -1420,7 +1424,10 @@ addEventListener("DOMContentLoaded", function() {
 			g.replies.add(D.ct("@" + my.screen_name));
 
 			g.inbox.href = ROOT + "inbox";
-			g.inbox.add(D.ct("Messages"));
+			g.inbox.add(D.ct("Inbox"));
+
+			g.sent.href = ROOT + "sent";
+			g.sent.add(D.ct("Sent"));
 
 			g.favorites.href = ROOT + "favorites";
 			g.favorites.add(D.ct("Favorites:" + my.favourites_count));
@@ -1453,6 +1460,7 @@ addEventListener("DOMContentLoaded", function() {
 				D.ce("li").add(g.profile),
 				D.ce("li").add(g.replies),
 				D.ce("li").add(g.inbox),
+				D.ce("li").add(g.sent),
 				D.ce("li").add(g.favorites),
 				D.ce("li").add(g.following),
 				D.ce("li").add(g.followers),
