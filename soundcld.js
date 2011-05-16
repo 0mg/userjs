@@ -22,7 +22,9 @@ addEventListener("DOMContentLoaded", function() {
 			var a = wrapper.childNodes[i];
 			a.style.display = "inline-block";
 			a.className = "download icon-button";
-			a.innerHTML = "<span>" + a.textContent + "</span>";
+			var span = document.createElement("span");
+			span.appendChild(a.lastChild);
+			a.appendChild(span);
 		}
 		var clearfix = document.createElement("br");
 		clearfix.style.clear = "both";

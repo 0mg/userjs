@@ -938,6 +938,8 @@ addEventListener("DOMContentLoaded", function() {
 			[].concat(data).forEach(function(data) {
 				var t = data;
 
+				t.text = t.text.replace(/"/g, "&quot;");
+
 				var isDM = "sender" in t && "recipient" in t;
 				var isRT = "retweeted_status" in t;
 
