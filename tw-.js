@@ -664,6 +664,12 @@ addEventListener("DOMContentLoaded", function() {
 					if (hash[1] === "status" || hash[1] === "statuses") {
 						content.showTL(APV + "statuses/show/" + hash[2] + ".json", my);
 						outline.showProfileOutline(hash[0], my, 1);
+					} else if (hash[1] === "following" && hash[2] === "timeline") {
+						content.showTL(APV +
+						"statuses/following_timeline.json?" +
+						"include_entities=true&screen_name=" +
+						hash[0] + "&" + q, my);
+						outline.showProfileOutline(hash[0], my, 3);
 					} else switch (hash[2]) {
 						case ("members"):
 						case ("subscribers"): {
@@ -1797,6 +1803,7 @@ addEventListener("DOMContentLoaded", function() {
 				bio: D.ce("p"),
 				tweets: D.ce("a"),
 				following: D.ce("a"),
+				following_timeline: D.ce("a"),
 				followers: D.ce("a"),
 				listed: D.ce("a"),
 				lists: D.ce("a"),
@@ -1827,6 +1834,10 @@ addEventListener("DOMContentLoaded", function() {
 
 			p.following.add(D.ct("Following"));
 			p.following.href = ROOT + user.screen_name + "/following";
+
+			p.following_timeline.add(D.ct("Timeline"));
+			p.following_timeline.href =
+				ROOT + user.screen_name + "/following/timeline";
 
 			p.followers.add(D.ct("Followers"));
 			p.followers.href = ROOT + user.screen_name + "/followers";
@@ -1860,7 +1871,7 @@ addEventListener("DOMContentLoaded", function() {
 				D.ce("dd").add(D.ct(user.statuses_count)),
 				D.ce("dt").add(p.favorites),
 				D.ce("dd").add(D.ct(user.favourites_count)),
-				D.ce("dt").add(p.following),
+				D.ce("dt").add(p.following).add(D.ct("/")).add(p.following_timeline),
 				D.ce("dd").add(D.ct(user.friends_count)),
 				D.ce("dt").add(p.followers),
 				D.ce("dd").add(D.ct(user.followers_count)),
