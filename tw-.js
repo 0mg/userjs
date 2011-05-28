@@ -7,14 +7,14 @@
 
 
 // Disable inline Script
-opera.addEventListener("BeforeScript", function(v) {
-  v.preventDefault();
+opera.addEventListener("BeforeScript", function(event) {
+  event.preventDefault();
 }, false);
 
 
 // Disable external Script
-opera.addEventListener("BeforeExternalScript", function(v) {
-  v.preventDefault();
+opera.addEventListener("BeforeExternalScript", function(event) {
+  event.preventDefault();
 }, false);
 
 
@@ -40,8 +40,8 @@ addEventListener("DOMContentLoaded", function() {
 
   // UserJS Debug Functions
 
+  // Show Props
   var props = function(o) {
-    // Show Props
     if (!o) return;
     var s = [];
     for (var p in o) {
@@ -150,7 +150,7 @@ addEventListener("DOMContentLoaded", function() {
 
       function linkify(str) {
         if (str.length <= 1) { // re.normalText, re.emptyText
-          // this `if` section is removable because it just be for acceleration.
+          // this `if` section is removable why it just be for acceleration.
           return str;
 
         } else if (RegExp(re.url).test(str)) { // re.url
@@ -319,15 +319,14 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     tco: function(input_url, callback, onError) {
-      X.get("/intent/tweet?url=" + encodeURIComponent(input_url),
-            function(xhr) {
-              var text = xhr.responseText;
-              var output_url =
-              /<input name="shortened_url" type="hidden" value="([^"]+)/(text);
-              output_url = output_url && output_url[1];
-              if (output_url) callback(output_url);
-              else onError(xhr);
-            });
+      function onSuccess(xhr) {
+        var text = xhr.responseText;
+        var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
+        var output_url = re.exec(text);
+        if (output_url) callback(String(output_url));
+        else (onError || alert)(xhr);
+      }
+      X.get("/intent/tweet?url=" + encodeURIComponent(input_url), onSuccess);
     }
   };
 
@@ -723,11 +722,11 @@ addEventListener("DOMContentLoaded", function() {
               }
               break;
             }
-          }
+          } // switch(hash[2])
           break;
-        }
-      }
-    }
+        } // case(3)
+      } // switch(hash.length)
+    } // function
   };
 
 
@@ -1102,10 +1101,10 @@ addEventListener("DOMContentLoaded", function() {
   };
 
 
-
   // Make Action buttons panel
+
   var panel = {
-    // Action panel for fav, reply, retweet
+    // Action buttons panel for fav, reply, retweet
     makeTwAct: function(t, my) {
       var isDM = "sender" in t;
       var isRT = "retweeted_status" in t;
@@ -1825,8 +1824,8 @@ addEventListener("DOMContentLoaded", function() {
       p.following.href = ROOT + user.screen_name + "/following";
 
       p.following_timeline.add(D.ct("Timeline"));
-      p.following_timeline.href =
-        ROOT + user.screen_name + "/following/timeline";
+      p.following_timeline.href = ROOT + user.screen_name +
+                                  "/following/timeline";
 
       p.followers.add(D.ct("Followers"));
       p.followers.href = ROOT + user.screen_name + "/followers";
@@ -1885,14 +1884,16 @@ addEventListener("DOMContentLoaded", function() {
 
   // Check if my Logged-in
   function main() {
-    X.get(APV + "account/verify_credentials.json", function(xhr) {
-      var my = JSON.parse(xhr.responseText);
-      init.initDOM(my);
-      init.structPage();
-      pre.startPage(my);
-    }, function() {
-      location = "/login?redirect_after_login=" + encodeURIComponent(location);
-    });
+    X.get(APV + "account/verify_credentials.json",
+          function(xhr) {
+            var my = JSON.parse(xhr.responseText);
+            init.initDOM(my);
+            init.structPage();
+            pre.startPage(my);
+          }, function() {
+            location = "/login?redirect_after_login=" +
+                       encodeURIComponent(location);
+          });
   }
 
 
