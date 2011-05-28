@@ -292,14 +292,14 @@ addEventListener("DOMContentLoaded", function() {
 
     createList: function(me, name, mode, description, callback) {
       X.post(APV + me + "/lists.xml",
-      "name=" + name + "&mode=" + mode + "&description=" + description,
-      callback);
+             "name=" + name + "&mode=" + mode + "&description=" + description,
+             callback);
     },
 
     updateList: function(me, id, name, mode, description, callback) {
       X.post(APV + me + "/lists/" + id + ".xml",
-      "name=" + name + "&mode=" + mode + "&description=" + description,
-      callback);
+             "name=" + name + "&mode=" + mode + "&description=" + description,
+             callback);
     },
 
     deleteList: function(me, id, callback) {
@@ -322,9 +322,10 @@ addEventListener("DOMContentLoaded", function() {
       function onSuccess(xhr) {
         var text = xhr.responseText;
         var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
-        var output_url = re.exec(text);
-        if (output_url) callback(String(output_url));
-        else (onError || alert)(xhr);
+        if (text.match(re)) {
+          var output_url = RegExp.$1;
+          callback(output_url);
+        } else (onError || alert)(xhr);
       }
       X.get("/intent/tweet?url=" + encodeURIComponent(input_url), onSuccess);
     }
@@ -581,17 +582,18 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("inbox"): {
-              content.showTL(APV + "direct_messages.json?" + q + "&cursor=-1",
-                             my);
+              content.showTL(APV + "direct_messages.json?" +
+                             "include_entities=true&" + q + "&cursor=-1", my);
               break;
             }
             case ("sent"): {
-              content.showTL(APV + "direct_messages/sent.json?" + q +
-                             "&cursor=-1", my);
+              content.showTL(APV + "direct_messages/sent.json?" +
+                             "include_entities=true&" + q + "&cursor=-1", my);
               break;
             }
             case ("favorites"): {
-              content.showTL(APV + "favorites.json?" + q + "&cursor=-1", my);
+              content.showTL(APV + "favorites.json?" +
+                             "include_entities=true&" + q + "&cursor=-1", my);
               break;
             }
             case ("following"): {
@@ -605,7 +607,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("mentions"): {
-              content.showTL(APV + "statuses/mentions.json?" + q, my);
+              content.showTL(APV + "statuses/mentions.json?" +
+                             "include_entities=true" + q, my);
               break;
             }
             case ("blocking"): {
@@ -613,7 +616,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case (""): {
-              content.showTL(APV + "statuses/home_timeline.json?" + q, my);
+              content.showTL(APV + "statuses/home_timeline.json?" + 
+                             "include_entities=true&" + q, my);
               break;
             }
             default: {
@@ -655,7 +659,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("favorites"): {
-              content.showTL(APV + "favorites.json?id=" + hash[0] + "&" + q +
+              content.showTL(APV + "favorites.json?include_entities=true&" +
+                             "id=" + hash[0] + "&" + q +
                              "&cursor=-1", my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
@@ -681,7 +686,7 @@ addEventListener("DOMContentLoaded", function() {
             default: {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
               content.showTL(APV + hash[0] + "/lists/" + hash[1] +
-                             "/statuses.json?" + q, my);
+                             "/statuses.json?include_entities=true&" + q, my);
               outline.showListOutline(hash);
               break;
             }
