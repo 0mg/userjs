@@ -270,6 +270,14 @@ addEventListener("DOMContentLoaded", function() {
       X.post(APV + "friendships/destroy/" + id + ".xml", "", callback);
     },
 
+    request_follow: function(id, callback) {
+      this.follow(id, callback);
+    },
+
+    unrequest_follow: function(id, callback) {
+      X.post(APV + "friendships/cancel/" + id + ".xml", "", callback);
+    },
+
     block: function(id, callback) {
       X.post(APV + "blocks/create/" + id + ".xml", "", callback);
     },
@@ -509,6 +517,7 @@ addEventListener("DOMContentLoaded", function() {
         .tweet-action .fav.true::before,\
         .tweet-action .retweet.true::before,\
         .user-action .follow.true::before,\
+        .user-action .follow_request_sent.true::before,\
         .user-action .block.true::before,\
         .user-action .spam.true::before,\
         .user-action .list.true::before {\
@@ -933,18 +942,13 @@ addEventListener("DOMContentLoaded", function() {
       });
     },
 
-    // Render View of Timeline (of home, mentions, messages, lists.,)
+    // Step to Render View of Timeline
     showTL: function(url, my) {
-      var that = this;
-      X.get(url, function(xhr) {
-        that.makeTL(xhr, url, my);
-
-        // Expand URL
-        var links =
-        document.evaluate('.//p[@class="text"]//a[starts-with(@href,"h") or ' +
-                          'starts-with(@href,"f")][starts-with(text(),"h")' +
-                          ' or starts-with(text(),"f")]',
-                          D.id("timeline"), null, 7, null);
+      function expandURL() {
+        var xpath = './/p[@class="text"]//a[starts-with(@href,"h") or ' +
+                    'starts-with(@href,"f")][starts-with(text(),"h") or ' +
+                    'starts-with(text(),"f")]';
+        var links = document.evaluate(xpath, D.id("timeline"), null, 7, null);
 
         for (var urls = [], i = 0; i < links.snapshotLength; ++i) {
           urls.push(links.snapshotItem(i));
@@ -960,11 +964,24 @@ addEventListener("DOMContentLoaded", function() {
             }
           });
 
-        }); // resolveURL
+        });
+      }
 
-      }); // X.get
+      var that = this;
+
+      function onGetTLData(xhr) {
+        that.makeTL(xhr, url, my);
+      }
+
+      function onError(xhr) {
+        if (xhr.status === 0) return; // it's may protected user timeline
+        alert(xhr.responseText);
+      }
+
+      X.get(url, onGetTLData, onError);
     },
 
+    // Render View of Timeline (of home, mentions, messages, lists.,)
     makeTL: function(xhr, url, my) {
       var data = JSON.parse(xhr.responseText);
 
@@ -1237,101 +1254,153 @@ addEventListener("DOMContentLoaded", function() {
         follow: D.ce("button"),
         block: D.ce("button"),
         spam: D.ce("button"),
-        lists: D.ce("div"),
+        followReq: D.ce("button"),
+        lists: D.ce("div")
       };
 
       act.follow.className = "follow";
       act.block.className = "block";
       act.spam.className = "spam";
+      act.followReq.className = "follow_request";
 
-      D.id("subaction").add(
-        act.foblo,
-        act.lists
-      );
+      D.id("subaction").add(act.foblo, act.lists);
 
       X.get(APV + "friendships/show.json?target_id=" + user.id_str,
-            function(xhr) {
-              var data = JSON.parse(xhr.responseText);
-              var ship = data.relationship.source;
+            lifeFollowButtons);
+      X.get(APV + "lists.json", lifeListButtons);
 
-              act.follow.following = ship.following;
-              act.follow.className = "follow " + act.follow.following;
-              act.follow.add(D.ct(act.follow.following ?
-                                  "Unfollow" : "Follow"));
+      function lifeFollowButtons(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        var ship = data.relationship.source;
 
-              act.follow.addEventListener("click", function() {
-                function onFollow() {
-                  act.follow.following = true;
-                  act.follow.className = "follow true";
-                  act.follow.textContent = "UnFollow";
-                }
-                function onUnFollow() {
-                  act.follow.following = false;
-                  act.follow.className = "follow false";
-                  act.follow.textContent = "Follow";
-                }
-                act.follow.following ?
-                API.unfollow(user.id_str, onUnFollow) :
-                API.follow(user.id_str, onFollow);
-              }, false);
+        var LABEL = {
+          FOLLOW: "Follow",
+          UNFOLLOW: "Unfollow",
+          BLOCK: "Block",
+          UNBLOCK: "Unblock",
+          REPORT_SPAM: "Spam",
+          CANCEL_REPORT_SPAM: "UnSpam",
+          FOLLOW_REQUEST: "ReqFollow",
+          CANCEL_FOLLOW_REQUEST: "UnreqFollow"
+        };
 
-              function onBlock() {
-                act.follow.following = false;
-                act.follow.className = "follow false";
-                act.follow.textContent = "Follow";
-                act.follow.style.display = "none";
+        function onBlock() {
+          act.follow.following = false;
+          act.follow.className = "follow false";
+          act.follow.textContent = LABEL.FOLLOW;
+          act.follow.style.display = "none";
 
-                act.block.blocking = true;
-                act.block.className = "block true";
-                act.block.textContent = "Unblock";
+          act.block.blocking = true;
+          act.block.className = "block true";
+          act.block.textContent = LABEL.UNBLOCK;
 
-                act.spam.spaming = true;
-                act.spam.className = "spam true";
-                act.spam.textContent = "UnSpam";
-                act.spam.style.display = "none";
-              }
+          act.spam.spaming = true;
+          act.spam.className = "spam true";
+          act.spam.textContent = LABEL.CANCEL_REPORT_SPAM;
+          act.spam.style.display = "none";
+        }
 
-              function onUnBlock() {
-                act.follow.style.display = "";
+        function onUnBlock() {
+          act.follow.following = false;
+          act.follow.className = "follow false";
+          act.follow.textContent = LABEL.FOLLOW;
+          act.follow.style.display = "";
 
-                act.block.blocking = false;
-                act.block.className = "block false";
-                act.block.textContent = "Block";
+          act.block.blocking = false;
+          act.block.className = "block false";
+          act.block.textContent = LABEL.BLOCK;
 
-                act.spam.spaming = false;
-                act.spam.className = "spam false";
-                act.spam.textContent = "Spam";
-                act.spam.style.display = "";
-              }
+          act.spam.spaming = false;
+          act.spam.className = "spam false";
+          act.spam.textContent = LABEL.REPORT_SPAM;
+          act.spam.style.display = "";
+        }
 
-              act.block.blocking = ship.blocking;
-              act.block.className = "block " + act.block.blocking;
-              act.block.add(D.ct(act.block.blocking ? "Unblock" : "Block"));
-              act.block.addEventListener("click", function() {
-                act.block.blocking ? API.unblock(user.id_str, onUnBlock) :
-                                     API.block(user.id_str, onBlock);
-              }, false);
+        act.block.blocking = ship.blocking;
+        act.block.className = "block " + act.block.blocking;
+        act.block.add(D.ct(act.block.blocking ? LABEL.UNBLOCK : LABEL.BLOCK));
+        act.block.addEventListener("click", function() {
+          act.block.blocking ? API.unblock(user.id_str, onUnBlock) :
+                               API.block(user.id_str, onBlock);
+        }, false);
 
-              act.spam.spaming = ship.marked_spam;
-              act.spam.className = "spam " + act.spam.spaming;
-              act.spam.add(D.ct("Spam"));
-              act.spam.addEventListener("click", function() {
-                API.spam(user.id_str, onBlock);
-              }, false);
+        act.spam.spaming = ship.marked_spam;
+        act.spam.className = "spam " + act.spam.spaming;
+        act.spam.add(D.ct(LABEL.REPORT_SPAM));
+        act.spam.addEventListener("click", function() {
+          API.spam(user.id_str, onBlock);
+        }, false);
 
-              if (act.block.blocking) {
-                act.follow.style.display = "none";
-                act.spam.style.display = "none";
-              }
+        if (act.block.blocking) {
+          act.follow.style.display = "none";
+          act.spam.style.display = "none";
+        }
 
-              act.foblo.add(
-                act.follow,
-                act.block,
-                act.spam
-              );
-            });
+        if (!user["protected"] || ship.following) {
+          // shown user
 
-      X.get(APV + "lists.json", function(xhr) {
+          act.follow.following = ship.following;
+          act.follow.className = "follow " + act.follow.following;
+          act.follow.add(D.ct(
+            act.follow.following ? LABEL.UNFOLLOW : LABEL.FOLLOW
+          ));
+
+          act.follow.addEventListener("click", function() {
+            function onFollow() {
+              act.follow.following = true;
+              act.follow.className = "follow true";
+              act.follow.textContent = LABEL.UNFOLLOW;
+            }
+            function onUnFollow() {
+              act.follow.following = false;
+              act.follow.className = "follow false";
+              act.follow.textContent = LABEL.FOLLOW;
+            }
+            act.follow.following ? API.unfollow(user.id_str, onUnFollow) :
+                                   API.follow(user.id_str, onFollow);
+          }, false);
+
+          act.foblo.add(
+            act.follow,
+            act.block,
+            act.spam
+          );
+        } else {
+          // hidden user
+
+          act.followReq.follow_request_sent = user.follow_request_sent;
+          act.followReq.className = "follow_request_sent " +
+                                     act.followReq.follow_request_sent;
+          act.followReq.add(D.ct(
+            act.followReq.follow_request_sent ?
+              LABEL.CANCEL_FOLLOW_REQUEST : LABEL.FOLLOW_REQUEST
+          ));
+
+          act.followReq.addEventListener("click", function() {
+            function onReqFollow() {
+              act.followReq.follow_request_sent = true;
+              act.followReq.className = "follow_request_sent true";
+              act.followReq.textContent = LABEL.CANCEL_FOLLOW_REQUEST;
+            }
+            function onUnreqFollow() {
+              act.followReq.follow_request_sent = false;
+              act.followReq.className = "follow_request_sent false";
+              act.followReq.textContent = LABEL.FOLLOW_REQUEST;
+            }
+            act.followReq.follow_request_sent ?
+              API.unrequest_follow(user.id_str, onUnreqFollow) :
+              API.request_follow(user.id_str, onReqFollow);
+          }, false);
+
+          act.foblo.add(
+            act.followReq,
+            act.block,
+            act.spam
+          );
+        }
+      }
+
+      function lifeListButtons(xhr) {
         var data = JSON.parse(xhr.responseText);
         var lists = data.lists;
 
@@ -1376,7 +1445,8 @@ addEventListener("DOMContentLoaded", function() {
           X.head(APV + l.full_name + "/members/" + user.id_str + ".json",
           onMembering, onNotMembering);
         });
-      });
+      }
+
     },
 
     // Button to do follow list
