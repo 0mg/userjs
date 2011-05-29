@@ -135,9 +135,11 @@ addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    this.head = head;
-    this.get = get;
-    this.post = post;
+    return {
+      head: head,
+      get: get,
+      post: post
+    };
   };
 
 
@@ -147,6 +149,20 @@ addEventListener("DOMContentLoaded", function() {
     // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
     linkifyText: function(text) {
       text = text.replace(/"/g, "&quot;");
+
+      var re = {
+        url: "(?:https?://|javascript:|data:)\\S+",
+        htmlRef: "&#x?[a-zA-Z\\d]+;",
+        hashTag: "#\\w+",
+        mention: "@\\w+(?:/[-\\w]+)?",
+        normalText: "[\\S\\s]",
+        emptyText: ""
+      };
+
+      var splitter = RegExp([re.url, re.htmlRef, re.hashTag, re.mention,
+                             re.normalText, re.emptyText].join("|"), "g");
+
+      var linkifiedText = text.match(splitter).map(linkify).join("");
 
       function linkify(str) {
         if (str.length <= 1) { // re.normalText, re.emptyText
@@ -181,17 +197,6 @@ addEventListener("DOMContentLoaded", function() {
         }
       }
 
-      var re = {
-        url: "(?:https?://|javascript:|data:)\\S+",
-        htmlRef: "&#x?[a-zA-Z\\d]+;",
-        hashTag: "#\\w+",
-        mention: "@\\w+(?:/[-\\w]+)?",
-        normalText: "[\\S\\s]",
-        emptyText: ""
-      };
-      var splitter = RegExp([re.url, re.htmlRef, re.hashTag, re.mention,
-                             re.normalText, re.emptyText].join("|"), "g");
-      var linkifiedText = text.match(splitter).map(linkify).join("");
       return linkifiedText;
     },
 
@@ -203,6 +208,37 @@ addEventListener("DOMContentLoaded", function() {
              g < 60000 * 60 ? gap.getMinutes() + " minutes ago" :
              g < 60000 * 60 * 24 ? gap.getHours() + " hours ago" :
              p.toLocaleString();
+    }
+  };
+
+
+  // User Script in tw-
+  var SCRIPT = {
+    expandUrls: function(parent) {
+      var links = (parent || document).getElementsByTagName("a");
+      var elements = [], urls = [];
+
+      for (var i = 0; i < links.length; ++i) {
+        var a = links[i];
+        if (a.href === a.textContent) {
+          elements.push(a);
+          urls.push(a.href);
+        }
+      }
+
+      urls.length && API.resolveURL(urls, function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+
+        for (var i = 0; i < urls.length; ++i) {
+          var raw_url = urls[i];
+          var exp_url = data[raw_url];
+          if (exp_url) {
+            var a = elements[i];
+            a.className += " expanded_url";
+            a.textContent = decodeURIComponent(escape(exp_url));
+          }
+        }
+      });
     }
   };
 
@@ -226,8 +262,8 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     resolveURL: function(links, callback) {
-      X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(a) {
-              return encodeURIComponent(a);
+      X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(url) {
+              return encodeURIComponent(url);
             })).join("&urls[]=").substring(1), callback);
     },
 
@@ -330,7 +366,7 @@ addEventListener("DOMContentLoaded", function() {
       function onSuccess(xhr) {
         var text = xhr.responseText;
         var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
-        if (text.match(re)) {
+        if (re.test(text)) {
           var output_url = RegExp.$1;
           callback(output_url);
         } else (onError || alert)(xhr);
@@ -939,34 +975,11 @@ addEventListener("DOMContentLoaded", function() {
 
     // Step to Render View of Timeline
     showTL: function(url, my) {
-      function expandURL() {
-        var xpath = './/p[@class="text"]//a[starts-with(@href,"h") or ' +
-                    'starts-with(@href,"f")][starts-with(text(),"h") or ' +
-                    'starts-with(text(),"f")]';
-        var links = document.evaluate(xpath, D.id("timeline"), null, 7, null);
-
-        for (var urls = [], i = 0; i < links.snapshotLength; ++i) {
-          urls.push(links.snapshotItem(i));
-        }
-
-        urls.length && API.resolveURL(urls, function(xhr) {
-          var data = JSON.parse(xhr.responseText);
-
-          urls.forEach(function(a) {
-            if (data[a.href]) {
-              a.className += " expanded_url";
-              a.textContent = decodeURIComponent(escape(data[a.href]));
-            }
-          });
-
-        });
-      }
-
       var that = this;
 
       function onGetTLData(xhr) {
         that.makeTL(xhr, url, my);
-        expandURL();
+        SCRIPT.expandUrls(D.id("timeline"));
       }
 
       function onError(xhr) {
@@ -979,19 +992,17 @@ addEventListener("DOMContentLoaded", function() {
 
     // Render View of Timeline (of home, mentions, messages, lists.,)
     makeTL: function(xhr, url, my) {
-      var data = JSON.parse(xhr.responseText);
+      var timeline = JSON.parse(xhr.responseText);
 
-      var timeline = D.ce("ol");
-      timeline.id = "timeline";
+      var tl_element = D.ce("ol");
+      tl_element.id = "timeline";
 
-      [].concat(data).forEach(function(data) {
-        var t = data;
+      timeline.forEach(function(tweet) {
+        var isDM = "sender" in tweet && "recipient" in tweet;
+        var isRT = "retweeted_status" in tweet;
 
-        var isDM = "sender" in t && "recipient" in t;
-        var isRT = "retweeted_status" in t;
-
-        if (isDM) t.user = t.sender;
-        else if (isRT) t = t.retweeted_status;
+        if (isDM) tweet.user = tweet.sender;
+        else if (isRT) tweet = tweet.retweeted_status;
 
         var ent = {
           ry: D.ce("li"),
@@ -1006,48 +1017,48 @@ addEventListener("DOMContentLoaded", function() {
         };
 
         ent.ry.className = "tweet";
-        ent.ry.className += " screen_name-" + t.user.screen_name;
-        if (t.user["protected"]) ent.ry.className += " protected";
+        ent.ry.className += " screen_name-" + tweet.user.screen_name;
+        if (tweet.user["protected"]) ent.ry.className += " protected";
         if (isRT) ent.ry.className += " retweet";
-        if (/[RQ]T:? *@\w+:?/.test(t.text)) {
+        if (/[RQ]T:? *@\w+:?/.test(tweet.text)) {
           ent.ry.className += " quote";
         }
 
         ent.name.className = "screen_name";
-        ent.name.href = ROOT + t.user.screen_name;
-        ent.name.add(D.ct(t.user.screen_name));
+        ent.name.href = ROOT + tweet.user.screen_name;
+        ent.name.add(D.ct(tweet.user.screen_name));
 
         ent.nick.className = "name";
-        ent.nick.add(D.ct(t.user.name));
+        ent.nick.add(D.ct(tweet.user.name));
 
         ent.icon.className = "icon";
-        ent.icon.alt = t.user.name;
-        ent.icon.src = t.user.profile_image_url;
+        ent.icon.alt = tweet.user.name;
+        ent.icon.src = tweet.user.profile_image_url;
 
         ent.reid.className = "in_reply_to";
-        if (t.in_reply_to_status_id) {
-          ent.reid.href = ROOT + t.in_reply_to_screen_name + "/status/" +
-                          t.in_reply_to_status_id_str;
-          ent.reid.add(D.ct("in reply to " + t.in_reply_to_screen_name));
+        if (tweet.in_reply_to_status_id) {
+          ent.reid.href = ROOT + tweet.in_reply_to_screen_name + "/status/" +
+                          tweet.in_reply_to_status_id_str;
+          ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
         }
         if (isDM) {
-          ent.reid.href = ROOT + t.recipient_screen_name;
-          ent.reid.add(D.ct("d " + t.recipient_screen_name));
+          ent.reid.href = ROOT + tweet.recipient_screen_name;
+          ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
         }
 
         ent.text.className = "text";
-        ent.text.innerHTML = T.linkifyText(t.text);
+        ent.text.innerHTML = T.linkifyText(tweet.text);
         ent.text.innerHTML = ent.text.innerHTML.replace(/\r\n|\r|\n/g, "<br>");
 
         ent.meta.className = "meta";
 
         ent.date.className = "created_at";
-        ent.date.href = isDM ? "?count=1&max_id=" + t.id_str :
-                        "http://m.twitter.com/statuses/" + t.id_str;
-        ent.date.add(D.ct(T.gapTime(new Date, new Date(t.created_at))));
+        ent.date.href = isDM ? "?count=1&max_id=" + tweet.id_str :
+                        "http://m.twitter.com/statuses/" + tweet.id_str;
+        ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
         ent.src.className = "source";
-        ent.src.innerHTML = t.source;
+        ent.src.innerHTML = tweet.source;
 
         ent.meta.add(ent.date);
         if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
@@ -1059,27 +1070,29 @@ addEventListener("DOMContentLoaded", function() {
           ent.reid,
           ent.text,
           ent.meta,
-          panel.makeTwAct(data, my)
+          panel.makeTwAct(tweet, my)
         );
 
-        timeline.add(ent.ry);
+        tl_element.add(ent.ry);
       });
 
-      D.id("main").add(timeline);
+      D.id("main").add(tl_element);
 
-      if (data.length) {
-        var past = D.ce("a");
-        past.add(D.ct("past"));
-        past.href = "?page=2&max_id=" + data[0].id_str;
+      if (timeline.length) {
+        var past = D.ce("a").
+                   sa("href", "?page=2&max_id=" + timeline[0].id_str).
+                   add(D.ct("past"));
+
         D.id("cursor").add(past);
 
-        var link = D.ce("link");
-        link.rel = "next";
-        link.href = past.href;
-        Array.prototype.forEach.call(D.tags("link"), function(e) {
-          if (e.rel === "next") e.parentNode.removeChild(e);
-        });
-        D.tag("head").add(link);
+        var links = D.tags("link");
+        for (i = 0; i < links.length; ++i) {
+          if (links[i].rel === "next") e.parentNode.removeChild(links[i]);
+        }
+
+        D.tag("head").add(
+          D.ce("link").sa("rel", "next").sa("href", past.href)
+        );
       }
     },
 
@@ -1089,7 +1102,7 @@ addEventListener("DOMContentLoaded", function() {
         var cur = {
           sor: D.ce("ol"),
           next: D.ce("a"),
-          prev: D.ce("a"),
+          prev: D.ce("a")
         };
 
         if (data.previous_cursor) {
@@ -1124,25 +1137,27 @@ addEventListener("DOMContentLoaded", function() {
   var panel = {
     // ON/OFF Button Constructor
     Button: function(name, labelDefault, labelOn) {
-      this.on = false;
-      this.name = name;
-      this.node = D.ce("button").add(D.ct(labelDefault));
-      this.turn = function(on_off) {
-        on_off = !!on_off;
-        this.on = on_off;
-        this.node.className = this.name + " " + on_off;
-        this.node.textContent = on_off ? labelOn : labelDefault;
-        return this;
-      };
-      this.enable = function() {
-        this.node.disabled = false;
-        this.node.style.display = "";
-        return this;
-      };
-      this.disable = function() {
-        this.node.disabled = true;
-        this.node.style.display = "none";
-        return this;
+      return {
+        on: false,
+        name: name,
+        node: D.ce("button").add(D.ct(labelDefault)),
+        turn: function(on_off) {
+          on_off = !!on_off;
+          this.on = on_off;
+          this.node.className = this.name + " " + on_off;
+          this.node.textContent = on_off ? labelOn : labelDefault;
+          return this;
+        },
+        enable: function() {
+          this.node.disabled = false;
+          this.node.style.display = "";
+          return this;
+        },
+        disable: function() {
+          this.node.disabled = true;
+          this.node.style.display = "none";
+          return this;
+        }
       };
     },
 
@@ -1181,7 +1196,7 @@ addEventListener("DOMContentLoaded", function() {
       if (!isDM) ab.node.add(ab.fav.node);
 
       ab.rep.node.className = "reply";
-      ab.rep.node.href = "javascript:;";
+      ab.rep.node.href = "javascript:void'Reply'";
       ab.rep.node.add(D.ct("Reply"));
 
       if (isDM) {
@@ -1327,8 +1342,8 @@ addEventListener("DOMContentLoaded", function() {
         if (!user["protected"] || ship.following) {
           // shown user
 
-          function onFollow() { ab.follow.turn(true); }
-          function onUnFollow() { ab.follow.turn(false); }
+          var onFollow = function() { ab.follow.turn(true); }
+          var onUnfollow = function() { ab.follow.turn(false); }
 
           ship.following && onFollow();
 
@@ -1346,8 +1361,8 @@ addEventListener("DOMContentLoaded", function() {
         } else {
           // hidden user
 
-          function onReqFollow() { ab.req_follow.turn(true); }
-          function onUnreqFollow() { ab.req_follow.turn(false); }
+          var onReqFollow = function() { ab.req_follow.turn(true); }
+          var onUnreqFollow = function() { ab.req_follow.turn(false); }
 
           user.follow_request_sent && onReqFollow();
 
@@ -1514,8 +1529,8 @@ addEventListener("DOMContentLoaded", function() {
         urls && urls.forEach(function(input_url) {
           API.tco(input_url,
                   function(output_url) {
-                    t.status.value = t.status.value
-                                     .replace(input_url, output_url);
+                    t.status.value = t.status.value.
+                                     replace(input_url, output_url);
                   },
                   function(xhr) {
                     alert(xhr.responseText);
@@ -1729,13 +1744,12 @@ addEventListener("DOMContentLoaded", function() {
       var styleElement = document.getElementsByTagName("style")[0];
       styleElement.textContent += "body { color: " + colorText + "; }" +
                                   "a { color: " + colorLink + "; }";
-      return true;
     },
 
-    // Step to Render outline of list information
-    showListOutline: function(hash) {
+    // Step to Render list outline and color
+    showListOutline: function(hash, mode) {
       var that = this;
-      var mode = arguments[1] || 255;
+      if (mode === void 0) mode = 7;
 
       X.get(APV + hash[0] + "/lists/" + hash[1] + ".json", function(xhr) {
         var data = JSON.parse(xhr.responseText);
@@ -1781,10 +1795,10 @@ addEventListener("DOMContentLoaded", function() {
       D.id("side").add(li.st);
     },
 
-    // Step to Render outline of User Profile
+    // Step to Render user profile outline and color
     showProfileOutline: function(screen_name, my, mode) {
       var that = this;
-      if (mode === void 0) mode = 255;
+      if (mode === void 0) mode = 7;
 
       X.get(APV + "users/show.json?screen_name=" + screen_name, function(xhr) {
         var user = JSON.parse(xhr.responseText);
@@ -1798,10 +1812,6 @@ addEventListener("DOMContentLoaded", function() {
 
     // Render outline of User Profile
     showProfile: function(user) {
-      if (typeof user === "string") {
-        this.showProfileOutline(user, null, 2);
-      }
-
       var p = {
         box: D.ce("dl"),
         icon: D.ce("img"),
@@ -1815,7 +1825,7 @@ addEventListener("DOMContentLoaded", function() {
         listed: D.ce("a"),
         lists: D.ce("a"),
         listsub: D.ce("a"),
-        favorites: D.ce("a"),
+        favorites: D.ce("a")
       };
 
       p.box.id = "profile";
@@ -1897,7 +1907,7 @@ addEventListener("DOMContentLoaded", function() {
       );
 
       D.id("side").add(p.box);
-    },
+    }
   };
 
 
