@@ -270,11 +270,11 @@ addEventListener("DOMContentLoaded", function() {
       X.post(APV + "friendships/destroy/" + id + ".xml", "", callback);
     },
 
-    request_follow: function(id, callback) {
+    requestFollow: function(id, callback) {
       this.follow(id, callback);
     },
 
-    unrequest_follow: function(id, callback) {
+    unrequestFollow: function(id, callback) {
       X.post(APV + "friendships/cancel/" + id + ".xml", "", callback);
     },
 
@@ -514,13 +514,8 @@ addEventListener("DOMContentLoaded", function() {
           display: inline-block;\
           margin-right: 1ex;\
         }\
-        .tweet-action .fav.true::before,\
-        .tweet-action .retweet.true::before,\
-        .user-action .follow.true::before,\
-        .user-action .follow_request_sent.true::before,\
-        .user-action .block.true::before,\
-        .user-action .spam.true::before,\
-        .user-action .list.true::before {\
+        .tweet-action button.true::before,\
+        .user-action button.true::before {\
           content: "\u2714";\
         }\
       '));
@@ -971,6 +966,7 @@ addEventListener("DOMContentLoaded", function() {
 
       function onGetTLData(xhr) {
         that.makeTL(xhr, url, my);
+        expandURL();
       }
 
       function onError(xhr) {
@@ -1126,6 +1122,30 @@ addEventListener("DOMContentLoaded", function() {
   // Make Action buttons panel
 
   var panel = {
+    // ON/OFF Button Constructor
+    Button: function(name, labelDefault, labelOn) {
+      this.on = false;
+      this.name = name;
+      this.node = D.ce("button").add(D.ct(labelDefault));
+      this.turn = function(on_off) {
+        on_off = !!on_off;
+        this.on = on_off;
+        this.node.className = this.name + " " + on_off;
+        this.node.textContent = on_off ? labelOn : labelDefault;
+        return this;
+      };
+      this.enable = function() {
+        this.node.disabled = false;
+        this.node.style.display = "";
+        return this;
+      };
+      this.disable = function() {
+        this.node.disabled = true;
+        this.node.style.display = "none";
+        return this;
+      };
+    },
+
     // Action buttons panel for fav, reply, retweet
     makeTwAct: function(t, my) {
       var isDM = "sender" in t;
@@ -1138,41 +1158,40 @@ addEventListener("DOMContentLoaded", function() {
 
       if (isDM) t.user = t.sender;
 
-      var act = {
-        bar: D.ce("div"),
-        fav: D.ce("button"),
-        rep: D.ce("a"),
-        del: D.ce("button"),
-        rt: D.ce("button")
+      var Button = this.Button;
+      var ab = {
+        node: D.ce("div").sa("class", "tweet-action"),
+        fav: new Button("fav", "Fav", "Unfav"),
+        rep: {node: D.ce("a")},
+        del: new Button("delete", "Delete", "Undelete"),
+        rt: new Button("retweet", "RT", "UnRT")
       };
 
-//act.bar.add(D.ct((isRT ? "このツイートは " + t.user.screen_name +" によるRTです" : "これはツイートです")+"。"));act.bar.add(D.ct(""+(isMyRT ? "すなわち、あなたによるRTです" : isRTtoMe ? "あなたへのRTです" : isTweetRTedByMe ? "あなたはこれをRTしています" : isRTRTedByMe ? "あなたもこれをRTしています" :  "")));
+//ab.node.add(D.ct((isRT ? "This Tweet is a RT by " + t.user.screen_name : "This is a Tweet")+". "));ab.node.add(D.ct(""+(isMyRT ? " So, This RT is by YOU" : isRTtoMe ? "It's RT to YOU" : isTweetRTedByMe ? "You are RTing this Tweet" : isRTRTedByMe ? "You are also RTing this too." :  "")));
 
-      act.bar.className = "tweet-action";
+      t.favorited && onFav();
 
-      act.fav.className = "fav " + t.favorited;
-      act.fav.favorited = t.favorited;
-      act.fav.add(D.ct(t.favorited ? "UnFav" : "Fav"));
-      act.fav.addEventListener("click", function() {
-        (act.fav.favorited ? API.unfav : API.fav)(t.id_str, function(xhr) {
-          act.fav.favorited = !act.fav.favorited;
-          act.fav.className = "fav " + act.fav.favorited;
-          act.fav.textContent = act.fav.favorited ? "UnFav" : "Fav";
-        });
+      function onFav() { ab.fav.turn(true); }
+      function onUnfav() { ab.fav.turn(false); }
+
+      ab.fav.node.addEventListener("click", function() {
+        ab.fav.on ? API.unfav(t.id_str, onUnfav) : API.fav(t.id_str, onFav);
       }, false);
 
-      act.rep.className = "reply";
-      act.rep.href = "javascript:;";
-      act.rep.add(D.ct("Reply"));
+      if (!isDM) ab.node.add(ab.fav.node);
+
+      ab.rep.node.className = "reply";
+      ab.rep.node.href = "javascript:;";
+      ab.rep.node.add(D.ct("Reply"));
 
       if (isDM) {
-        act.rep.addEventListener("click", function() {
+        ab.rep.node.addEventListener("click", function() {
           var status = D.id("status");
           status.value = "d " + t.user.screen_name + " " + status.value;
           status.focus();
         }, false)
       } else {
-        act.rep.addEventListener("click", function() {
+        ab.rep.node.addEventListener("click", function() {
           var status = D.id("status");
           var repid = D.id("in_reply_to_status_id");
 
@@ -1183,222 +1202,170 @@ addEventListener("DOMContentLoaded", function() {
         }, false);
       }
 
-      act.rt.className = "retweet " + (isMyRT || isTweetRTedByMe);
-      act.rt.isMyRT = isMyRT;
-      act.rt.isTweetRTedByMe = isTweetRTedByMe;
-      act.rt.add(D.ct((isMyRT || isTweetRTedByMe) ? "UnRT" : "RT"));
-      act.rt.addEventListener("click", function() {
-        if (act.rt.isMyRT) {
+      ab.node.add(ab.rep.node);
+
+      (isMyRT || isTweetRTedByMe) && onRT();
+
+      function onRT() { ab.rt.turn(true); }
+      function onUnRT() { ab.rt.turn(false); }
+
+      ab.rt.isMyRT = isMyRT;
+      ab.rt.isTweetRTedByMe = isTweetRTedByMe;
+      ab.rt.node.addEventListener("click", function() {
+        if (ab.rt.isMyRT) {
           // undo RT (button on RT by me)
-          API.untweet(t.id_str, function(xhr) {
-            var data = JSON.parse(xhr.responseText);
-            act.bar.parentNode.style.display = "none";
+          API.untweet(t.id_str, function() {
+            ab.node.parentNode.style.display = "none";
           });
-        } else if (act.rt.isTweetRTedByMe) {
-          API.untweet(t.current_user_retweet.id_str, function(xhr) {
+        } else if (ab.rt.isTweetRTedByMe) {
+          API.untweet(t.current_user_retweet.id_str, function() {
             // undo RT (button on RT by others, or owner)
-            var data = JSON.parse(xhr.responseText);
-            act.rt.isTweetRTedByMe = false;
-            act.rt.className = "retweet false";
-            act.rt.textContent = "RT";
+            ab.rt.isTweetRTedByMe = false;
+            ab.rt.turn(false);
           });
         } else {
           API.retweet(t.id_str, function(xhr) {
             // do RT
+            ab.rt.isTweetRTedByMe = true;
+            ab.rt.turn(true);
             var data = JSON.parse(xhr.responseText);
-            act.rt.isTweetRTedByMe = true;
-            act.rt.className = "retweet true";
-            act.rt.textContent = "UnRT";
             t.current_user_retweet = data;
           });
         }
       }, false);
 
-      if (!isDM) act.bar.add(act.fav);
-      act.bar.add(act.rep);
       if (!isDM && ((t.user.id_str !== my.id_str) || isMyRT) && !isRTtoMe) {
         // Show RT buttons on tweets without my tweets
-        act.bar.add(act.rt);
+        ab.node.add(ab.rt.node);
       }
 
       if (isDM) {
         // Delete button for DM
-        act.del.add(D.ct("Delete"));
-        act.del.addEventListener("click", function() {
+        ab.del.node.addEventListener("click", function() {
           API.deleteMessage(t.id_str, function(xhr) {
-            act.bar.parentNode.style.display = "none";
+            ab.node.parentNode.style.display = "none";
           });
         }, false);
-        act.bar.add(act.del);
+        ab.node.add(ab.del.node);
 
       } else if (((t.user.id_str === my.id_str) && !isMyRT) || isRTtoMe) {
         // Delete button for my tweets
-        act.del.add(D.ct("Delete"));
-        act.del.addEventListener("click", function() {
+        ab.del.node.addEventListener("click", function() {
           API.untweet(isRTtoMe ? t.retweeted_status.id_str : t.id_str,
                       function(xhr) {
-                        act.bar.parentNode.style.display = "none";
+                        ab.node.parentNode.style.display = "none";
                       });
         }, false);
 
-        act.bar.add(act.del);
+        ab.node.add(ab.del.node);
       }
 
-      return act.bar;
+      return ab.node;
     },
 
     // Action buttons panel for follow, unfollow, spam, add to list.,
     showFollowPanel: function(user) {
-      var act = {
-        foblo: D.ce("div"),
-        follow: D.ce("button"),
-        block: D.ce("button"),
-        spam: D.ce("button"),
-        followReq: D.ce("button"),
-        lists: D.ce("div")
+      var Button = this.Button;
+      var ab = { // action: basic
+        node: D.ce("div"),
+        follow: new Button("follow", "Follow", "Unfollow"),
+        block: new Button("block", "Block", "Unblock"),
+        spam: new Button("spam", "Spam", "Unspam"),
+        req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow")
+      }
+      var al = { // action: list
+        node: D.ce("div")
       };
 
-      act.follow.className = "follow";
-      act.block.className = "block";
-      act.spam.className = "spam";
-      act.followReq.className = "follow_request";
-
-      D.id("subaction").add(act.foblo, act.lists);
+      D.id("subaction").add(ab.node, al.node);
 
       X.get(APV + "friendships/show.json?target_id=" + user.id_str,
             lifeFollowButtons);
-      X.get(APV + "lists.json", lifeListButtons);
 
       function lifeFollowButtons(xhr) {
         var data = JSON.parse(xhr.responseText);
         var ship = data.relationship.source;
 
-        var LABEL = {
-          FOLLOW: "Follow",
-          UNFOLLOW: "Unfollow",
-          BLOCK: "Block",
-          UNBLOCK: "Unblock",
-          REPORT_SPAM: "Spam",
-          CANCEL_REPORT_SPAM: "UnSpam",
-          FOLLOW_REQUEST: "ReqFollow",
-          CANCEL_FOLLOW_REQUEST: "UnreqFollow"
-        };
-
         function onBlock() {
-          act.follow.following = false;
-          act.follow.className = "follow false";
-          act.follow.textContent = LABEL.FOLLOW;
-          act.follow.style.display = "none";
-
-          act.block.blocking = true;
-          act.block.className = "block true";
-          act.block.textContent = LABEL.UNBLOCK;
-
-          act.spam.spaming = true;
-          act.spam.className = "spam true";
-          act.spam.textContent = LABEL.CANCEL_REPORT_SPAM;
-          act.spam.style.display = "none";
+          ab.follow.turn(false).disable();
+          ab.block.turn(true).enable();
+          ab.spam.turn(false).enable();
         }
 
         function onUnBlock() {
-          act.follow.following = false;
-          act.follow.className = "follow false";
-          act.follow.textContent = LABEL.FOLLOW;
-          act.follow.style.display = "";
-
-          act.block.blocking = false;
-          act.block.className = "block false";
-          act.block.textContent = LABEL.BLOCK;
-
-          act.spam.spaming = false;
-          act.spam.className = "spam false";
-          act.spam.textContent = LABEL.REPORT_SPAM;
-          act.spam.style.display = "";
+          ab.follow.turn(false).enable();
+          ab.block.turn(false).enable();
+          ab.spam.turn(false).enable();
         }
 
-        act.block.blocking = ship.blocking;
-        act.block.className = "block " + act.block.blocking;
-        act.block.add(D.ct(act.block.blocking ? LABEL.UNBLOCK : LABEL.BLOCK));
-        act.block.addEventListener("click", function() {
-          act.block.blocking ? API.unblock(user.id_str, onUnBlock) :
-                               API.block(user.id_str, onBlock);
+        ship.blocking && onBlock();
+
+        ab.block.node.addEventListener("click", function() {
+          ab.block.on ? API.unblock(user.id_str, onUnBlock) :
+                        API.block(user.id_str, onBlock);
         }, false);
 
-        act.spam.spaming = ship.marked_spam;
-        act.spam.className = "spam " + act.spam.spaming;
-        act.spam.add(D.ct(LABEL.REPORT_SPAM));
-        act.spam.addEventListener("click", function() {
-          API.spam(user.id_str, onBlock);
-        }, false);
-
-        if (act.block.blocking) {
-          act.follow.style.display = "none";
-          act.spam.style.display = "none";
+        function onSpam() {
+          ab.follow.turn(false).disable();
+          ab.block.turn(true).enable();
+          ab.spam.turn(true).disable();
         }
+
+        function onUnSpam() {
+          ab.follow.turn(false).enable();
+          ab.block.turn(false).enable();
+          ab.spam.turn(false).enable();
+        }
+
+        ship.marked_spam && onSpam();
+
+        ab.spam.node.addEventListener("click", function() {
+          ab.spam.on ? API.unblock(user.id_str, onUnSpam) :
+                       API.spam(user.id_str, onSpam);
+        }, false);
 
         if (!user["protected"] || ship.following) {
           // shown user
 
-          act.follow.following = ship.following;
-          act.follow.className = "follow " + act.follow.following;
-          act.follow.add(D.ct(
-            act.follow.following ? LABEL.UNFOLLOW : LABEL.FOLLOW
-          ));
+          function onFollow() { ab.follow.turn(true); }
+          function onUnFollow() { ab.follow.turn(false); }
 
-          act.follow.addEventListener("click", function() {
-            function onFollow() {
-              act.follow.following = true;
-              act.follow.className = "follow true";
-              act.follow.textContent = LABEL.UNFOLLOW;
-            }
-            function onUnFollow() {
-              act.follow.following = false;
-              act.follow.className = "follow false";
-              act.follow.textContent = LABEL.FOLLOW;
-            }
-            act.follow.following ? API.unfollow(user.id_str, onUnFollow) :
-                                   API.follow(user.id_str, onFollow);
+          ship.following && onFollow();
+
+          ab.follow.node.addEventListener("click", function() {
+            ab.follow.on ? API.unfollow(user.id_str, onUnFollow) :
+                           API.follow(user.id_str, onFollow);
           }, false);
 
-          act.foblo.add(
-            act.follow,
-            act.block,
-            act.spam
+          ab.node.add(
+            ab.follow.node,
+            ab.block.node,
+            ab.spam.node
           );
+
         } else {
           // hidden user
 
-          act.followReq.follow_request_sent = user.follow_request_sent;
-          act.followReq.className = "follow_request_sent " +
-                                     act.followReq.follow_request_sent;
-          act.followReq.add(D.ct(
-            act.followReq.follow_request_sent ?
-              LABEL.CANCEL_FOLLOW_REQUEST : LABEL.FOLLOW_REQUEST
-          ));
+          function onReqFollow() { ab.req_follow.turn(true); }
+          function onUnreqFollow() { ab.req_follow.turn(false); }
 
-          act.followReq.addEventListener("click", function() {
-            function onReqFollow() {
-              act.followReq.follow_request_sent = true;
-              act.followReq.className = "follow_request_sent true";
-              act.followReq.textContent = LABEL.CANCEL_FOLLOW_REQUEST;
-            }
-            function onUnreqFollow() {
-              act.followReq.follow_request_sent = false;
-              act.followReq.className = "follow_request_sent false";
-              act.followReq.textContent = LABEL.FOLLOW_REQUEST;
-            }
-            act.followReq.follow_request_sent ?
-              API.unrequest_follow(user.id_str, onUnreqFollow) :
-              API.request_follow(user.id_str, onReqFollow);
+          user.follow_request_sent && onReqFollow();
+
+          ab.req_follow.node.addEventListener("click", function() {
+            ab.req_follow.on ?
+              API.unrequestFollow(user.id_str, onUnreqFollow) :
+              API.requestFollow(user.id_str, onReqFollow);
           }, false);
 
-          act.foblo.add(
-            act.followReq,
-            act.block,
-            act.spam
+          ab.node.add(
+            ab.req_follow.node,
+            ab.block.node,
+            ab.spam.node
           );
         }
       }
+
+      X.get(APV + "lists.json", lifeListButtons);
 
       function lifeListButtons(xhr) {
         var data = JSON.parse(xhr.responseText);
@@ -1406,70 +1373,47 @@ addEventListener("DOMContentLoaded", function() {
 
         lists.forEach(function(l) {
 
-          var list = D.ce("button");
-          list.textContent = (l.mode === "private" ? "-" : "+") + l.slug;
-          act.lists.add(list);
-
-          function listing() {
-            API.listing(l.full_name, user.id_str, function() {
-              list.membering = true;
-              list.className = "list true";
-            });
-          }
-
-          function unlisting() {
-            API.unlisting(l.full_name, user.id_str, function() {
-              list.membering = false;
-              list.className = "list false";
-            });
-          }
-
-          function addEventToListButton(list) {
-            list.addEventListener("click", function() {
-              list.membering ? unlisting() : listing();
-            }, false);
-          }
-
-          function onMembering() {
-            list.membering = true;
-            list.className = "list true";
-            addEventToListButton(list);
-          }
-
-          function onNotMembering() {
-            list.membering = false;
-            list.className = "list false";
-            addEventToListButton(list);
-          }
+          var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
+          var lb = new Button("list", lb_label, lb_label);
 
           X.head(APV + l.full_name + "/members/" + user.id_str + ".json",
-          onMembering, onNotMembering);
+                 onListing, onUnlisting);
+
+          function onListing() { lb.turn(true); }
+          function onUnlisting() { lb.turn(false); }
+
+          lb.node.addEventListener("click", function() {
+            lb.on ? API.unlisting(l.full_name, user.id_str, onUnlisting) :
+                    API.listing(l.full_name, user.id_str, onListing);
+          }, false);
+
+          al.node.add(lb.node);
         });
       }
 
     },
 
     // Button to do follow list
-    showListFollowPanel: function(data) {
-      var b = {
-        follow: D.ce("button"),
+    showListFollowPanel: function(list) {
+      var Button = this.Button;
+      var ab = {
+        node: D.ce("div").sa("list-action"),
+        follow: new Button("follow", "Follow", "Unfollow")
       };
 
-      b.follow.following = data.following;
-      b.follow.className = "follow " + b.follow.following;
-      b.follow.add(D.ct(data.following ? "Unfollow" : "Follow"));
-      b.follow.addEventListener("click", function() {
-        (b.follow.following ? API.unfollowList : API.followList)(
-          data.full_name,
-          function(xhr) {
-            b.follow.following = !b.follow.following;
-            b.follow.className = "follow " + b.follow.following;
-            b.follow.textContent = b.follow.following ? "Unfollow" : "Follow";
-          }
-        );
+      function onFollow() { ab.follow.turn(true); }
+      function onUnfollow() { ab.follow.turn(false); }
+
+      list.following && onFollow();
+
+      ab.follow.node.addEventListener("click", function() {
+        ab.follow.on ? API.unfollowList(list.full_name, onUnfollow) :
+                       API.followList(list.full_name, onFollow);
       }, false);
 
-      D.id("subaction").add(b.follow);
+      ab.node.add(ab.follow.node);
+
+      D.id("subaction").add(ab.node);
     },
 
     // Global bar: links to home, profile, mentions, lists.,
