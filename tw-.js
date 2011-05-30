@@ -993,6 +993,7 @@ addEventListener("DOMContentLoaded", function() {
     // Render View of Timeline (of home, mentions, messages, lists.,)
     makeTL: function(xhr, url, my) {
       var timeline = JSON.parse(xhr.responseText);
+      timeline = [].concat(timeline); // for single tweet
 
       var tl_element = D.ce("ol");
       tl_element.id = "timeline";
