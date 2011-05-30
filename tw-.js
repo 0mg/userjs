@@ -68,7 +68,8 @@ addEventListener("DOMContentLoaded", function() {
     id: function(s) { return document.getElementById(s); },
     tag: function(s) { return document.getElementsByTagName(s)[0]; },
     tags: function(s) { return document.getElementsByTagName(s); },
-    cf: function() { return document.createDocumentFragment(); }
+    cf: function() { return document.createDocumentFragment(); },
+    del: function(e) { return e.parentNode.removeChild(e); }
   };
 
 
@@ -110,7 +111,7 @@ addEventListener("DOMContentLoaded", function() {
 
     // POST Method for Twitter API
     function post(url, q, f, b) {
-      confirm("sure?") &&
+      confirm("sure?") ?
       auth(function(auth) {
         xhr = new XMLHttpRequest;
         xhr.open("POST", url, true);
@@ -122,7 +123,8 @@ addEventListener("DOMContentLoaded", function() {
           else (b || function(x) { alert(x.responseText); })(this);
         };
         xhr.send(q + "&post_authenticity_token=" + auth);
-      });
+      })//;
+      : b && b(false);
     }
 
     // Twitter Auth token Getter
@@ -246,130 +248,142 @@ addEventListener("DOMContentLoaded", function() {
   // Twitter API Functions
 
   var API = {
-    updateProfileBackgroundImage: function(image, tile, callback) {
+    updateProfileBackgroundImage: function(image, tile, callback, onErr) {
     },
 
     updateProfileColors: function(background_color, text_color, link_color,
                                   sidebar_fill_color, sidebar_border_color,
-                                  callback) {
+                                  callback, onErr) {
       X.post(APV + "account/update_profile_colors.xml",
              "profile_background_color=" + background_color +
              "&profile_text_color=" + text_color +
              "&profile_link_color=" + link_color +
              "&profile_sidebar_fill_color=" + sidebar_fill_color +
              "&profile_sidebar_border_color=" + sidebar_border_color,
-             callback);
+             callback, onErr);
     },
 
-    resolveURL: function(links, callback) {
+    resolveURL: function(links, callback, onErr) {
       X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(url) {
               return encodeURIComponent(url);
-            })).join("&urls[]=").substring(1), callback);
+            })).join("&urls[]=").substring(1), callback, onErr);
     },
 
     tweet: function(status, id, lat, lon, place_id, display_coordinates,
-                    source, callback) {
+                    source, callback, onErr) {
       X.post(APV + "statuses/update.xml",
              "status=" + (encodeURIComponent(status) || "") +
              "&in_reply_to_status_id=" + (id || "") +
              "&lat=" + (lat || "") +
              "&long=" + (lon || "") +
              "&display_coordinates=" + (display_coordinates || "") +
-             "&source=" + (source || ""), callback);
+             "&source=" + (source || ""), callback, onErr);
     },
 
-    untweet: function(id, callback) {
-      X.post(APV + "statuses/destroy/" + id + ".json", "", callback);
+    untweet: function(id, callback, onErr) {
+      X.post(APV + "statuses/destroy/" + id + ".json", "", callback, onErr);
     },
 
-    retweet: function(id, callback) {
-      X.post(APV + "statuses/retweet/" + id + ".json", "", callback);
+    retweet: function(id, callback, onErr) {
+      X.post(APV + "statuses/retweet/" + id + ".json", "", callback, onErr);
     },
 
-    deleteMessage: function(id, callback) {
-      X.post(APV + "direct_messages/destroy/" + id + ".xml", "", callback);
+    deleteMessage: function(id, callback, onErr) {
+      X.post(APV + "direct_messages/destroy/" + id + ".xml", "",
+             callback, onErr);
     },
 
-    fav: function(id, callback) {
-      X.post(APV + "favorites/create/" + id + ".xml", "", callback);
+    fav: function(id, callback, onErr) {
+      X.post(APV + "favorites/create/" + id + ".xml", "", callback, onErr);
     },
 
-    unfav: function(id, callback) {
-      X.post(APV + "favorites/destroy/" + id + ".xml", "", callback);
+    unfav: function(id, callback, onErr) {
+      X.post(APV + "favorites/destroy/" + id + ".xml", "", callback, onErr);
     },
 
-    follow: function(id, callback) {
-      X.post(APV + "friendships/create/" + id + ".xml", "", callback);
+    follow: function(id, callback, onErr) {
+      X.post(APV + "friendships/create/" + id + ".xml", "", callback, onErr);
     },
 
-    unfollow: function(id, callback) {
-      X.post(APV + "friendships/destroy/" + id + ".xml", "", callback);
+    unfollow: function(id, callback, onErr) {
+      X.post(APV + "friendships/destroy/" + id + ".xml", "", callback, onErr);
     },
 
-    requestFollow: function(id, callback) {
-      this.follow(id, callback);
+    requestFollow: function(id, callback, onErr) {
+      this.follow(id, callback, onErr);
     },
 
-    unrequestFollow: function(id, callback) {
-      X.post(APV + "friendships/cancel/" + id + ".xml", "", callback);
+    unrequestFollow: function(id, callback, onErr) {
+      X.post(APV + "friendships/cancel/" + id + ".xml", "", callback, onErr);
     },
 
-    block: function(id, callback) {
-      X.post(APV + "blocks/create/" + id + ".xml", "", callback);
+    acceptFollow: function(id, callback, onErr) {
+      X.post(APV + "friendships/accept/" + id + ".xml", "", callback, onErr);
     },
 
-    unblock: function(id, callback) {
-      X.post(APV + "blocks/destroy/" + id + ".xml", "", callback);
+    denyFollow: function(id, callback, onErr) {
+      X.post(APV + "friendships/deny/" + id + ".xml", "", callback, onErr);
     },
 
-    spam: function(id, callback) {
-      X.post(APV + "report_spam.xml", "id=" + id, callback);
+    block: function(id, callback, onErr) {
+      X.post(APV + "blocks/create/" + id + ".xml", "", callback, onErr);
     },
 
-    followList: function(full_name, callback) {
-      X.post(APV + full_name + "/subscribers.xml", "", callback);
+    unblock: function(id, callback, onErr) {
+      X.post(APV + "blocks/destroy/" + id + ".xml", "", callback, onErr);
     },
 
-    unfollowList: function(full_name, callback) {
-      X.post(APV + full_name + "/subscribers.xml", "_method=DELETE", callback);
+    spam: function(id, callback, onErr) {
+      X.post(APV + "report_spam.xml", "id=" + id, callback, onErr);
     },
 
-    createList: function(me, name, mode, description, callback) {
+    followList: function(full_name, callback, onErr) {
+      X.post(APV + full_name + "/subscribers.xml", "", callback, onErr);
+    },
+
+    unfollowList: function(full_name, callback, onErr) {
+      X.post(APV + full_name + "/subscribers.xml", "_method=DELETE",
+             callback, onErr);
+    },
+
+    createList: function(me, name, mode, description, callback, onErr) {
       X.post(APV + me + "/lists.xml",
              "name=" + name + "&mode=" + mode + "&description=" + description,
-             callback);
+             callback, onErr);
     },
 
-    updateList: function(me, id, name, mode, description, callback) {
+    updateList: function(me, id, name, mode, description, callback, onErr) {
       X.post(APV + me + "/lists/" + id + ".xml",
              "name=" + name + "&mode=" + mode + "&description=" + description,
-             callback);
+             callback, onErr);
     },
 
-    deleteList: function(me, id, callback) {
-      X.post(APV + me + "/lists/" + id + ".xml", "_method=DELETE", callback);
+    deleteList: function(me, id, callback, onErr) {
+      X.post(APV + me + "/lists/" + id + ".xml", "_method=DELETE",
+             callback, onErr);
     },
 
-    listing: function(list, id, callback) {
-      X.post(APV + list + "/members.xml", "id=" + id, callback);
+    listing: function(list, id, callback, onErr) {
+      X.post(APV + list + "/members.xml", "id=" + id, callback, onErr);
     },
 
-    unlisting: function(list, id, callback) {
-      X.post(APV + list + "/members.xml", "_method=DELETE&id=" + id, callback);
+    unlisting: function(list, id, callback, onErr) {
+      X.post(APV + list + "/members.xml", "_method=DELETE&id=" + id,
+             callback, onErr);
     },
 
-    logout: function(callback) {
-      X.post("/sessions/destroy/", "", callback);
+    logout: function(callback, onErr) {
+      X.post("/sessions/destroy/", "", callback, onErr);
     },
 
-    tco: function(input_url, callback, onError) {
+    tco: function(input_url, callback, onErr) {
       function onSuccess(xhr) {
         var text = xhr.responseText;
         var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
         if (re.test(text)) {
           var output_url = RegExp.$1;
           callback(output_url);
-        } else (onError || alert)(xhr);
+        } else (onErr || alert)(xhr);
       }
       X.get("/intent/tweet?url=" + encodeURIComponent(input_url), onSuccess);
     }
@@ -653,7 +667,7 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case (""): {
-              content.showTL(APV + "statuses/home_timeline.json?" + 
+              content.showTL(APV + "statuses/home_timeline.json?" +
                              "include_entities=true&" + q, my);
               break;
             }
@@ -668,7 +682,13 @@ addEventListener("DOMContentLoaded", function() {
           break;
         }
         case (2): {
-          switch (hash[1]) {
+          if (hash[0] === "followers" && hash[1] === "requests") {
+            content.showUsersByIds(APV + "friendships/incoming.json?" + q +
+                                   "&cursor=-1", my, 1);
+          } else if (hash[0] === "following" && hash[1] === "requests") {
+            content.showUsersByIds(APV + "friendships/outgoing.json?" + q +
+                                   "&cursor=-1", my);
+          } else switch (hash[1]) {
             case ("design"): {
               if (hash[0] === "settings") {
                 content.customizeDesign(my);
@@ -885,65 +905,99 @@ addEventListener("DOMContentLoaded", function() {
       D.id("subaction").add(profile.form);
     },
 
-    // Render View of list of users (following, followers, list members.,)
-    showUsers: function(url, my) {
+    // Step to Render View of list of users by ids (follow requests in/out.,)
+    showUsersByIds: function(url, my, mode) {
       var that = this;
-      panel.showHyperPanel(my);
-      X.get(url, function(xhr) {
-        var data = JSON.parse(xhr.responseText);
-        data.users = data.users || data;
-        var ul = D.ce("ul");
-        ul.id = "users";
-        data.users && data.users.forEach(function(u) {
-          var user = {
-            root: D.ce("li"),
-            screen_name: D.ce("a"),
-            icon: D.ce("img"),
-            name: D.ce("span"),
-            description: D.ce("p"),
-            created_at: D.ce("a"),
-          };
+      function onGetIds(xhr) {
+        var ids_data = JSON.parse(xhr.responseText);
+        function onGetUsers(xhr) {
+          var users_data = JSON.parse(xhr.responseText);
+          users_data.previous_cursor = ids_data.previous_cursor;
+          users_data.next_cursor = ids_data.next_cursor;
+          that.makeUsers(users_data, my, mode);
+        }
+        var ids = ids_data.ids.join(",");
+        if (ids.length) {
+          X.get(APV + "users/lookup.json?user_id=" + ids, onGetUsers);
+        }
+      }
+      X.get(url, onGetIds);
+    },
 
-          user.root.className = "user";
-          if (u["protected"]) user.root.className += " protected";
+    // Render View of list of users
+    makeUsers: function(data, my, mode) {
+      data.users = data.users || data;
+      var followerRequests = mode & 1;
 
-          user.screen_name.className = "screen_name";
-          user.screen_name.add(D.ct(u.screen_name));
-          user.screen_name.href = ROOT + u.screen_name;
+      var that = this;
 
-          user.icon.className = "icon";
-          user.icon.src = u.profile_image_url;
-          user.icon.alt = u.name;
+      var users_list = D.ce("ul");
+      users_list.id = "users";
 
-          user.name.className = "name";
-          user.name.add(D.ct(u.name));
+      data.users && data.users.forEach(function(user) {
+        var lu= {
+          root: D.ce("li"),
+          screen_name: D.ce("a"),
+          icon: D.ce("img"),
+          name: D.ce("span"),
+          description: D.ce("p"),
+          created_at: D.ce("a"),
+        };
 
-          user.description.className = "description";
-          user.description.innerHTML = T.linkifyText(u.description || "");
+        lu.root.className = "user";
+        if (user["protected"]) lu.root.className += " protected";
 
-          user.created_at.className = "created_at";
-          user.created_at.href = u.url || user.screen_name.href;
-          user.created_at.add(
-            D.ct(T.gapTime(new Date, new Date(u.created_at)))
-          );
+        lu.screen_name.className = "screen_name";
+        lu.screen_name.add(D.ct(user.screen_name));
+        lu.screen_name.href = ROOT + user.screen_name;
 
-          ul.add(
-            user.root.add(
-              user.screen_name,
-              user.icon,
-              user.name,
-              user.description,
-              D.ce("span").sa("class", "meta").add(
-                user.created_at//,
-                //D.ct(" in " + u.location)
-              )
-            )
-          );
-        });
+        lu.icon.className = "icon";
+        lu.icon.src = user.profile_image_url;
+        lu.icon.alt = user.name;
 
-        D.id("main").add(ul);
-        that.misc.showCursor(data);
+        lu.name.className = "name";
+        lu.name.add(D.ct(user.name));
+
+        lu.description.className = "description";
+        lu.description.innerHTML = T.linkifyText(user.description || "");
+
+        lu.created_at.className = "created_at";
+        lu.created_at.href = user.url || lu.screen_name.href;
+        lu.created_at.add(
+          D.ct(T.gapTime(new Date, new Date(user.created_at)))
+        );
+
+        lu.root.add(
+          lu.screen_name,
+          lu.icon,
+          lu.name,
+          lu.description,
+          D.ce("span").sa("class", "meta").add(
+            lu.created_at
+          )
+        );
+
+        if (followerRequests) {
+          lu.root.add(panel.makeReqDecider(user));
+        }
+
+        users_list.add(lu.root);
       });
+
+      D.id("main").add(users_list);
+      that.misc.showCursor(data);
+    },
+
+
+    // Step to Render View of list of users (following/ers, lists members.,)
+    showUsers: function(url, my, mode) {
+      var that = this;
+      function onGetUsers(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        that.makeUsers(data, my, mode);
+      }
+      X.get(url, onGetUsers);
+      panel.showHyperPanel(my);
     },
 
     // Render View of list of lists
@@ -1085,7 +1139,7 @@ addEventListener("DOMContentLoaded", function() {
 
         var links = D.tags("link");
         for (i = 0; i < links.length; ++i) {
-          if (links[i].rel === "next") e.parentNode.removeChild(links[i]);
+          if (links[i].rel === "next") D.del(links[i]);
         }
 
         D.tag("head").add(
@@ -1119,7 +1173,7 @@ addEventListener("DOMContentLoaded", function() {
           link.rel = "next";
           link.href = cur.next.href;
           Array.prototype.forEach.call(D.tags("link"), function(e) {
-            if (e.rel === "next") e.parentNode.removeChild(e);
+            if (e.rel === "next") D.del(e);
           });
           D.tag("head").add(link);
         }
@@ -1134,29 +1188,71 @@ addEventListener("DOMContentLoaded", function() {
 
   var panel = {
     // ON/OFF Button Constructor
-    Button: function(name, labelDefault, labelOn) {
-      return {
+    Button: (function() {
+      var Button = function(name, labelDefault, labelOn) {
+        this.name = name;
+        this.labelDefault = labelDefault;
+        this.labelOn = labelOn;
+        this.node = D.ce("button").add(D.ct(labelDefault));
+      };
+      Button.prototype = {
         on: false,
-        name: name,
-        node: D.ce("button").add(D.ct(labelDefault)),
-        turn: function(on_off) {
-          on_off = !!on_off;
-          this.on = on_off;
-          this.node.className = this.name + " " + on_off;
-          this.node.textContent = on_off ? labelOn : labelDefault;
+        turn: function(flag) {
+          flag = !!flag;
+          this.on = flag;
+          this.node.className = this.name + " " + flag;
+          this.node.textContent = flag ? this.labelOn : this.labelDefault;
           return this;
         },
         enable: function() {
           this.node.disabled = false;
-          this.node.style.display = "";
           return this;
         },
         disable: function() {
           this.node.disabled = true;
+          return this;
+        },
+        show: function() {
+          this.node.style.display = "";
+          return this;
+        },
+        hide: function() {
           this.node.style.display = "none";
           return this;
         }
       };
+      return Button;
+    })(),
+
+    // Buttons to do Follow Request Accept/Deny
+    makeReqDecider: function(user) {
+      var Button = this.Button;
+      var ad = {
+        node: D.ce("div").sa("user-action"),
+        accept: new Button("accept-follow", "Accept", "Accept"),
+        deny: new Button("deny-follow", "Deny", "Deny")
+      };
+
+      function onDecide() {
+        ad.accept.turn(false);
+        ad.deny.turn(false);
+        D.del(ad.node.parentNode);
+      }
+
+      var onAccept = onDecide;
+      var onDeny = onDecide;
+
+      ad.accept.node.addEventListener("click", function() {
+        API.acceptFollow(user.id_str, onAccept);
+      }, false);
+
+      ad.deny.node.addEventListener("click", function() {
+        API.denyFollow(user.id_str, onDeny);
+      }, false);
+
+      ad.node.add(ad.accept.node, ad.deny.node);
+
+      return ad.node;
     },
 
     // Action buttons panel for fav, reply, retweet
@@ -1176,7 +1272,7 @@ addEventListener("DOMContentLoaded", function() {
         node: D.ce("div").sa("class", "tweet-action"),
         fav: new Button("fav", "Fav", "Unfav"),
         rep: {node: D.ce("a")},
-        del: new Button("delete", "Delete", "Undelete"),
+        del: new Button("delete", "Delete", "Delete"),
         rt: new Button("retweet", "RT", "UnRT")
       };
 
@@ -1228,7 +1324,8 @@ addEventListener("DOMContentLoaded", function() {
         if (ab.rt.isMyRT) {
           // undo RT (button on RT by me)
           API.untweet(t.id_str, function() {
-            ab.node.parentNode.style.display = "none";
+            ab.rt.turn(false);
+            D.del(ab.node.parentNode);
           });
         } else if (ab.rt.isTweetRTedByMe) {
           API.untweet(t.current_user_retweet.id_str, function() {
@@ -1256,7 +1353,7 @@ addEventListener("DOMContentLoaded", function() {
         // Delete button for DM
         ab.del.node.addEventListener("click", function() {
           API.deleteMessage(t.id_str, function(xhr) {
-            ab.node.parentNode.style.display = "none";
+            D.del(ab.node.parentNode);
           });
         }, false);
         ab.node.add(ab.del.node);
@@ -1266,7 +1363,7 @@ addEventListener("DOMContentLoaded", function() {
         ab.del.node.addEventListener("click", function() {
           API.untweet(isRTtoMe ? t.retweeted_status.id_str : t.id_str,
                       function(xhr) {
-                        ab.node.parentNode.style.display = "none";
+                        D.del(ab.node.parentNode);
                       });
         }, false);
 
@@ -1296,16 +1393,25 @@ addEventListener("DOMContentLoaded", function() {
         var data = JSON.parse(xhr.responseText);
         var ship = data.relationship.source;
 
-        function onBlock() {
-          ab.follow.turn(false).disable();
-          ab.block.turn(true).enable();
-          ab.spam.turn(false).enable();
+        function changeFollowBtn() {
+          var isUserHidden = user["protected"];
+          if (isUserHidden && ab.follow.node.parentNode === ab.node) {
+            ab.node.replaceChild(ab.req_follow.node, ab.follow.node);
+          }
         }
 
+        function onBlock() {
+          changeFollowBtn();
+          ab.req_follow.turn(false).disable().hide();
+          ab.follow.turn(false).disable().hide();
+          ab.block.turn(true).enable().show();
+          ab.spam.turn(false).enable().show();
+        }
         function onUnBlock() {
-          ab.follow.turn(false).enable();
-          ab.block.turn(false).enable();
-          ab.spam.turn(false).enable();
+          ab.req_follow.turn(false).enable().show();
+          ab.follow.turn(false).enable().show();
+          ab.block.turn(false).enable().show();
+          ab.spam.turn(false).enable().show();
         }
 
         ship.blocking && onBlock();
@@ -1316,15 +1422,17 @@ addEventListener("DOMContentLoaded", function() {
         }, false);
 
         function onSpam() {
-          ab.follow.turn(false).disable();
-          ab.block.turn(true).enable();
-          ab.spam.turn(true).disable();
+          changeFollowBtn();
+          ab.req_follow.turn(false).disable().hide();
+          ab.follow.turn(false).disable().hide();
+          ab.block.turn(true).enable().show();
+          ab.spam.turn(true).disable().hide();
         }
-
         function onUnSpam() {
-          ab.follow.turn(false).enable();
-          ab.block.turn(false).enable();
-          ab.spam.turn(false).enable();
+          ab.req_follow.turn(false).enable().show();
+          ab.follow.turn(false).enable().show();
+          ab.block.turn(false).enable().show();
+          ab.spam.turn(false).enable().show();
         }
 
         ship.marked_spam && onSpam();
@@ -1334,41 +1442,41 @@ addEventListener("DOMContentLoaded", function() {
                        API.spam(user.id_str, onSpam);
         }, false);
 
-        if (!user["protected"] || ship.following) {
-          // shown user
+        function onFollow() {
+          ab.follow.turn(true).enable();
+        }
+        function onUnfollow() {
+          changeFollowBtn();
+          ab.follow.turn(false).enable();
+        }
 
-          var onFollow = function() { ab.follow.turn(true); }
-          var onUnfollow = function() { ab.follow.turn(false); }
+        ship.following && onFollow();
 
-          ship.following && onFollow();
+        ab.follow.node.addEventListener("click", function() {
+          ab.follow.on ? API.unfollow(user.id_str, onUnfollow) :
+                         API.follow(user.id_str, onFollow);
+        }, false);
 
-          ab.follow.node.addEventListener("click", function() {
-            ab.follow.on ? API.unfollow(user.id_str, onUnFollow) :
-                           API.follow(user.id_str, onFollow);
-          }, false);
+        function onReqFollow() { ab.req_follow.turn(true).enable(); }
+        function onUnreqFollow() { ab.req_follow.turn(false).enable(); }
 
+        user.follow_request_sent && onReqFollow();
+
+        ab.req_follow.node.addEventListener("click", function() {
+          ab.req_follow.on ?
+                  API.unrequestFollow(user.id_str, onUnreqFollow) :
+                  API.requestFollow(user.id_str, onReqFollow);
+        }, false);
+
+        if (user["protected"] && !ship.following) {
           ab.node.add(
-            ab.follow.node,
+            ab.req_follow.node,
             ab.block.node,
             ab.spam.node
           );
-
         } else {
-          // hidden user
-
-          var onReqFollow = function() { ab.req_follow.turn(true); }
-          var onUnreqFollow = function() { ab.req_follow.turn(false); }
-
-          user.follow_request_sent && onReqFollow();
-
-          ab.req_follow.node.addEventListener("click", function() {
-            ab.req_follow.on ?
-              API.unrequestFollow(user.id_str, onUnreqFollow) :
-              API.requestFollow(user.id_str, onReqFollow);
-          }, false);
-
           ab.node.add(
-            ab.req_follow.node,
+            ab.follow.node,
             ab.block.node,
             ab.spam.node
           );
@@ -1447,6 +1555,8 @@ addEventListener("DOMContentLoaded", function() {
         favorites: D.ce("a"),
         following: D.ce("a"),
         followers: D.ce("a"),
+        follow_req_in: D.ce("a"),
+        follow_req_out: D.ce("a"),
         lists: D.ce("a"),
         listsub: D.ce("a"),
         listed: D.ce("a"),
@@ -1480,6 +1590,12 @@ addEventListener("DOMContentLoaded", function() {
       g.followers.href = ROOT + "followers";
       g.followers.add(D.ct("Followers:" + my.followers_count));
 
+      g.follow_req_in.href = ROOT + "followers/requests";
+      g.follow_req_in.add(D.ct("req"));
+
+      g.follow_req_out.href = ROOT + "following/requests";
+      g.follow_req_out.add(D.ct("req"));
+
       g.lists.href = ROOT + "lists";
       g.lists.add(D.ct("Lists"));
 
@@ -1504,8 +1620,8 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("li").add(g.inbox),
         D.ce("li").add(g.sent),
         D.ce("li").add(g.favorites),
-        D.ce("li").add(g.following),
-        D.ce("li").add(g.followers),
+        D.ce("li").add(g.following, D.ct("/"), g.follow_req_out),
+        D.ce("li").add(g.followers, D.ct("/"), g.follow_req_in),
         D.ce("li").add(g.lists),
         D.ce("li").add(g.listsub),
         D.ce("li").add(g.listed),
