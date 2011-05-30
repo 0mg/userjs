@@ -454,11 +454,6 @@ addEventListener("DOMContentLoaded", function() {
           font-size: smaller;\
           border-left: 1px solid transparent;\
         }\
-        #side::before {\
-          content: ".";\
-          line-height: 0.1;\
-          visibility: hidden;\
-        }\
         #footer {\
           clear: both;\
           background: #ffc;\
@@ -469,12 +464,9 @@ addEventListener("DOMContentLoaded", function() {
           max-width: 100%;\
           max-height: 100%;\
         }\
-        #lists .private::after {\
-          content: "private";\
-        }\
         #timeline {\
         }\
-        .expanded_url {\
+        a.expanded_url {\
         }\
         .user,\
         .tweet {\
@@ -485,8 +477,18 @@ addEventListener("DOMContentLoaded", function() {
           border-bottom: 1px solid silver;\
           background: #fcfcfc;\
         }\
-        #lists .private::after,\
-        #profile.protected .name::after,\
+        .user-profile.protected .name::after,\
+        .user.protected .name::after,\
+        .tweet.protected .name::after {\
+          content: "protected";\
+        }\
+        .list-profile.private .name::after,\
+        .listslist .private::after {\
+          content: "private";\
+        }\
+        .listslist .private::after,\
+        .list-profile.private .name::after,\
+        .user-profile.protected .name::after,\
         .user.protected .name::after,\
         .tweet.protected .name::after {\
           font-size: smaller;\
@@ -494,11 +496,6 @@ addEventListener("DOMContentLoaded", function() {
           background-color: gray;\
           color: white;\
           margin-left: 1ex;\
-        }\
-        #profile.protected .name::after,\
-        .user.protected .name::after,\
-        .tweet.protected .name::after {\
-          content: "protected";\
         }\
         .user .name,\
         .tweet .name,\
@@ -727,7 +724,7 @@ addEventListener("DOMContentLoaded", function() {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
               content.showTL(APV + hash[0] + "/lists/" + hash[1] +
                              "/statuses.json?include_entities=true&" + q, my);
-              outline.showListOutline(hash);
+              outline.showListOutline(hash, my);
               break;
             }
           }
@@ -747,7 +744,7 @@ addEventListener("DOMContentLoaded", function() {
             case ("subscribers"): {
               hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
               content.showUsers(APV + hash.join("/") + ".json?" + q, my);
-              outline.showListOutline(hash, 3);
+              outline.showListOutline(hash, my, 3);
               break;
             }
             case ("memberships"): {
@@ -867,11 +864,11 @@ addEventListener("DOMContentLoaded", function() {
       profile.form.add(
         //D.ce("dt").add(D.ct("background image")),
         //D.ce("dd").add(profile.background.image),
-        /*D.ce("dd").add(
-          D.ce("label").add(
-            profile.background.tile, D.ct("tile")
-          )
-        ),*/
+        //D.ce("dd").add(
+          //D.ce("label").add(
+            //profile.background.tile, D.ct("tile")
+          //)
+        //),
         D.ce("dt").add(D.ct("background color")),
         D.ce("dd").add(profile.background.color),
         D.ce("dt").add(D.ct("text color")),
@@ -956,7 +953,7 @@ addEventListener("DOMContentLoaded", function() {
         var data = JSON.parse(xhr.responseText);
 
         var lists = D.ce("dl");
-        lists.id = "lists";
+        lists.className = "listslist";
 
         data.lists.forEach(function(l) {
           var listPath = ROOT + l.full_name.substring(1);
@@ -1279,7 +1276,7 @@ addEventListener("DOMContentLoaded", function() {
       return ab.node;
     },
 
-    // Action buttons panel for follow, unfollow, spam, add to list.,
+    // Action buttons panel for follow, unfollow, spam.,
     showFollowPanel: function(user) {
       var Button = this.Button;
       var ab = { // action: basic
@@ -1289,11 +1286,8 @@ addEventListener("DOMContentLoaded", function() {
         spam: new Button("spam", "Spam", "Unspam"),
         req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow")
       }
-      var al = { // action: list
-        node: D.ce("div")
-      };
 
-      D.id("subaction").add(ab.node, al.node);
+      D.id("subaction").add(ab.node);
 
       X.get(APV + "friendships/show.json?target_id=" + user.id_str,
             lifeFollowButtons);
@@ -1380,6 +1374,16 @@ addEventListener("DOMContentLoaded", function() {
           );
         }
       }
+    },
+
+    // Action buttons panel for add user to list
+    showAddListPanel: function(user) {
+      var Button = this.Button;
+      var al = { // action: list
+        node: D.ce("div")
+      };
+
+      D.id("subaction").add(al.node);
 
       X.get(APV + "lists.json", lifeListButtons);
 
@@ -1406,7 +1410,6 @@ addEventListener("DOMContentLoaded", function() {
           al.node.add(lb.node);
         });
       }
-
     },
 
     // Button to do follow list
@@ -1748,16 +1751,18 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     // Step to Render list outline and color
-    showListOutline: function(hash, mode) {
+    showListOutline: function(hash, my, mode) {
       var that = this;
-      if (mode === void 0) mode = 7;
 
       X.get(APV + hash[0] + "/lists/" + hash[1] + ".json", function(xhr) {
-        var data = JSON.parse(xhr.responseText);
+        var list = JSON.parse(xhr.responseText);
 
-        mode & 1 && that.changeDesign(data.user);
-        mode & 2 && that.showListProfile(data);
-        mode & 4 && panel.showListFollowPanel(data);
+        if (mode === void 0) mode = 7;
+        if ((mode & 4) && (list.user.id_str === my.id_str)) mode ^= 4;
+
+        mode & 1 && that.changeDesign(list.user);
+        mode & 2 && that.showListProfile(list);
+        mode & 4 && panel.showListFollowPanel(list);
 
       });
     },
@@ -1767,8 +1772,11 @@ addEventListener("DOMContentLoaded", function() {
       var li = {
         st: D.ce("dl"),
         members: D.ce("a"),
-        followers: D.ce("a"),
+        followers: D.ce("a")
       };
+
+      li.st.className = "list-profile";
+      if (list.mode === "private") li.st.className += " private";
 
       li.members.href = ROOT + list.uri.substring(1) + "/members";
       li.members.add(D.ct("Members"));
@@ -1778,7 +1786,7 @@ addEventListener("DOMContentLoaded", function() {
 
       li.st.add(
         D.ce("dt").add(D.ct("Name")),
-        D.ce("dd").add(D.ct(list.name)),
+        D.ce("dd").sa("class", "name").add(D.ct(list.name)),
         D.ce("dt").add(D.ct("Full Name")),
         D.ce("dd").add(D.ct(list.full_name)),
         D.ce("dt").add(D.ct("Description")),
@@ -1787,10 +1795,10 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dd").add(D.ct(list.member_count)),
         D.ce("dt").add(li.followers),
         D.ce("dd").add(D.ct(list.subscriber_count)),
-        D.ce("dt").add(D.ct("Mode")),
-        D.ce("dd").add(D.ct(list.mode)),
         D.ce("dt").add(D.ct("ID")),
-        D.ce("dd").add(D.ct(list.id_str))
+        D.ce("dd").add(D.ct(list.id_str)),
+        D.ce("dt").add(D.ct("Mode")),
+        D.ce("dd").add(D.ct(list.mode))
       );
 
       D.id("side").add(li.st);
@@ -1799,14 +1807,17 @@ addEventListener("DOMContentLoaded", function() {
     // Step to Render user profile outline and color
     showProfileOutline: function(screen_name, my, mode) {
       var that = this;
-      if (mode === void 0) mode = 7;
 
       X.get(APV + "users/show.json?screen_name=" + screen_name, function(xhr) {
         var user = JSON.parse(xhr.responseText);
 
+        if (mode === void 0) mode = 15;
+        if ((mode & 4) && (user.id_str === my.id_str)) mode ^= 4;
+
         mode & 1 && that.changeDesign(user);
         mode & 2 && that.showProfile(user);
         mode & 4 && panel.showFollowPanel(user);
+        mode & 6 && panel.showAddListPanel(user);
 
       });
     },
@@ -1829,8 +1840,8 @@ addEventListener("DOMContentLoaded", function() {
         favorites: D.ce("a")
       };
 
-      p.box.id = "profile";
-      p.box.className += user["protected"] ? " protected" : "";
+      p.box.className = "user-profile";
+      if (user["protected"]) p.box.className += " protected";
 
       p.icon.className = "icon";
       p.icon.alt = user.name;
@@ -1899,6 +1910,8 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(p.listsub),
         D.ce("dt").add(D.ct("ID")),
         D.ce("dd").add(D.ct(user.id_str)),
+        D.ce("dt").add(D.ct("Protected")),
+        D.ce("dd").add(D.ct(user["protected"])),
         D.ce("dt").add(D.ct("Time Zone")),
         D.ce("dd").add(D.ct(user.time_zone)),
         D.ce("dt").add(D.ct("Language")),
