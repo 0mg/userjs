@@ -609,7 +609,7 @@ addEventListener("DOMContentLoaded", function() {
   };
 
 
-  // Functions step to Render
+  // Functions step to Render main content
   var pre = {
 
     // Switch content by path in URL
@@ -804,7 +804,7 @@ addEventListener("DOMContentLoaded", function() {
   };
 
 
-  // Render Functions
+  // Functions of Render main content
 
   var content = {
     // Render View of Colors Setting
@@ -1149,11 +1149,6 @@ addEventListener("DOMContentLoaded", function() {
 
         D.id("cursor").add(past);
 
-        // DOM element removal complex in `for` loop
-        Array.prototype.forEach.call(D.tags("link"), function(link) {
-          if (link.rel === "next") D.del(link);
-        });
-
         D.tag("head").add(
           D.ce("link").sa("rel", "next").sa("href", past.href)
         );
@@ -1184,10 +1179,6 @@ addEventListener("DOMContentLoaded", function() {
           var link = D.ce("link");
           link.rel = "next";
           link.href = cur.next.href;
-          // DOM element removal complex in `for` loop
-          Array.prototype.forEach.call(D.tags("link"), function(link) {
-            if (link.rel === "next") D.del(link);
-          });
           D.tag("head").add(link);
         }
 
@@ -1247,8 +1238,6 @@ addEventListener("DOMContentLoaded", function() {
       };
 
       function onDecide() {
-        ad.accept.turn(false);
-        ad.deny.turn(false);
         D.del(ad.node.parentNode);
       }
 
