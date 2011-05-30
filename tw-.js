@@ -49,6 +49,14 @@ addEventListener("DOMContentLoaded", function() {
     }
     return s.sort().join("\n");
   };
+  // API limit
+  window.addEventListener("dblclick", function(event) {
+    if (event.target === document.documentElement) {
+      X.get(APV + "account/rate_limit_status.json", function(xhr) {
+        alert(xhr.responseText);
+      });
+    }
+  }, false);
 
 
   // CONST_VALUE
@@ -111,7 +119,7 @@ addEventListener("DOMContentLoaded", function() {
 
     // POST Method for Twitter API
     function post(url, q, f, b) {
-      confirm("sure?") ?
+      confirm("sure?\n" + url + "?" + q) ?
       auth(function(auth) {
         xhr = new XMLHttpRequest;
         xhr.open("POST", url, true);
@@ -222,7 +230,7 @@ addEventListener("DOMContentLoaded", function() {
 
       for (var i = 0; i < links.length; ++i) {
         var a = links[i];
-        if (a.href === a.textContent) {
+        if (a.hasChildNodes() && (a.href === a.textContent)) {
           elements.push(a);
           urls.push(a.href);
         }
@@ -276,6 +284,7 @@ addEventListener("DOMContentLoaded", function() {
              "&in_reply_to_status_id=" + (id || "") +
              "&lat=" + (lat || "") +
              "&long=" + (lon || "") +
+             "&place_id=" + (place_id || "") +
              "&display_coordinates=" + (display_coordinates || "") +
              "&source=" + (source || ""), callback, onErr);
     },
@@ -302,11 +311,11 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     follow: function(id, callback, onErr) {
-      X.post(APV + "friendships/create/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "friendships/create.xml", "user_id=" + id, callback, onErr);
     },
 
     unfollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/destroy/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "friendships/destroy.xml", "user_id=" + id, callback, onErr);
     },
 
     requestFollow: function(id, callback, onErr) {
@@ -314,15 +323,15 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     unrequestFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/cancel/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "friendships/cancel.xml", "user_id=" + id, callback, onErr);
     },
 
     acceptFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/accept/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "friendships/accept.xml", "user_id=" + id, callback, onErr);
     },
 
     denyFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/deny/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "friendships/deny.xml", "user_id=" + id, callback, onErr);
     },
 
     block: function(id, callback, onErr) {
@@ -330,19 +339,30 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     unblock: function(id, callback, onErr) {
-      X.post(APV + "blocks/destroy/" + id + ".xml", "", callback, onErr);
+      X.post(APV + "blocks/destroy.xml", "user_id=" + id, callback, onErr);
     },
 
     spam: function(id, callback, onErr) {
-      X.post(APV + "report_spam.xml", "id=" + id, callback, onErr);
+      X.post(APV + "report_spam.xml", "user_id=" + id, callback, onErr);
     },
 
     followList: function(full_name, callback, onErr) {
-      X.post(APV + full_name + "/subscribers.xml", "", callback, onErr);
+      var data = full_name.split("/");
+      var screen_name = data[0].substring(1);
+      var slug = data[1];
+      
+      X.post(APV + "lists/subscribers/create.xml",
+             "owner_screen_name=" + screen_name + "&slug=" + slug,
+             callback, onErr);
     },
 
     unfollowList: function(full_name, callback, onErr) {
-      X.post(APV + full_name + "/subscribers.xml", "_method=DELETE",
+      var data = full_name.split("/");
+      var screen_name = data[0].substring(1);
+      var slug = data[1];
+      
+      X.post(APV + "lists/subscribers/destroy.xml",
+             "owner_screen_name=" + screen_name + "&slug=" + slug,
              callback, onErr);
     },
 
@@ -684,20 +704,12 @@ addEventListener("DOMContentLoaded", function() {
         case (2): {
           switch (hash[1]) {
             case ("requests"): {
-              switch (hash[0]) {
-                case ("following"): {
-                  content.showUsersByIds(
-                    APV + "friendships/outgoing.json?" + q + "&cursor=-1", my
-                  );
-                  break;
-                }
-                case ("followers"): {
-                  content.showUsersByIds(
-                    APV + "friendships/incoming.json?" + q + "&cursor=-1",
-                    my, 1
-                  );
-                  break;
-                }
+              if (hash[0] === "following") {
+                content.showUsersByIds(APV + "friendships/outgoing.json?" + q +
+                                       "&cursor=-1", my);
+              } else if (hash[0] === "followers") {
+                content.showUsersByIds(APV + "friendships/incoming.json?" + q +
+                                       "&cursor=-1", my, 1);
               }
               break;
             }
@@ -729,7 +741,7 @@ addEventListener("DOMContentLoaded", function() {
             }
             case ("favorites"): {
               content.showTL(APV + "favorites.json?include_entities=true&" +
-                             "id=" + hash[0] + "&" + q +
+                             "screen_name=" + hash[0] + "&" + q +
                              "&cursor=-1", my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
@@ -747,15 +759,17 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("lists"): {
-              hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-              content.showLists(APV + hash[0] + "/lists.json?" + q, my);
+              content.showLists(APV + "lists.json?" + 
+                                "screen_name=" + hash[0] + "&" + q, my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             default: {
-              hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-              content.showTL(APV + hash[0] + "/lists/" + hash[1] +
-                             "/statuses.json?include_entities=true&" + q, my);
+              var url = APV + "lists/statuses.json?" +
+                        "owner_screen_name=" + hash[0] +
+                        "&slug=" + hash[1] +
+                        "&include_entities=true&" + q;
+              content.showTL(url, my);
               outline.showListOutline(hash, my);
               break;
             }
@@ -1871,8 +1885,10 @@ addEventListener("DOMContentLoaded", function() {
     // Step to Render list outline and color
     showListOutline: function(hash, my, mode) {
       var that = this;
+      var url = APV + "lists/show.json?" +
+                "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
 
-      X.get(APV + hash[0] + "/lists/" + hash[1] + ".json", function(xhr) {
+      X.get(url, function(xhr) {
         var list = JSON.parse(xhr.responseText);
 
         if (mode === void 0) mode = 7;
@@ -2046,15 +2062,17 @@ addEventListener("DOMContentLoaded", function() {
   // Check if my Logged-in
   function main() {
     X.get(APV + "account/verify_credentials.json",
-          function(xhr) {
-            var my = JSON.parse(xhr.responseText);
-            init.initDOM(my);
-            init.structPage();
-            pre.startPage(my);
-          }, function() {
-            location = "/login?redirect_after_login=" +
-                       encodeURIComponent(location);
-          });
+      function(xhr) {
+        var my = JSON.parse(xhr.responseText);
+        init.initDOM(my);
+        init.structPage();
+        pre.startPage(my);
+      },
+      function() {
+        location = "/login?redirect_after_login=" +
+                   encodeURIComponent(location);
+      }
+    );
   }
 
 
