@@ -682,13 +682,25 @@ addEventListener("DOMContentLoaded", function() {
           break;
         }
         case (2): {
-          if (hash[0] === "followers" && hash[1] === "requests") {
-            content.showUsersByIds(APV + "friendships/incoming.json?" + q +
-                                   "&cursor=-1", my, 1);
-          } else if (hash[0] === "following" && hash[1] === "requests") {
-            content.showUsersByIds(APV + "friendships/outgoing.json?" + q +
-                                   "&cursor=-1", my);
-          } else switch (hash[1]) {
+          switch (hash[1]) {
+            case ("requests"): {
+              switch (hash[0]) {
+                case ("following"): {
+                  content.showUsersByIds(
+                    APV + "friendships/outgoing.json?" + q + "&cursor=-1", my
+                  );
+                  break;
+                }
+                case ("followers"): {
+                  content.showUsersByIds(
+                    APV + "friendships/incoming.json?" + q + "&cursor=-1",
+                    my, 1
+                  );
+                  break;
+                }
+              }
+              break;
+            }
             case ("design"): {
               if (hash[0] === "settings") {
                 content.customizeDesign(my);
@@ -1137,10 +1149,10 @@ addEventListener("DOMContentLoaded", function() {
 
         D.id("cursor").add(past);
 
-        var links = D.tags("link");
-        for (i = 0; i < links.length; ++i) {
-          if (links[i].rel === "next") D.del(links[i]);
-        }
+        // DOM element removal complex in `for` loop
+        Array.prototype.forEach.call(D.tags("link"), function(link) {
+          if (link.rel === "next") D.del(link);
+        });
 
         D.tag("head").add(
           D.ce("link").sa("rel", "next").sa("href", past.href)
@@ -1172,8 +1184,9 @@ addEventListener("DOMContentLoaded", function() {
           var link = D.ce("link");
           link.rel = "next";
           link.href = cur.next.href;
-          Array.prototype.forEach.call(D.tags("link"), function(e) {
-            if (e.rel === "next") D.del(e);
+          // DOM element removal complex in `for` loop
+          Array.prototype.forEach.call(D.tags("link"), function(link) {
+            if (link.rel === "next") D.del(link);
           });
           D.tag("head").add(link);
         }
