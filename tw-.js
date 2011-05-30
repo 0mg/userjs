@@ -1817,7 +1817,7 @@ addEventListener("DOMContentLoaded", function() {
         mode & 1 && that.changeDesign(user);
         mode & 2 && that.showProfile(user);
         mode & 4 && panel.showFollowPanel(user);
-        mode & 6 && panel.showAddListPanel(user);
+        mode & 8 && panel.showAddListPanel(user);
 
       });
     },
