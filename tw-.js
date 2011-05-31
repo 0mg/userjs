@@ -769,7 +769,7 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("lists"): {
-              content.showLists(APV + "lists.json?" + 
+              content.showLists(APV + "lists.json?" +
                                 "screen_name=" + hash[0] + "&" + q, my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
@@ -2006,10 +2006,10 @@ addEventListener("DOMContentLoaded", function() {
       p.icon.className = "icon";
       p.icon.alt = user.name;
       p.icon.width = "73";
-      p.icon.src = user.profile_image_url.replace(/_normal\./, "_bigger.");
+      p.icon.src = user.profile_image_url.replace("_normal.", "_bigger.");
 
       p.icorg.add(p.icon);
-      p.icorg.href = user.profile_image_url.replace(/_normal\./, ".");
+      p.icorg.href = user.profile_image_url.replace("_normal.", ".");
 
       if (user.url) {
         p.url.href = user.url;
