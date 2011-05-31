@@ -310,85 +310,93 @@ addEventListener("DOMContentLoaded", function() {
       X.post(APV + "favorites/destroy/" + id + ".xml", "", callback, onErr);
     },
 
-    follow: function(id, callback, onErr) {
-      X.post(APV + "friendships/create.xml", "user_id=" + id, callback, onErr);
+    follow: function(uname, callback, onErr) {
+      X.post(APV + "friendships/create.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    unfollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/destroy.xml", "user_id=" + id, callback, onErr);
+    unfollow: function(uname, callback, onErr) {
+      X.post(APV + "friendships/destroy.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    requestFollow: function(id, callback, onErr) {
-      this.follow(id, callback, onErr);
+    requestFollow: function(uname, callback, onErr) {
+      this.follow(uname, callback, onErr);
     },
 
-    unrequestFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/cancel.xml", "user_id=" + id, callback, onErr);
+    unrequestFollow: function(uname, callback, onErr) {
+      X.post(APV + "friendships/cancel.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    acceptFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/accept.xml", "user_id=" + id, callback, onErr);
+    acceptFollow: function(uname, callback, onErr) {
+      X.post(APV + "friendships/accept.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    denyFollow: function(id, callback, onErr) {
-      X.post(APV + "friendships/deny.xml", "user_id=" + id, callback, onErr);
+    denyFollow: function(uname, callback, onErr) {
+      X.post(APV + "friendships/deny.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    block: function(id, callback, onErr) {
-      X.post(APV + "blocks/create/" + id + ".xml", "", callback, onErr);
+    block: function(uname, callback, onErr) {
+      X.post(APV + "blocks/create.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    unblock: function(id, callback, onErr) {
-      X.post(APV + "blocks/destroy.xml", "user_id=" + id, callback, onErr);
+    unblock: function(uname, callback, onErr) {
+      X.post(APV + "blocks/destroy.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
-    spam: function(id, callback, onErr) {
-      X.post(APV + "report_spam.xml", "user_id=" + id, callback, onErr);
+    spam: function(uname, callback, onErr) {
+      X.post(APV + "report_spam.xml", "screen_name=" + uname, callback, onErr);
     },
 
-    followList: function(full_name, callback, onErr) {
-      var data = full_name.split("/");
-      var screen_name = data[0].substring(1);
-      var slug = data[1];
-      
+    followList: function(uname, slug, callback, onErr) {
       X.post(APV + "lists/subscribers/create.xml",
-             "owner_screen_name=" + screen_name + "&slug=" + slug,
+             "owner_screen_name=" + uname + "&slug=" + slug,
              callback, onErr);
     },
 
-    unfollowList: function(full_name, callback, onErr) {
-      var data = full_name.split("/");
-      var screen_name = data[0].substring(1);
-      var slug = data[1];
-      
+    unfollowList: function(uname, slug, callback, onErr) {
       X.post(APV + "lists/subscribers/destroy.xml",
-             "owner_screen_name=" + screen_name + "&slug=" + slug,
+             "owner_screen_name=" + uname + "&slug=" + slug,
              callback, onErr);
     },
 
-    createList: function(me, name, mode, description, callback, onErr) {
-      X.post(APV + me + "/lists.xml",
-             "name=" + name + "&mode=" + mode + "&description=" + description,
+    createList: function(lname, mode, description, callback, onErr) {
+      X.post(APV + "lists/create.xml",
+             "name=" + lname + "&mode=" + mode + "&description=" + description,
              callback, onErr);
     },
 
-    updateList: function(me, id, name, mode, description, callback, onErr) {
-      X.post(APV + me + "/lists/" + id + ".xml",
-             "name=" + name + "&mode=" + mode + "&description=" + description,
+    updateList: function(myname, slug, lname, mode, description,
+                         callback, onErr) {
+      X.post(APV + "lists/update.xml",
+             "owner_screen_name=" + myname +
+             "&slug=" + slug + "&name=" + lname +
+             "&mode=" + mode + "&description=" + description,
              callback, onErr);
     },
 
-    deleteList: function(me, id, callback, onErr) {
-      X.post(APV + me + "/lists/" + id + ".xml", "_method=DELETE",
+    deleteList: function(myname, slug, callback, onErr) {
+      X.post(APV + "lists/destroy.xml",
+             "owner_screen_name=" + myname + "&slug=" + slug,
              callback, onErr);
     },
 
-    listing: function(list, id, callback, onErr) {
-      X.post(APV + list + "/members.xml", "id=" + id, callback, onErr);
+    listing: function(myname, slug, uname, callback, onErr) {
+      X.post(APV + "lists/members/create.xml",
+             "owner_screen_name=" + myname + "&slug=" + slug +
+             "&screen_name=" + uname,
+             callback, onErr);
     },
 
-    unlisting: function(list, id, callback, onErr) {
-      X.post(APV + list + "/members.xml", "_method=DELETE&id=" + id,
+    unlisting: function(myname, slug, uname, callback, onErr) {
+      X.post(APV + "lists/members/destroy.xml",
+             "owner_screen_name=" + myname + "&slug=" + slug +
+             "&screen_name=" + uname,
              callback, onErr);
     },
 
@@ -721,7 +729,7 @@ addEventListener("DOMContentLoaded", function() {
             }
             case ("memberships"): {
               if (hash[0] === "lists") {
-                content.showLists(APV + path + ".json?" + q, my);
+                content.showLists(APV + "lists/memberships.json?" + q, my);
               }
               break;
             }
@@ -740,6 +748,8 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("favorites"): {
+              // formal: fovorites/(screen_name||ID).json
+              // http://dev.twitter.com/doc/get/favorites
               content.showTL(APV + "favorites.json?include_entities=true&" +
                              "screen_name=" + hash[0] + "&" + q +
                              "&cursor=-1", my);
@@ -786,26 +796,32 @@ addEventListener("DOMContentLoaded", function() {
                            "&screen_name=" + hash[0] + "&" + q, my);
             outline.showProfileOutline(hash[0], my, 3);
           } else switch (hash[2]) {
-            case ("members"):
+            case ("members"): {
+              content.showUsers(APV + "lists/members.json?" +
+                                "owner_screen_name=" + hash[0] +
+                                "&slug=" + hash[1] + "&" + q, my);
+              outline.showListOutline(hash, my, 3);
+              break;
+            }
             case ("subscribers"): {
-              hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-              content.showUsers(APV + hash.join("/") + ".json?" + q, my);
+              content.showUsers(APV + "lists/subscribers.json?" +
+                                "owner_screen_name=" + hash[0] +
+                                "&slug=" + hash[1] + "&" + q, my);
               outline.showListOutline(hash, my, 3);
               break;
             }
             case ("memberships"): {
               if (hash[1] === "lists") {
-                hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-                content.showLists(APV + hash.join("/") + ".json?" + q, my);
+                content.showLists(APV + "lists/memberships.json?" +
+                                  "screen_name=" + hash[0] + "&" + q, my);
                 outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
             case ("subscriptions"): {
               if (hash[1] === "lists") {
-                hash[0] = (hash[0].indexOf("@") ? "@" : "") + hash[0];
-                content.showLists(APV + hash[0] + "/lists/subscriptions.json?" +
-                                  q, my);
+                content.showLists(APV + "lists/subscriptions.json?" +
+                                  "screen_name=" + hash[0] + "&" + q, my);
                 outline.showProfileOutline(hash[0], my, 3);
               }
               break;
@@ -1259,11 +1275,11 @@ addEventListener("DOMContentLoaded", function() {
       var onDeny = onDecide;
 
       ad.accept.node.addEventListener("click", function() {
-        API.acceptFollow(user.id_str, onAccept);
+        API.acceptFollow(user.screen_name, onAccept);
       }, false);
 
       ad.deny.node.addEventListener("click", function() {
-        API.denyFollow(user.id_str, onDeny);
+        API.denyFollow(user.screen_name, onDeny);
       }, false);
 
       ad.node.add(ad.accept.node, ad.deny.node);
@@ -1433,8 +1449,8 @@ addEventListener("DOMContentLoaded", function() {
         ship.blocking && onBlock();
 
         ab.block.node.addEventListener("click", function() {
-          ab.block.on ? API.unblock(user.id_str, onUnBlock) :
-                        API.block(user.id_str, onBlock);
+          ab.block.on ? API.unblock(user.screen_name, onUnBlock) :
+                        API.block(user.screen_name, onBlock);
         }, false);
 
         function onSpam() {
@@ -1454,8 +1470,8 @@ addEventListener("DOMContentLoaded", function() {
         ship.marked_spam && onSpam();
 
         ab.spam.node.addEventListener("click", function() {
-          ab.spam.on ? API.unblock(user.id_str, onUnSpam) :
-                       API.spam(user.id_str, onSpam);
+          ab.spam.on ? API.unblock(user.screen_name, onUnSpam) :
+                       API.spam(user.screen_name, onSpam);
         }, false);
 
         function onFollow() {
@@ -1469,8 +1485,8 @@ addEventListener("DOMContentLoaded", function() {
         ship.following && onFollow();
 
         ab.follow.node.addEventListener("click", function() {
-          ab.follow.on ? API.unfollow(user.id_str, onUnfollow) :
-                         API.follow(user.id_str, onFollow);
+          ab.follow.on ? API.unfollow(user.screen_name, onUnfollow) :
+                         API.follow(user.screen_name, onFollow);
         }, false);
 
         function onReqFollow() { ab.req_follow.turn(true).enable(); }
@@ -1480,8 +1496,8 @@ addEventListener("DOMContentLoaded", function() {
 
         ab.req_follow.node.addEventListener("click", function() {
           ab.req_follow.on ?
-                  API.unrequestFollow(user.id_str, onUnreqFollow) :
-                  API.requestFollow(user.id_str, onReqFollow);
+                  API.unrequestFollow(user.screen_name, onUnreqFollow) :
+                  API.requestFollow(user.screen_name, onReqFollow);
         }, false);
 
         if (user["protected"] && !ship.following) {
@@ -1527,8 +1543,10 @@ addEventListener("DOMContentLoaded", function() {
           function onUnlisting() { lb.turn(false); }
 
           lb.node.addEventListener("click", function() {
-            lb.on ? API.unlisting(l.full_name, user.id_str, onUnlisting) :
-                    API.listing(l.full_name, user.id_str, onListing);
+            lb.on ? API.unlisting(l.user.screen_name, l.slug,
+                                  user.screen_name, onUnlisting) :
+                    API.listing(l.user.screen_name, l.slug,
+                                user.screen_name, onListing);
           }, false);
 
           al.node.add(lb.node);
@@ -1550,8 +1568,10 @@ addEventListener("DOMContentLoaded", function() {
       list.following && onFollow();
 
       ab.follow.node.addEventListener("click", function() {
-        ab.follow.on ? API.unfollowList(list.full_name, onUnfollow) :
-                       API.followList(list.full_name, onFollow);
+        ab.follow.on ? API.unfollowList(list.user.screen_name,
+                                        list.slug, onUnfollow) :
+                       API.followList(list.user.screen_name,
+                                      list.slug, onFollow);
       }, false);
 
       ab.node.add(ab.follow.node);
@@ -1727,8 +1747,10 @@ addEventListener("DOMContentLoaded", function() {
           API.block(act.target.value, f);
 
         } else if (act.source.value.indexOf("/") >= 0) {
-          API.listing("@" + act.source.value.match(/^@?(.+)/)[1],
-                      act.target.value, f);
+          var data = act.source.value.split("/");
+          var screen_name = data[0];
+          var slug = data[1];
+          API.listing(screen_name, slug, act.target.value, f);
         }
       }, false);
 
@@ -1746,8 +1768,10 @@ addEventListener("DOMContentLoaded", function() {
           API.unblock(act.target.value, f);
 
         } else if (act.source.value.indexOf("/") >= 0) {
-          API.unlisting("@" + act.source.value.match(/^@?(.+)/)[1],
-                        act.target.value, f);
+          var data = act.source.value.split("/");
+          var screen_name = data[0];
+          var slug = data[1];
+          API.unlisting(screen_name, slug, act.target.value, f);
         }
       }, false);
 
@@ -1781,7 +1805,7 @@ addEventListener("DOMContentLoaded", function() {
       list.del.add(D.ct("Delete"));
 
       list.create.addEventListener("click", function() {
-        API.createList(my.id_str, list.name.value,
+        API.createList(list.name.value,
                        list.privat.checked ? "private" : "public",
                        list.description.value,
                        function(xhr) {
@@ -1790,7 +1814,9 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       list.update.addEventListener("click", function() {
-        API.updateList(my.id_str, list.name.value, list.rename.value,
+        API.updateList(my.screen_name,
+                       list.name.value,
+                       list.rename.value,
                        list.privat.checked ? "private" : "public",
                        list.description.value,
                        function(xhr) {
@@ -1799,7 +1825,7 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       list.del.addEventListener("click", function() {
-        API.deleteList(my.id_str, list.name.value,
+        API.deleteList(my.screen_name, list.name.value,
                        function(xhr) {
                          alert(xhr.responseText);
                        });
@@ -1892,7 +1918,7 @@ addEventListener("DOMContentLoaded", function() {
         var list = JSON.parse(xhr.responseText);
 
         if (mode === void 0) mode = 7;
-        if ((mode & 4) && (list.user.id_str === my.id_str)) mode ^= 4;
+        if ((mode & 4) && (list.mode === "private")) mode ^= 4;
 
         mode & 1 && that.changeDesign(list.user);
         mode & 2 && that.showListProfile(list);
