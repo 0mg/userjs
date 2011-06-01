@@ -840,8 +840,10 @@ addEventListener("DOMContentLoaded", function() {
     // Render View of Colors Setting
     // Change colors of text, link, background-color.,
     customizeDesign: function(my) {
-      content.showTL(APV + "statuses/user_timeline.json", my);
-      outline.showProfileOutline(my.screen_name, my, 2);
+      var timeline = my.status;
+      timeline.user = my;
+      this.rendTL(timeline, my);
+      outline.rendProfileOutline(my, my, 2);
       outline.changeDesign(my);
 
       var profile = {
@@ -857,7 +859,7 @@ addEventListener("DOMContentLoaded", function() {
           fill_color: D.ce("input"),
           border_color: D.ce("input"),
         },
-        update: D.ce("button"),
+        update: D.ce("button")
       };
 
       profile.background.image.type = "file";
@@ -879,7 +881,7 @@ addEventListener("DOMContentLoaded", function() {
       }, false);
 
       profile.form.addEventListener("keyup", function(v) {
-        if (v.target.value.length !== 6) return;
+        if (v.target.value.length !== 6 || isNaN("0x" + v.target.value)) return;
         switch (v.target) {
           case (profile.background.color): {
             document.body.style.backgroundColor = "#" + v.target.value;
@@ -890,7 +892,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case (profile.link_color): {
-            Array.prototype.forEach.call(document.links, function(a) {
+            Array.prototype.forEach.call(D.tags("a"), function(a) {
               a.style.color = "#" + v.target.value;
             });
             break;
@@ -1071,7 +1073,8 @@ addEventListener("DOMContentLoaded", function() {
       var that = this;
 
       function onGetTLData(xhr) {
-        that.makeTL(xhr, url, my);
+        var timeline = JSON.parse(xhr.responseText);
+        that.rendTL(timeline, my);
         SCRIPT.expandUrls(D.id("timeline"));
       }
 
@@ -1084,8 +1087,7 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     // Render View of Timeline (of home, mentions, messages, lists.,)
-    makeTL: function(xhr, url, my) {
-      var timeline = JSON.parse(xhr.responseText);
+    rendTL: function(timeline, my) {
       timeline = [].concat(timeline); // for single tweet
 
       var tl_element = D.ce("ol");
@@ -1975,7 +1977,7 @@ addEventListener("DOMContentLoaded", function() {
         if ((mode & 4) && (user.id_str === my.id_str)) mode ^= 4;
 
         mode & 1 && that.changeDesign(user);
-        mode & 2 && that.showProfile(user);
+        mode & 2 && that.rendProfileOutline(user);
         mode & 4 && panel.showFollowPanel(user);
         mode & 8 && panel.showAddListPanel(user);
 
@@ -1983,7 +1985,7 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     // Render outline of User Profile
-    showProfile: function(user) {
+    rendProfileOutline: function(user) {
       var p = {
         box: D.ce("dl"),
         icon: D.ce("img"),
