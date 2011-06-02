@@ -222,8 +222,8 @@ addEventListener("DOMContentLoaded", function() {
   };
 
 
-  // User Script in tw-
-  var SCRIPT = {
+  // Scripts after render page
+  var after = {
     expandUrls: function(parent) {
       var links = (parent || document).getElementsByTagName("a");
       var elements = [], urls = [];
@@ -231,8 +231,7 @@ addEventListener("DOMContentLoaded", function() {
       for (var i = 0; i < links.length; ++i) {
         var a = links[i];
         if (a.hasChildNodes() && (a.href === a.textContent)) {
-          elements.push(a);
-          urls.push(a.href);
+          elements.push(a), urls.push(a.href);
         }
       }
 
@@ -345,7 +344,7 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     unblock: function(uname, callback, onErr) {
-      X.post(APV + "blocks/destroy.xml",
+      X.post(APV + "blocks/destroy.json",
              "screen_name=" + uname, callback, onErr);
     },
 
@@ -744,7 +743,6 @@ addEventListener("DOMContentLoaded", function() {
               content.showTL(APV + "statuses/user_timeline.json?" +
                              "include_entities=true&include_rts=true" +
                              "&screen_name=" + hash[0] + "&" + q, my);
-              outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("favorites"): {
@@ -1075,7 +1073,7 @@ addEventListener("DOMContentLoaded", function() {
       function onGetTLData(xhr) {
         var timeline = JSON.parse(xhr.responseText);
         that.rendTL(timeline, my);
-        SCRIPT.expandUrls(D.id("timeline"));
+        after.expandUrls(D.id("timeline"));
       }
 
       function onError(xhr) {
@@ -1970,18 +1968,27 @@ addEventListener("DOMContentLoaded", function() {
     showProfileOutline: function(screen_name, my, mode) {
       var that = this;
 
-      X.get(APV + "users/show.json?screen_name=" + screen_name, function(xhr) {
+      if (mode === void 0) mode = 15;
+
+      function onGet(xhr) {
         var user = JSON.parse(xhr.responseText);
 
-        if (mode === void 0) mode = 15;
         if ((mode & 4) && (user.id_str === my.id_str)) mode ^= 4;
 
         mode & 1 && that.changeDesign(user);
         mode & 2 && that.rendProfileOutline(user);
         mode & 4 && panel.showFollowPanel(user);
         mode & 8 && panel.showAddListPanel(user);
+      }
 
-      });
+      function onErr(xhr) { // hacking(using API bug) function
+        // bug: /blocks/destroy.json returns suspended user's profile
+        if (mode & 4) mode ^= 4;
+        if (mode & 8) mode ^= 8;
+        API.unblock(screen_name, onGet);
+      }
+
+      X.get(APV + "users/show.json?screen_name=" + screen_name, onGet, onErr);
     },
 
     // Render outline of User Profile
