@@ -62,10 +62,10 @@ addEventListener("DOMContentLoaded", function() {
   // CONST_VALUE
 
   // HOMEPATH (depends on @include)
-  var ROOT = "/" + /[^/]+/(location.pathname) + "/";
+  var ROOT = "/" + location.pathname.split("/")[1] + "/";
 
-  var APV = 1; // API VERSION
-  APV = "/" + APV + "/";
+  // ROOT OF API PATH (API VERSION)
+  var APV = "/1/";
 
 
   // DOM Functions
