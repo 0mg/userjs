@@ -952,6 +952,7 @@ addEventListener("DOMContentLoaded", function() {
         }
       }
       X.get(url, onGetIds);
+      panel.showUserManager(my);
     },
 
     // Render View of list of users
@@ -1027,12 +1028,11 @@ addEventListener("DOMContentLoaded", function() {
         that.rendUsers(data, my, mode);
       }
       X.get(url, onGetUsers);
-      panel.showHyperPanel(my);
+      panel.showUserManager(my);
     },
 
     // Render View of list of lists
     showLists: function(url, my) {
-      panel.showHyperPanel(my);
       X.get(url, function(xhr) {
         var data = JSON.parse(xhr.responseText);
 
@@ -1705,71 +1705,104 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     // Panel for manage list members, following, followers.,
-    showHyperPanel: function(my) {
-      var act = {
-        bar: D.ce("div"),
-        source: D.ce("input"),
+    showUserManager: function(my) {
+      var um = {
+        node: D.ce("div"),
+        dir: D.ce("input"),
         target: D.ce("input"),
-        add: D.ce("button"),
-        del: D.ce("button"),
+        add: D.ce("button").add(D.ct("Add")),
+        del: D.ce("button").add(D.ct("Delete"))
       };
 
-      act.source.value = location.pathname.substring(ROOT.length)
-                         .match(/[^/]+(?:[/][^/]+)?/);
-      act.add.add(D.ct("Add"));
-      act.del.add(D.ct("Delete"));
+      um.dir.value = location.pathname.substring(ROOT.length).
+                     match(/[^/]+(?:[/][^/]+)?/);
 
-      act.add.addEventListener("click", function(v) {
-        var f = function(xhr) { alert(xhr.responseText) };
+      um.add.addEventListener("click", onBtn, false);
+      um.del.addEventListener("click", onBtn, false);
 
-        if (act.source.value === "following" ||
-            act.source.value === my.screen_name + "/following") {
-          API.follow(act.target.value, f);
+      function onBtn(event) {
+        var isAdd = event.target === um.add;
+        var isDel = event.target === um.del;
+        if (!isAdd && !isDel) return;
 
-        } else if (act.source.value === "followers" ||
-                   act.source.value === my.screen_name + "/followers") {
-          API.unblock(act.target.value, f);
+        var dir = um.dir.value;
+        var target = um.target.value;
+        if (!dir || !target) return;
 
-        } else if (act.source.value === "blocking") {
-          API.block(act.target.value, f);
+        function onAPI(xhr) { if (xhr) alert(xhr.responseText); }
 
-        } else if (act.source.value.indexOf("/") >= 0) {
-          var data = act.source.value.split("/");
-          var screen_name = data[0];
-          var slug = data[1];
-          API.listing(screen_name, slug, act.target.value, f);
+        var dir_is_list = dir.indexOf("/") >= 0 ? 1 : 0;
+        var target_is_list = target.indexOf("/") >= 0 ? 2 : 0;
+        var mode = dir_is_list | target_is_list;
+
+        switch (mode) {
+          case(0): {
+            switch(dir) {
+              case("following"): {
+                API[isAdd ? "follow" : "unfollow"](target, onAPI);
+                break;
+              }
+              case("followers"): {
+                API[isAdd ? "unblock" : "block"](target, onAPI);
+                break;
+              }
+              case("blocking"): {
+                API[isAdd ? "block" : "unblock"](target, onAPI);
+                break;
+              }
+            }
+            break;
+          }
+          case(1): {
+            switch(dir) {
+              case("following/requests"): {
+                API[isAdd ? "requestFollow" : "unrequestFollow"](target, onAPI);
+                break;
+              }
+              default: { // add user to list
+                var myname_slug = dir.split("/");
+                var myname = myname_slug[0];
+                var slug = myname_slug[1];
+                API[isAdd ? "listing" : "unlisting"](
+                  myname, slug, target, onAPI
+                );
+                break;
+              }
+            }
+            break;
+          }
+          case(2): {
+            break;
+          }
+          case(3): {
+            switch(dir) {
+              case("lists/subscriptions"): {
+                var uname_slug = target.split("/");
+                var uname = uname_slug[0];
+                var slug = uname_slug[1];
+                API[isAdd ? "followList" : "unfollowList"](
+                  uname, slug, onAPI
+                );
+                break;
+              }
+            }
+            break;
+          }
         }
-      }, false);
+      }
 
-      act.del.addEventListener("click", function(v) {
-        var f = function(xhr) { alert(xhr.responseText) };
-        if (act.source.value === "following" ||
-            act.source.value === my.screen_name + "/following") {
-          API.unfollow(act.target.value, f);
+      um.node.add(
+        D.ce("dt").add(D.ct("location")),
+        D.ce("dd").add(um.dir),
+        D.ce("dt").add(D.ct("target")),
+        D.ce("dd").add(
+          um.target,
+          um.add,
+          um.del
+        )
+      );
 
-        } else if (act.source.value === "followers" ||
-                   act.source.value === my.screen_name + "/followers") {
-          API.block(act.target.value, f);
-
-        } else if (act.source.value === "blocking") {
-          API.unblock(act.target.value, f);
-
-        } else if (act.source.value.indexOf("/") >= 0) {
-          var data = act.source.value.split("/");
-          var screen_name = data[0];
-          var slug = data[1];
-          API.unlisting(screen_name, slug, act.target.value, f);
-        }
-      }, false);
-
-      act.bar.add(D.ct("source: "));
-      act.bar.add(act.source);
-      act.bar.add(D.ct("target: "));
-      act.bar.add(act.target);
-      act.bar.add(act.add);
-      act.bar.add(act.del);
-
-      D.id("side").add(act.bar);
+      D.id("side").add(um.node);
     },
 
     // Panel for Manage list
@@ -1782,7 +1815,7 @@ addEventListener("DOMContentLoaded", function() {
         privat: D.ce("input"),
         create: D.ce("button"),
         update: D.ce("button"),
-        del: D.ce("button"),
+        del: D.ce("button")
       };
       list.privat.type = "checkbox";
       list.privat.checked = true;
