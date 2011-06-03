@@ -450,9 +450,6 @@ addEventListener("DOMContentLoaded", function() {
           font-size: 14px;\
           background-attachment: fixed;\
         }\
-        a:hover {\
-          text-decoration: underline;\
-        }\
         button {\
           line-height: 1;\
           padding: 0.4ex;\
@@ -467,37 +464,29 @@ addEventListener("DOMContentLoaded", function() {
           margin: 0 0 1em 1em;\
         }\
         #header {\
-          background: #fcf;\
         }\
         #globalbar li {\
           display: inline-block;\
-        }\
-        #globalbar li + li {\
-          margin-left: 1ex;\
-          padding-left: 1ex;\
-          border-left: 1px solid;\
+          margin-right: 2ex;\
         }\
         #subtitle {\
           padding: 1ex;\
           border-bottom: 1px solid transparent;\
         }\
+        #subaction {\
+          background: ButtonFace;\
+        }\
         #content {\
-          float: left;\
+          display: table-cell;\
           width: 500px;\
-          max-width: 100%;\
-          background: #ddd;\
+          max-width: 500px;\
         }\
         #side {\
-          float: left;\
+          display: table-cell;\
           width: 249px;\
-          max-width: 100%;\
-          background-color: #ccf;\
+          max-width: 249px;\
           font-size: smaller;\
           border-left: 1px solid transparent;\
-        }\
-        #footer {\
-          clear: both;\
-          background: #ffc;\
         }\
         #status {\
           width: 35em;\
@@ -506,6 +495,8 @@ addEventListener("DOMContentLoaded", function() {
           max-height: 100%;\
         }\
         #timeline {\
+        }\
+        #cursor {\
         }\
         a.expanded_url {\
         }\
@@ -516,7 +507,7 @@ addEventListener("DOMContentLoaded", function() {
           min-height: 48px;\
           padding: 1ex 1ex 1ex 60px;\
           border-bottom: 1px solid silver;\
-          background: #fcfcfc;\
+          background: #fdfdfd;\
         }\
         .user-profile.protected .name::after,\
         .user.protected .name::after,\
@@ -532,7 +523,7 @@ addEventListener("DOMContentLoaded", function() {
         .user-profile.protected .name::after,\
         .user.protected .name::after,\
         .tweet.protected .name::after {\
-          font-size: smaller;\
+          font-size: xx-small;\
           padding: 0.5ex;\
           background-color: gray;\
           color: white;\
@@ -606,8 +597,7 @@ addEventListener("DOMContentLoaded", function() {
         subaction: D.ce("div"),
         submain: D.ce("div"),
         subcursor: D.ce("ul"),
-        side: D.ce("div"),
-        footer: D.ce("div")
+        side: D.ce("div")
       };
 
       fw.header.id    = "header";
@@ -617,7 +607,6 @@ addEventListener("DOMContentLoaded", function() {
       fw.submain.id   = "main";
       fw.subcursor.id = "cursor";
       fw.side.id      = "side";
-      fw.footer.id    = "footer";
 
       fw.subaction.className = "user-action";
 
@@ -629,8 +618,7 @@ addEventListener("DOMContentLoaded", function() {
           fw.submain,
           fw.subcursor
         ),
-        fw.side,
-        fw.footer
+        fw.side
       );
     }
   };
@@ -956,7 +944,7 @@ addEventListener("DOMContentLoaded", function() {
           var users_data = JSON.parse(xhr.responseText);
           users_data.previous_cursor = ids_data.previous_cursor;
           users_data.next_cursor = ids_data.next_cursor;
-          that.makeUsers(users_data, my, mode);
+          that.rendUsers(users_data, my, mode);
         }
         var ids = ids_data.ids.join(",");
         if (ids.length) {
@@ -967,7 +955,7 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     // Render View of list of users
-    makeUsers: function(data, my, mode) {
+    rendUsers: function(data, my, mode) {
       data.users = data.users || data;
       var followerRequests = mode & 1;
 
@@ -1036,7 +1024,7 @@ addEventListener("DOMContentLoaded", function() {
       var that = this;
       function onGetUsers(xhr) {
         var data = JSON.parse(xhr.responseText);
-        that.makeUsers(data, my, mode);
+        that.rendUsers(data, my, mode);
       }
       X.get(url, onGetUsers);
       panel.showHyperPanel(my);
@@ -1077,8 +1065,7 @@ addEventListener("DOMContentLoaded", function() {
       }
 
       function onError(xhr) {
-        if (xhr.status === 0) return; // it's may protected user timeline
-        alert(xhr.responseText);
+        D.id("main").add(D.ct(xhr.responseText || "No data"));
       }
 
       X.get(url, onGetTLData, onError);
@@ -1897,7 +1884,8 @@ addEventListener("DOMContentLoaded", function() {
       var colorLink = user.profile_link_color ?
                       "#" + user.profile_link_color : "transparent";
 
-      D.id("subtitle").style.backgroundColor =
+      D.id("header").style.backgroundColor =
+      D.id("content").style.backgroundColor =
       D.id("side").style.backgroundColor = colorSideFill;
 
       D.id("subtitle").style.borderColor =
