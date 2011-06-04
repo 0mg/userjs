@@ -22,22 +22,6 @@ opera.addEventListener("BeforeExternalScript", function(event) {
 
 addEventListener("DOMContentLoaded", function() {
 
-  // DOM prototype Functions
-
-  Document.prototype.add =
-  DocumentFragment.prototype.add =
-  Element.prototype.add = function() {
-    for (var i = 0; i < arguments.length; ++i) {
-      this.appendChild(arguments[i]);
-    }
-    return this;
-  };
-  Element.prototype.sa = function(attr, value) {
-    this.setAttribute(attr, value);
-    return this;
-  };
-
-
   // UserJS Debug Functions
 
   // Show Props
@@ -70,14 +54,31 @@ addEventListener("DOMContentLoaded", function() {
 
   // DOM Functions
 
-  var D = {
-    ce: function(s) { return document.createElement(s); },
-    ct: function(s) { return document.createTextNode(s); },
-    id: function(s) { return document.getElementById(s); },
-    tag: function(s) { return document.getElementsByTagName(s)[0]; },
-    tags: function(s) { return document.getElementsByTagName(s); },
-    cf: function() { return document.createDocumentFragment(); },
-    del: function(e) { return e.parentNode.removeChild(e); }
+  var D = new function() {
+    function appendChildren() {
+      for (var i = 0; i < arguments.length; ++i) {
+        this.appendChild(arguments[i]);
+      }
+      return this;
+    }
+    function setAttribute(attr, value) {
+      this.setAttribute(attr, value);
+      return this;
+    }
+    function x(e) { // extend element
+      e.add = appendChildren;
+      e.sa = setAttribute;
+      return e;
+    }
+    return {
+      ce: function(s) { return x(document.createElement(s)); },
+      ct: function(s) { return document.createTextNode(s); },
+      id: function(s) { return x(document.getElementById(s)); },
+      tag: function(s) { return x(document.getElementsByTagName(s)[0]); },
+      tags: function(s) { return document.getElementsByTagName(s); },
+      cf: function() { return x(document.createDocumentFragment()); },
+      del: function(e) { return e.parentNode.removeChild(e); }
+    };
   };
 
 
@@ -423,6 +424,13 @@ addEventListener("DOMContentLoaded", function() {
              callback, onErr);
     },
 
+    isMemberOfList: function(oname, slug, uname, callback, onErr) {
+      X.head(APV + "lists/members/show.xml" +
+             "?owner_screen_name=" + oname + "&slug=" + slug +
+             "&screen_name=" + uname,
+             callback, onErr);
+    },
+
     listing: function(myname, slug, uname, callback, onErr) {
       X.post(APV + "lists/members/create.xml",
              "owner_screen_name=" + myname + "&slug=" + slug +
@@ -462,7 +470,7 @@ addEventListener("DOMContentLoaded", function() {
     // Clear all DOM and set new base
     initDOM: function(my) {
 
-      document.removeChild(document.documentElement);
+      D.del(document.documentElement);
 
       var html = D.ce("html");
       var head = D.ce("head");
@@ -513,6 +521,7 @@ addEventListener("DOMContentLoaded", function() {
           border-bottom: 1px solid transparent;\
         }\
         #subaction {\
+          color: ButtonText;\
           background: ButtonFace;\
         }\
         #content {\
@@ -624,7 +633,7 @@ addEventListener("DOMContentLoaded", function() {
         }\
       '));
 
-      document.add(html.add(head.add(style, title), body));
+      document.appendChild(html.add(head.add(style, title), body));
     },
 
     // Set DOM struct of tw-
@@ -827,15 +836,16 @@ addEventListener("DOMContentLoaded", function() {
           break;
         }
         case (3): {
-          if (hash[1] === "status" || hash[1] === "statuses") {
-            content.showTL(APV + "statuses/show/" + hash[2] + ".json", my);
-            outline.showProfileOutline(hash[0], my, 1);
-          } else if (hash[1] === "following" && hash[2] === "timeline") {
-            content.showTL(APV + "statuses/following_timeline.json?" +
-                           "include_entities=true" +
-                           "&screen_name=" + hash[0] + "&" + q, my);
-            outline.showProfileOutline(hash[0], my, 3);
-          } else switch (hash[2]) {
+          switch (hash[2]) {
+            case ("timeline"): {
+              if (hash[1] === "following") {
+                content.showTL(APV + "statuses/following_timeline.json?" +
+                               "include_entities=true" +
+                               "&screen_name=" + hash[0] + "&" + q, my);
+                outline.showProfileOutline(hash[0], my, 3);
+              }
+              break;
+            }
             case ("members"): {
               content.showUsers(APV + "lists/members.json?" +
                                 "owner_screen_name=" + hash[0] +
@@ -863,6 +873,13 @@ addEventListener("DOMContentLoaded", function() {
                 content.showLists(APV + "lists/subscriptions.json?" +
                                   "screen_name=" + hash[0] + "&" + q, my);
                 outline.showProfileOutline(hash[0], my, 3);
+              }
+              break;
+            }
+            default: {
+              if (hash[1] === "status" || hash[1] === "statuses") {
+                content.showTL(APV + "statuses/show/" + hash[2] + ".json", my);
+                outline.showProfileOutline(hash[0], my, 1);
               }
               break;
             }
@@ -1609,8 +1626,8 @@ addEventListener("DOMContentLoaded", function() {
           var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
           var lb = new Button("list", lb_label, lb_label);
 
-          X.head(APV + l.full_name + "/members/" + user.id_str + ".json",
-                 onListing, onUnlisting);
+          API.isMemberOfList(l.user.screen_name, l.slug, user.screen_name,
+                             onListing, onUnlisting);
 
           function onListing() { lb.turn(true); }
           function onUnlisting() { lb.turn(false); }
@@ -2211,8 +2228,8 @@ addEventListener("DOMContentLoaded", function() {
         pre.startPage(my);
       },
       function() {
-        location = "/login?redirect_after_login=" +
-                   encodeURIComponent(location);
+        location.href = "/login?redirect_after_login=" +
+                        encodeURIComponent(location);
       }
     );
   }
