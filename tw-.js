@@ -120,7 +120,7 @@ addEventListener("DOMContentLoaded", function() {
     // POST Method for Twitter API
     function post(url, q, f, b) {
       confirm("sure?\n" + url + "?" + q) ?
-      auth(function(auth) {
+      getAuthToken(function(authtoken) {
         xhr = new XMLHttpRequest;
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-Type",
@@ -130,22 +130,23 @@ addEventListener("DOMContentLoaded", function() {
           if (this.status === 200) f(this);
           else (b || function(x) { alert(x.responseText); })(this);
         };
-        xhr.send(q + "&post_authenticity_token=" + auth);
+        xhr.send(q + "&post_authenticity_token=" + authtoken);
       })//;
       : b && b(false);
     }
 
     // Twitter Auth token Getter
-    function auth(f) {
+    function getAuthToken(f) {
       get("/about/contact", function(xhr) {
         var data = xhr.responseText;
         var key = "authenticity_token = '";
-        var auth = data.substr(data.indexOf(key) + key.length, 40);
-        f(auth);
+        var authtoken = data.substr(data.indexOf(key) + key.length, 40);
+        f(authtoken);
       });
     }
 
     return {
+      getAuthToken: getAuthToken,
       head: head,
       get: get,
       post: post
@@ -255,7 +256,44 @@ addEventListener("DOMContentLoaded", function() {
   // Twitter API Functions
 
   var API = {
-    updateProfileBackgroundImage: function(image, tile, callback, onErr) {
+    updateProfileBgImage: function(imageInputElement, useImage, tile,
+                                   callback, onErr) {
+      var fm = {
+        form: D.ce("form"),
+        image: imageInputElement.cloneNode(false),
+        useImage: D.ce("input"),
+        tile: D.ce("input"),
+        authtoken: D.ce("input")
+      };
+
+      fm.form.action = "/settings/design/update";
+      fm.form.enctype = "multipart/form-data";
+      fm.form.method = "post";
+      fm.form.addEventListener("submit", function(event) {
+        event.stopPropagation();
+      }, false);
+
+      fm.image.name = "user[uploaded_data]";
+
+      fm.useImage.name = "user[profile_use_background_image]";
+      fm.useImage.value = useImage;
+
+      fm.tile.name = "user[profile_background_tile]";
+      fm.tile.value = tile;
+
+      fm.authtoken.name = "authenticity_token";
+
+      fm.form.add(
+        fm.image,
+        fm.useImage,
+        fm.tile,
+        fm.authtoken
+      );
+
+      X.getAuthToken(function(authtoken) {
+        fm.authtoken.value = authtoken;
+        fm.form.submit();
+      });
     },
 
     updateProfileColors: function(background_color, text_color, link_color,
@@ -449,6 +487,7 @@ addEventListener("DOMContentLoaded", function() {
           font-family: "Lucida Console" sans-serif;\
           font-size: 14px;\
           background-attachment: fixed;\
+          background-repeat: no-repeat;\
         }\
         button {\
           line-height: 1;\
@@ -638,6 +677,21 @@ addEventListener("DOMContentLoaded", function() {
       switch (hash.length) {
         case (1): {
           switch (hash[0]) {
+            case ("retweeted_by_me"): {
+              content.showTL(APV + "statuses/retweeted_by_me.json?" +
+                             "include_entities=true&" + q, my);
+              break;
+            }
+            case ("retweeted_to_me"): {
+              content.showTL(APV + "statuses/retweeted_to_me.json?" +
+                             "include_entities=true&" + q, my);
+              break;
+            }
+            case ("retweets_of_me"): {
+              content.showTL(APV + "statuses/retweets_of_me.json?" +
+                             "include_entities=true&" + q, my);
+              break;
+            }
             case ("search"): {
               location = "http://search.twitter.com/search?" + q;
               break;
@@ -832,107 +886,138 @@ addEventListener("DOMContentLoaded", function() {
       outline.rendProfileOutline(my, my, 2);
       outline.changeDesign(my);
 
-      var profile = {
+      var fm = {
         form: D.ce("dl"),
-        background: {
+        bg: {
           image: D.ce("input"),
+          useImage: D.ce("input"),
           tile: D.ce("input"),
           color: D.ce("input"),
+          update: D.ce("button")
         },
-        text_color: D.ce("input"),
-        link_color: D.ce("input"),
+        textColor: D.ce("input"),
+        linkColor: D.ce("input"),
         sidebar: {
-          fill_color: D.ce("input"),
-          border_color: D.ce("input"),
+          fillColor: D.ce("input"),
+          borderColor: D.ce("input")
         },
         update: D.ce("button")
       };
 
-      profile.background.image.type = "file";
-      profile.background.tile.type = "checkbox";
-
-      // Default Values
-      profile.background.tile.checked    = my.profile_background_tile;
-      profile.background.color.value     = my.profile_background_color;
-      profile.text_color.value           = my.profile_text_color;
-      profile.link_color.value           = my.profile_link_color;
-      profile.sidebar.fill_color.value   = my.profile_sidebar_fill_color;
-      profile.sidebar.border_color.value = my.profile_sidebar_border_color;
-
-      profile.update.add(D.ct("Update"));
-
-      profile.background.tile.addEventListener("change", function(v) {
-        document.body.style.backgroundRepeat = v.target.checked ?
-                                               "repeat" : "no-repeat";
-      }, false);
-
-      profile.form.addEventListener("keyup", function(v) {
-        if (v.target.value.length !== 6 || isNaN("0x" + v.target.value)) return;
-        switch (v.target) {
-          case (profile.background.color): {
-            document.body.style.backgroundColor = "#" + v.target.value;
+      fm.form.addEventListener("keyup", function(event) {
+        var input = event.target;
+        if (input.value.length !== 6 || isNaN("0x" + input.value)) return;
+        switch (input) {
+          case (fm.bg.color): {
+            document.body.style.backgroundColor = "#" + input.value;
             break;
           }
-          case (profile.text_color): {
-            document.body.style.color = "#" + v.target.value;
+          case (fm.textColor): {
+            document.body.style.color = "#" + input.value;
             break;
           }
-          case (profile.link_color): {
+          case (fm.linkColor): {
             Array.prototype.forEach.call(D.tags("a"), function(a) {
-              a.style.color = "#" + v.target.value;
+              a.style.color = "#" + input.value;
             });
             break;
           }
-          case (profile.sidebar.fill_color): {
+          case (fm.sidebar.fillColor): {
             D.id("subtitle").style.backgroundColor =
-            D.id("side").style.backgroundColor = "#" + v.target.value;
+            D.id("side").style.backgroundColor = "#" + input.value;
             break;
           }
-          case (profile.sidebar.border_color): {
+          case (fm.sidebar.borderColor): {
             D.id("subtitle").style.borderColor =
-            D.id("side").style.borderColor = v.target.value;
+            D.id("side").style.borderColor = input.value;
             break;
           }
         }
       }, true);
 
-      profile.update.addEventListener("click", function() {
-        var f = function(xhr) {
-          alert(xhr.responseText);
-        };
-        if (profile.background.image.value) {
-          API.updateProfileBackgroundImage(profile.background.image.value,
-                                           profile.background.tile.checked, f);
-        }
-        API.updateProfileColors(profile.background.color.value,
-                                profile.text_color.value,
-                                profile.link_color.value,
-                                profile.sidebar.fill_color.value,
-                                profile.sidebar.border_color.value, f);
+      fm.bg.image.type = "file";
+
+      fm.bg.useImage.type = "checkbox";
+      fm.bg.useImage.checked = my.profile_use_background_image;
+      fm.bg.useImage.addEventListener("change", function(event) {
+        var use = event.target.checked;
+        document.body.style.backgroundImage =
+          use ? "url(" + my.profile_background_image_url + ")" : "none";
       }, false);
 
-      profile.form.add(
-        //D.ce("dt").add(D.ct("background image")),
-        //D.ce("dd").add(profile.background.image),
-        //D.ce("dd").add(
-          //D.ce("label").add(
-            //profile.background.tile, D.ct("tile")
-          //)
-        //),
+      fm.bg.tile.type = "checkbox";
+      fm.bg.tile.checked = my.profile_background_tile;
+      fm.bg.tile.addEventListener("change", function(v) {
+        document.body.style.backgroundRepeat =
+          v.target.checked ? "repeat" : "no-repeat";
+      }, false);
+
+      fm.bg.color.value = my.profile_background_color;
+
+      fm.bg.update.add(D.ct("Update"));
+      fm.bg.update.addEventListener("click", function() {
+        function onAPI(xhr) {
+          alert(xhr.responseText);
+        }
+        confirm("sure?") && API.updateProfileBgImage(
+          fm.bg.image,
+          fm.bg.useImage.checked,
+          fm.bg.tile.checked,
+          onAPI
+        );
+      }, false);
+
+      fm.textColor.value = my.profile_text_color;
+
+      fm.linkColor.value = my.profile_link_color;
+
+      fm.sidebar.fillColor.value = my.profile_sidebar_fill_color;
+
+      fm.sidebar.borderColor.value = my.profile_sidebar_border_color;
+
+      fm.update.add(D.ct("Update"));
+      fm.update.addEventListener("click", function() {
+        function onAPI(xhr) {
+          alert(xhr.responseText);
+        }
+        API.updateProfileColors(
+          fm.bg.color.value,
+          fm.textColor.value,
+          fm.linkColor.value,
+          fm.sidebar.fillColor.value,
+          fm.sidebar.borderColor.value,
+          onAPI
+        );
+      }, false);
+
+      fm.form.add(
+        D.ce("dt").add(D.ct("background image")),
+        D.ce("dd").add(fm.bg.image),
+        D.ce("dd").add(
+          D.ce("label").add(
+            fm.bg.useImage, D.ct("use image")
+          )
+        ),
+        D.ce("dd").add(
+          D.ce("label").add(
+            fm.bg.tile, D.ct("tile")
+          )
+        ),
+        D.ce("dd").add(fm.bg.update),
         D.ce("dt").add(D.ct("background color")),
-        D.ce("dd").add(profile.background.color),
+        D.ce("dd").add(fm.bg.color),
         D.ce("dt").add(D.ct("text color")),
-        D.ce("dd").add(profile.text_color),
+        D.ce("dd").add(fm.textColor),
         D.ce("dt").add(D.ct("link color")),
-        D.ce("dd").add(profile.link_color),
+        D.ce("dd").add(fm.linkColor),
         D.ce("dt").add(D.ct("sidebar color")),
-        D.ce("dd").add(profile.sidebar.fill_color),
+        D.ce("dd").add(fm.sidebar.fillColor),
         D.ce("dt").add(D.ct("sidebar border color")),
-        D.ce("dd").add(profile.sidebar.border_color),
-        D.ce("dt").add(profile.update)
+        D.ce("dd").add(fm.sidebar.borderColor),
+        D.ce("dd").add(fm.update)
       );
 
-      D.id("subaction").add(profile.form);
+      D.id("subaction").add(fm.form);
     },
 
     // Step to Render View of list of users by ids (follow requests in/out.,)
@@ -1079,6 +1164,7 @@ addEventListener("DOMContentLoaded", function() {
       tl_element.id = "timeline";
 
       timeline.forEach(function(tweet) {
+        var tweet_org = tweet;
         var isDM = "sender" in tweet && "recipient" in tweet;
         var isRT = "retweeted_status" in tweet;
 
@@ -1151,7 +1237,7 @@ addEventListener("DOMContentLoaded", function() {
           ent.reid,
           ent.text,
           ent.meta,
-          panel.makeTwAct(tweet, my)
+          panel.makeTwAct(tweet_org, my)
         );
 
         tl_element.add(ent.ry);
