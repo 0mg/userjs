@@ -507,6 +507,10 @@ addEventListener("DOMContentLoaded", function() {
           margin: 0;\
           padding: 0;\
         }\
+        html {\
+          background-attachment: fixed;\
+          background-repeat: no-repeat;\
+        }\
         body {\
           max-width: 750px;\
           margin: 0 auto;\
@@ -514,8 +518,6 @@ addEventListener("DOMContentLoaded", function() {
           line-height: 1.6;\
           font-family: "Lucida Console", monospace;\
           font-size: 14px;\
-          background-attachment: fixed;\
-          background-repeat: no-repeat;\
         }\
         button {\
           line-height: 1;\
