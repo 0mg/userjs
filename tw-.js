@@ -492,10 +492,14 @@ addEventListener("DOMContentLoaded", function() {
       var title = D.ce("title");
       var style = D.ce("style");
       var body = D.ce("body");
-      if (!document.body) document.body = body;
+      // document.body is undefined in XML
+      if (!("body" in document)) document.body = body;
 
-      html.style.height = "100%";
-      html.lang = "ja"; // Opera 10.5x Fonts Fix
+      // Original page Overlayer
+      // css 'height' does work too, but scrollable area be narrower in XML.
+      html.style.minHeight = "100%";
+      // Opera 10.5x Fonts Fix
+      html.lang = "ja";
 
       title.add(D.ct("tw-"));
       style.add(D.ct('\
@@ -961,7 +965,7 @@ addEventListener("DOMContentLoaded", function() {
             break;
           }
           case (fm.textColor): {
-            background.style.color = "#" + input.value;
+            document.body.style.color = "#" + input.value;
             break;
           }
           case (fm.linkColor): {
