@@ -1,26 +1,47 @@
 // ==UserScript==
 // @name tw-
-// @include http://api.twitter.com/-/*
-// @include https://api.twitter.com/-/*
+// @include http://api.twitter.com/1/help/test.xml?-=/*
+// @include https://api.twitter.com/1/help/test.xml?-=/*
 // @description A Twitter client
 // ==/UserScript==
 
 
-// Disable inline Script
-opera.addEventListener("BeforeScript", function(event) {
-  event.preventDefault();
-}, false);
-
-
-// Disable external Script
-opera.addEventListener("BeforeExternalScript", function(event) {
-  event.preventDefault();
-}, false);
+if (typeof opera === "object") {
+  // Disable inline Script
+  opera.addEventListener("BeforeScript", function(event) {
+    event.preventDefault();
+  }, false);
+  // Disable external Script
+  opera.addEventListener("BeforeExternalScript", function(event) {
+    event.preventDefault();
+  }, false);
+}
 
 
 // UserJS Body
 
 addEventListener("DOMContentLoaded", function() {
+
+  // URL CONST VALUE and Functions
+
+  var U = {
+    // HOMEPATH
+    ROOT: "/1/help/test.xml?-=/",
+    Q: "&",
+    // ROOT OF API PATH (API VERSION)
+    APV: "/1/",
+    getURL: function() {
+      var pathall = (location.pathname + location.search).
+                     substring(this.ROOT.length).split(this.Q);
+      var path = pathall[0].replace(/[/]+$/, "");
+      var query = pathall.slice(1).join(this.Q);
+      return {
+        path: path,
+        query: query
+      };
+    }
+  };
+
 
   // UserJS Debug Functions
 
@@ -36,20 +57,11 @@ addEventListener("DOMContentLoaded", function() {
   // API limit
   window.addEventListener("dblclick", function(event) {
     if (event.target === document.documentElement) {
-      X.get(APV + "account/rate_limit_status.json", function(xhr) {
+      X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
         alert(xhr.responseText);
       });
     }
   }, false);
-
-
-  // CONST_VALUE
-
-  // HOMEPATH (depends on @include)
-  var ROOT = "/" + location.pathname.split("/")[1] + "/";
-
-  // ROOT OF API PATH (API VERSION)
-  var APV = "/1/";
 
 
   // DOM Functions
@@ -71,7 +83,9 @@ addEventListener("DOMContentLoaded", function() {
       return e;
     }
     return {
-      ce: function(s) { return x(document.createElement(s)); },
+      ce: function(s) {
+        return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
+      },
       ct: function(s) { return document.createTextNode(s); },
       id: function(s) { return x(document.getElementById(s)); },
       tag: function(s) { return x(document.getElementsByTagName(s)[0]); },
@@ -184,7 +198,7 @@ addEventListener("DOMContentLoaded", function() {
         } else if (RegExp(re.url).test(str)) { // re.url
           var url = str;
           if (/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/.test(url)) {
-            url = ROOT + RegExp.$1;
+            url = U.ROOT + RegExp.$1;
           }
           var aHref = url;
           var aText = url;
@@ -192,7 +206,7 @@ addEventListener("DOMContentLoaded", function() {
 
         } else if (RegExp(re.mention).test(str)) { // re.mention
          var userName = str.substring(1);
-         var aHref = ROOT + userName;
+         var aHref = U.ROOT + userName;
          var aText = userName;
          return '@' + aText.link(aHref);
 
@@ -300,7 +314,7 @@ addEventListener("DOMContentLoaded", function() {
     updateProfileColors: function(background_color, text_color, link_color,
                                   sidebar_fill_color, sidebar_border_color,
                                   callback, onErr) {
-      X.post(APV + "account/update_profile_colors.xml",
+      X.post(U.APV + "account/update_profile_colors.xml",
              "profile_background_color=" + background_color +
              "&profile_text_color=" + text_color +
              "&profile_link_color=" + link_color +
@@ -310,14 +324,14 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     resolveURL: function(links, callback, onErr) {
-      X.get(APV + "urls/resolve.json?" + [""].concat(links.map(function(url) {
+      X.get(U.APV + "urls/resolve.json?" + [""].concat(links.map(function(url) {
               return encodeURIComponent(url);
             })).join("&urls[]=").substring(1), callback, onErr);
     },
 
     tweet: function(status, id, lat, lon, place_id, display_coordinates,
                     source, callback, onErr) {
-      X.post(APV + "statuses/update.xml",
+      X.post(U.APV + "statuses/update.xml",
              "status=" + (encodeURIComponent(status) || "") +
              "&in_reply_to_status_id=" + (id || "") +
              "&lat=" + (lat || "") +
@@ -328,33 +342,33 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     untweet: function(id, callback, onErr) {
-      X.post(APV + "statuses/destroy/" + id + ".json", "", callback, onErr);
+      X.post(U.APV + "statuses/destroy/" + id + ".json", "", callback, onErr);
     },
 
     retweet: function(id, callback, onErr) {
-      X.post(APV + "statuses/retweet/" + id + ".json", "", callback, onErr);
+      X.post(U.APV + "statuses/retweet/" + id + ".json", "", callback, onErr);
     },
 
     deleteMessage: function(id, callback, onErr) {
-      X.post(APV + "direct_messages/destroy/" + id + ".xml", "",
+      X.post(U.APV + "direct_messages/destroy/" + id + ".xml", "",
              callback, onErr);
     },
 
     fav: function(id, callback, onErr) {
-      X.post(APV + "favorites/create/" + id + ".xml", "", callback, onErr);
+      X.post(U.APV + "favorites/create/" + id + ".xml", "", callback, onErr);
     },
 
     unfav: function(id, callback, onErr) {
-      X.post(APV + "favorites/destroy/" + id + ".xml", "", callback, onErr);
+      X.post(U.APV + "favorites/destroy/" + id + ".xml", "", callback, onErr);
     },
 
     follow: function(uname, callback, onErr) {
-      X.post(APV + "friendships/create.xml",
+      X.post(U.APV + "friendships/create.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
     unfollow: function(uname, callback, onErr) {
-      X.post(APV + "friendships/destroy.xml",
+      X.post(U.APV + "friendships/destroy.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
@@ -363,55 +377,56 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     unrequestFollow: function(uname, callback, onErr) {
-      X.post(APV + "friendships/cancel.xml",
+      X.post(U.APV + "friendships/cancel.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
     acceptFollow: function(uname, callback, onErr) {
-      X.post(APV + "friendships/accept.xml",
+      X.post(U.APV + "friendships/accept.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
     denyFollow: function(uname, callback, onErr) {
-      X.post(APV + "friendships/deny.xml",
+      X.post(U.APV + "friendships/deny.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
     block: function(uname, callback, onErr) {
-      X.post(APV + "blocks/create.xml",
+      X.post(U.APV + "blocks/create.xml",
              "screen_name=" + uname, callback, onErr);
     },
 
     unblock: function(uname, callback, onErr) {
-      X.post(APV + "blocks/destroy.json",
+      X.post(U.APV + "blocks/destroy.json",
              "screen_name=" + uname, callback, onErr);
     },
 
     spam: function(uname, callback, onErr) {
-      X.post(APV + "report_spam.xml", "screen_name=" + uname, callback, onErr);
+      X.post(U.APV + "report_spam.xml",
+             "screen_name=" + uname, callback, onErr);
     },
 
     followList: function(uname, slug, callback, onErr) {
-      X.post(APV + "lists/subscribers/create.xml",
+      X.post(U.APV + "lists/subscribers/create.xml",
              "owner_screen_name=" + uname + "&slug=" + slug,
              callback, onErr);
     },
 
     unfollowList: function(uname, slug, callback, onErr) {
-      X.post(APV + "lists/subscribers/destroy.xml",
+      X.post(U.APV + "lists/subscribers/destroy.xml",
              "owner_screen_name=" + uname + "&slug=" + slug,
              callback, onErr);
     },
 
     createList: function(lname, mode, description, callback, onErr) {
-      X.post(APV + "lists/create.xml",
+      X.post(U.APV + "lists/create.xml",
              "name=" + lname + "&mode=" + mode + "&description=" + description,
              callback, onErr);
     },
 
     updateList: function(myname, slug, lname, mode, description,
                          callback, onErr) {
-      X.post(APV + "lists/update.xml",
+      X.post(U.APV + "lists/update.xml",
              "owner_screen_name=" + myname +
              "&slug=" + slug + "&name=" + lname +
              "&mode=" + mode + "&description=" + description,
@@ -419,27 +434,27 @@ addEventListener("DOMContentLoaded", function() {
     },
 
     deleteList: function(myname, slug, callback, onErr) {
-      X.post(APV + "lists/destroy.xml",
+      X.post(U.APV + "lists/destroy.xml",
              "owner_screen_name=" + myname + "&slug=" + slug,
              callback, onErr);
     },
 
     isMemberOfList: function(oname, slug, uname, callback, onErr) {
-      X.head(APV + "lists/members/show.xml" +
+      X.head(U.APV + "lists/members/show.xml" +
              "?owner_screen_name=" + oname + "&slug=" + slug +
              "&screen_name=" + uname,
              callback, onErr);
     },
 
     listing: function(myname, slug, uname, callback, onErr) {
-      X.post(APV + "lists/members/create.xml",
+      X.post(U.APV + "lists/members/create.xml",
              "owner_screen_name=" + myname + "&slug=" + slug +
              "&screen_name=" + uname,
              callback, onErr);
     },
 
     unlisting: function(myname, slug, uname, callback, onErr) {
-      X.post(APV + "lists/members/destroy.xml",
+      X.post(U.APV + "lists/members/destroy.xml",
              "owner_screen_name=" + myname + "&slug=" + slug +
              "&screen_name=" + uname,
              callback, onErr);
@@ -477,6 +492,7 @@ addEventListener("DOMContentLoaded", function() {
       var title = D.ce("title");
       var style = D.ce("style");
       var body = D.ce("body");
+      if (!document.body) document.body = body;
 
       html.style.height = "100%";
       html.lang = "ja"; // Opera 10.5x Fonts Fix
@@ -492,7 +508,7 @@ addEventListener("DOMContentLoaded", function() {
           margin: 0 auto;\
           padding: 1ex;\
           line-height: 1.6;\
-          font-family: "Lucida Console" sans-serif;\
+          font-family: "Lucida Console", monospace;\
           font-size: 14px;\
           background-attachment: fixed;\
           background-repeat: no-repeat;\
@@ -658,7 +674,7 @@ addEventListener("DOMContentLoaded", function() {
 
       fw.subaction.className = "user-action";
 
-      document.body.add(
+      D.tag("body").add(
         fw.header,
         fw.content.add(
           fw.subtitle,
@@ -677,9 +693,19 @@ addEventListener("DOMContentLoaded", function() {
 
     // Switch content by path in URL
     startPage: function(my) {
-      var path = location.pathname.substring(ROOT.length).replace(/[/]+$/, "");
+/*
+      var path = location.pathname.substring(U.ROOT.length).
+                 replace(/[/]+$/, "");
       var hash = path.split("/");
       var q = location.search.substring(1);
+*/
+      var curl = U.getURL();
+      var path = curl.path;
+      var hash = path.split("/");
+      var q = curl.query;
+//      alert([path,hash,q].join("\n"));
+//      return;
+      D.tag("title").textContent = "tw-/" + path;
       outline.showSubTitle(path);
       panel.showGlobalBar(my);
       panel.showTweetBox();
@@ -687,18 +713,18 @@ addEventListener("DOMContentLoaded", function() {
         case (1): {
           switch (hash[0]) {
             case ("retweeted_by_me"): {
-              content.showTL(APV + "statuses/retweeted_by_me.json?" +
-                             "include_entities=true&" + q, my);
+              content.showTL(U.APV + "statuses/retweeted_by_me.json?" + q +
+                             "&include_entities=true", my);
               break;
             }
             case ("retweeted_to_me"): {
-              content.showTL(APV + "statuses/retweeted_to_me.json?" +
-                             "include_entities=true&" + q, my);
+              content.showTL(U.APV + "statuses/retweeted_to_me.json?" + q +
+                             "&include_entities=true", my);
               break;
             }
             case ("retweets_of_me"): {
-              content.showTL(APV + "statuses/retweets_of_me.json?" +
-                             "include_entities=true&" + q, my);
+              content.showTL(U.APV + "statuses/retweets_of_me.json?" + q +
+                             "&include_entities=true", my);
               break;
             }
             case ("search"): {
@@ -706,53 +732,53 @@ addEventListener("DOMContentLoaded", function() {
               break;
             }
             case ("lists"): {
-              content.showLists(APV + "lists.json?" + q + "&cursor=-1", my);
+              content.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
               panel.showListPanel(my);
               break;
             }
             case ("inbox"): {
-              content.showTL(APV + "direct_messages.json?" +
-                             "include_entities=true&" + q + "&cursor=-1", my);
+              content.showTL(U.APV + "direct_messages.json?" + q +
+                             "&include_entities=true&cursor=-1", my);
               break;
             }
             case ("sent"): {
-              content.showTL(APV + "direct_messages/sent.json?" +
-                             "include_entities=true&" + q + "&cursor=-1", my);
+              content.showTL(U.APV + "direct_messages/sent.json?" + q +
+                             "&include_entities=true&cursor=-1", my);
               break;
             }
             case ("favorites"): {
-              content.showTL(APV + "favorites.json?" +
-                             "include_entities=true&" + q + "&cursor=-1", my);
+              content.showTL(U.APV + "favorites.json?" + q +
+                             "&include_entities=true&cursor=-1", my);
               break;
             }
             case ("following"): {
-              content.showUsers(APV + "statuses/friends.json?" + q +
+              content.showUsers(U.APV + "statuses/friends.json?" + q +
                                 "&count=20&cursor=-1", my);
               break;
             }
             case ("followers"): {
-              content.showUsers(APV + "statuses/followers.json?" + q +
+              content.showUsers(U.APV + "statuses/followers.json?" + q +
                                 "&count=20&cursor=-1", my);
               break;
             }
             case ("mentions"): {
-              content.showTL(APV + "statuses/mentions.json?" +
-                             "include_entities=true" + q, my);
+              content.showTL(U.APV + "statuses/mentions.json?" + q +
+                             "&include_entities=true", my);
               break;
             }
             case ("blocking"): {
-              content.showUsers(APV + "blocks/blocking.json?" + q, my);
+              content.showUsers(U.APV + "blocks/blocking.json?" + q, my);
               break;
             }
             case (""): {
-              content.showTL(APV + "statuses/home_timeline.json?" +
-                             "include_entities=true&" + q, my);
+              content.showTL(U.APV + "statuses/home_timeline.json?" + q +
+                             "&include_entities=true", my);
               break;
             }
             default: {
-              content.showTL(APV + "statuses/user_timeline.json?" +
-                             "include_entities=true&include_rts=true" +
-                             "&screen_name=" + hash[0] + "&" + q, my);
+              content.showTL(U.APV + "statuses/user_timeline.json?" + q +
+                             "&include_entities=true&include_rts=true" +
+                             "&screen_name=" + hash[0], my);
               outline.showProfileOutline(hash[0], my);
               break;
             }
@@ -763,11 +789,11 @@ addEventListener("DOMContentLoaded", function() {
           switch (hash[1]) {
             case ("requests"): {
               if (hash[0] === "following") {
-                content.showUsersByIds(APV + "friendships/outgoing.json?" + q +
-                                       "&cursor=-1", my);
+                content.showUsersByIds(U.APV + "friendships/outgoing.json?" +
+                                       q + "&cursor=-1", my);
               } else if (hash[0] === "followers") {
-                content.showUsersByIds(APV + "friendships/incoming.json?" + q +
-                                       "&cursor=-1", my, 1);
+                content.showUsersByIds(U.APV + "friendships/incoming.json?" +
+                                       q + "&cursor=-1", my, 1);
               }
               break;
             }
@@ -779,55 +805,58 @@ addEventListener("DOMContentLoaded", function() {
             }
             case ("memberships"): {
               if (hash[0] === "lists") {
-                content.showLists(APV + "lists/memberships.json?" + q, my);
+                content.showLists(U.APV + "lists/memberships.json?" + q, my);
               }
               break;
             }
             case ("subscriptions"): {
               if (hash[0] === "lists") {
-                content.showLists(APV + "lists/subscriptions.json?" + q, my);
+                content.showLists(U.APV + "lists/subscriptions.json?" + q, my);
               }
               break;
             }
             case ("status"):
             case ("statuses"): {
-              content.showTL(APV + "statuses/user_timeline.json?" +
-                             "include_entities=true&include_rts=true" +
-                             "&screen_name=" + hash[0] + "&" + q, my);
+              content.showTL(U.APV + "statuses/user_timeline.json?" + q +
+                             "&include_entities=true&include_rts=true" +
+                             "&screen_name=" + hash[0], my);
               break;
             }
             case ("favorites"): {
               // formal: fovorites/(screen_name||ID).json
               // http://dev.twitter.com/doc/get/favorites
-              content.showTL(APV + "favorites.json?include_entities=true&" +
-                             "screen_name=" + hash[0] + "&" + q +
+              content.showTL(U.APV + "favorites.json?" + q +
+                             "&include_entities=true" +
+                             "&screen_name=" + hash[0] +
                              "&cursor=-1", my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("following"): {
-              content.showUsers(APV + "statuses/friends.json?screen_name=" +
-                                hash[0] + "&" + q + "&count=20&cursor=-1", my);
+              content.showUsers(U.APV + "statuses/friends.json?" + q +
+                                "&screen_name=" + hash[0] +
+                                "&count=20&cursor=-1", my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("followers"): {
-              content.showUsers(APV + "statuses/followers.json?screen_name=" +
-                                hash[0] + "&" + q + "&count=20&cursor=-1", my);
+              content.showUsers(U.APV + "statuses/followers.json?" + q +
+                                "&screen_name=" + hash[0] +
+                                "&count=20&cursor=-1", my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             case ("lists"): {
-              content.showLists(APV + "lists.json?" +
-                                "screen_name=" + hash[0] + "&" + q, my);
+              content.showLists(U.APV + "lists.json?" + q +
+                                "&screen_name=" + hash[0], my);
               outline.showProfileOutline(hash[0], my, 3);
               break;
             }
             default: {
-              var url = APV + "lists/statuses.json?" +
-                        "owner_screen_name=" + hash[0] +
+              var url = U.APV + "lists/statuses.json?" + q +
+                        "&owner_screen_name=" + hash[0] +
                         "&slug=" + hash[1] +
-                        "&include_entities=true&" + q;
+                        "&include_entities=true";
               content.showTL(url, my);
               outline.showListOutline(hash, my);
               break;
@@ -839,46 +868,47 @@ addEventListener("DOMContentLoaded", function() {
           switch (hash[2]) {
             case ("timeline"): {
               if (hash[1] === "following") {
-                content.showTL(APV + "statuses/following_timeline.json?" +
-                               "include_entities=true" +
-                               "&screen_name=" + hash[0] + "&" + q, my);
+                content.showTL(U.APV + "statuses/following_timeline.json?" + q +
+                               "&include_entities=true" +
+                               "&screen_name=" + hash[0], my);
                 outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
             case ("members"): {
-              content.showUsers(APV + "lists/members.json?" +
-                                "owner_screen_name=" + hash[0] +
-                                "&slug=" + hash[1] + "&" + q, my);
+              content.showUsers(U.APV + "lists/members.json?" + q +
+                                "&owner_screen_name=" + hash[0] +
+                                "&slug=" + hash[1], my);
               outline.showListOutline(hash, my, 3);
               break;
             }
             case ("subscribers"): {
-              content.showUsers(APV + "lists/subscribers.json?" +
-                                "owner_screen_name=" + hash[0] +
-                                "&slug=" + hash[1] + "&" + q, my);
+              content.showUsers(U.APV + "lists/subscribers.json?" + q +
+                                "&owner_screen_name=" + hash[0] +
+                                "&slug=" + hash[1], my);
               outline.showListOutline(hash, my, 3);
               break;
             }
             case ("memberships"): {
               if (hash[1] === "lists") {
-                content.showLists(APV + "lists/memberships.json?" +
-                                  "screen_name=" + hash[0] + "&" + q, my);
+                content.showLists(U.APV + "lists/memberships.json?" + q +
+                                  "&screen_name=" + hash[0], my);
                 outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
             case ("subscriptions"): {
               if (hash[1] === "lists") {
-                content.showLists(APV + "lists/subscriptions.json?" +
-                                  "screen_name=" + hash[0] + "&" + q, my);
+                content.showLists(U.APV + "lists/subscriptions.json?" + q +
+                                  "&screen_name=" + hash[0], my);
                 outline.showProfileOutline(hash[0], my, 3);
               }
               break;
             }
             default: {
               if (hash[1] === "status" || hash[1] === "statuses") {
-                content.showTL(APV + "statuses/show/" + hash[2] + ".json", my);
+                content.showTL(U.APV + "statuses/show/" + hash[2] + ".json?" +
+                               q, my);
                 outline.showProfileOutline(hash[0], my, 1);
               }
               break;
@@ -903,6 +933,7 @@ addEventListener("DOMContentLoaded", function() {
       outline.rendProfileOutline(my, my, 2);
       outline.changeDesign(my);
 
+      var background = D.tag("html");
       var fm = {
         form: D.ce("dl"),
         bg: {
@@ -926,11 +957,11 @@ addEventListener("DOMContentLoaded", function() {
         if (input.value.length !== 6 || isNaN("0x" + input.value)) return;
         switch (input) {
           case (fm.bg.color): {
-            document.body.style.backgroundColor = "#" + input.value;
+            background.style.backgroundColor = "#" + input.value;
             break;
           }
           case (fm.textColor): {
-            document.body.style.color = "#" + input.value;
+            background.style.color = "#" + input.value;
             break;
           }
           case (fm.linkColor): {
@@ -958,14 +989,14 @@ addEventListener("DOMContentLoaded", function() {
       fm.bg.useImage.checked = my.profile_use_background_image;
       fm.bg.useImage.addEventListener("change", function(event) {
         var use = event.target.checked;
-        document.body.style.backgroundImage =
+        background.style.backgroundImage =
           use ? "url(" + my.profile_background_image_url + ")" : "none";
       }, false);
 
       fm.bg.tile.type = "checkbox";
       fm.bg.tile.checked = my.profile_background_tile;
       fm.bg.tile.addEventListener("change", function(v) {
-        document.body.style.backgroundRepeat =
+        background.style.backgroundRepeat =
           v.target.checked ? "repeat" : "no-repeat";
       }, false);
 
@@ -1050,7 +1081,7 @@ addEventListener("DOMContentLoaded", function() {
         }
         var ids = ids_data.ids.join(",");
         if (ids.length) {
-          X.get(APV + "users/lookup.json?user_id=" + ids, onGetUsers);
+          X.get(U.APV + "users/lookup.json?user_id=" + ids, onGetUsers);
         }
       }
       X.get(url, onGetIds);
@@ -1082,7 +1113,7 @@ addEventListener("DOMContentLoaded", function() {
 
         lu.screen_name.className = "screen_name";
         lu.screen_name.add(D.ct(user.screen_name));
-        lu.screen_name.href = ROOT + user.screen_name;
+        lu.screen_name.href = U.ROOT + user.screen_name;
 
         lu.icon.className = "icon";
         lu.icon.src = user.profile_image_url;
@@ -1142,7 +1173,7 @@ addEventListener("DOMContentLoaded", function() {
         lists.className = "listslist";
 
         data.lists.forEach(function(l) {
-          var listPath = ROOT + l.full_name.substring(1);
+          var listPath = U.ROOT + l.full_name.substring(1);
           lists.add(
             D.ce("dt").sa("class", l.mode).add(
               D.ce("a").sa("href", listPath).add(D.ct(l.full_name))
@@ -1209,7 +1240,7 @@ addEventListener("DOMContentLoaded", function() {
         }
 
         ent.name.className = "screen_name";
-        ent.name.href = ROOT + tweet.user.screen_name;
+        ent.name.href = U.ROOT + tweet.user.screen_name;
         ent.name.add(D.ct(tweet.user.screen_name));
 
         ent.nick.className = "name";
@@ -1221,12 +1252,12 @@ addEventListener("DOMContentLoaded", function() {
 
         ent.reid.className = "in_reply_to";
         if (tweet.in_reply_to_status_id) {
-          ent.reid.href = ROOT + tweet.in_reply_to_screen_name + "/status/" +
+          ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
                           tweet.in_reply_to_status_id_str;
           ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
         }
         if (isDM) {
-          ent.reid.href = ROOT + tweet.recipient_screen_name;
+          ent.reid.href = U.ROOT + tweet.recipient_screen_name;
           ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
         }
 
@@ -1237,8 +1268,10 @@ addEventListener("DOMContentLoaded", function() {
         ent.meta.className = "meta";
 
         ent.date.className = "created_at";
-        ent.date.href = isDM ? "?count=1&max_id=" + tweet.id_str :
-                        "http://m.twitter.com/statuses/" + tweet.id_str;
+        var dmhref = U.ROOT + U.getURL().path +
+                     U.Q + "count=1&max_id=" + tweet.id_str;
+        var tweethref = "http://m.twitter.com/statuses/" + tweet.id_str;
+        ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
         ent.src.className = "source";
@@ -1263,8 +1296,13 @@ addEventListener("DOMContentLoaded", function() {
       D.id("main").add(tl_element);
 
       if (timeline.length) {
+        var curl = U.getURL();
+        var href = U.ROOT + curl.path +
+                   U.Q + "page=2&max_id=" + timeline[0].id_str;
+
         var past = D.ce("a").
-                   sa("href", "?page=2&max_id=" + timeline[0].id_str).
+                   //sa("href", "?page=2&max_id=" + timeline[0].id_str).
+                   sa("href", href).
                    add(D.ct("past"));
 
         D.id("cursor").add(past);
@@ -1283,17 +1321,21 @@ addEventListener("DOMContentLoaded", function() {
           next: D.ce("a"),
           prev: D.ce("a")
         };
+        var curl = U.getURL();
 
         if (data.previous_cursor) {
-          cur.prev.href = "?cursor=" + data.previous_cursor;
+          //cur.prev.href = "?cursor=" + data.previous_cursor;
+          cur.prev.href = U.ROOT + curl.path +
+                          U.Q + "cursor=" + data.previous_cursor;
           cur.prev.add(D.ct("Prev"));
           cur.sor.add(D.ce("li").add(cur.prev));
         }
 
         if (data.next_cursor) {
-          cur.next.href = "?cursor=" + data.next_cursor;
+          //cur.next.href = "?cursor=" + data.next_cursor;
+          cur.next.href = U.ROOT + curl.path +
+                          U.Q + "cursor=" + data.next_cursor;
           cur.next.add(D.ct("Next"));
-
           cur.sor.add(D.ce("li").add(cur.next));
 
           var link = D.ce("link");
@@ -1508,7 +1550,7 @@ addEventListener("DOMContentLoaded", function() {
 
       D.id("subaction").add(ab.node);
 
-      X.get(APV + "friendships/show.json?target_id=" + user.id_str,
+      X.get(U.APV + "friendships/show.json?target_id=" + user.id_str,
             lifeFollowButtons);
 
       function lifeFollowButtons(xhr) {
@@ -1615,7 +1657,7 @@ addEventListener("DOMContentLoaded", function() {
 
       D.id("subaction").add(al.node);
 
-      X.get(APV + "lists.json", lifeListButtons);
+      X.get(U.APV + "lists.json", lifeListButtons);
 
       function lifeListButtons(xhr) {
         var data = JSON.parse(xhr.responseText);
@@ -1692,51 +1734,51 @@ addEventListener("DOMContentLoaded", function() {
 
       g.bar.id = "globalbar";
 
-      g.home.href = ROOT;
+      g.home.href = U.ROOT;
       g.home.add(D.ct("Home"));
 
-      g.profile.href = ROOT + my.screen_name;
+      g.profile.href = U.ROOT + my.screen_name;
       g.profile.add(D.ct("Profile:" + my.statuses_count));
 
-      g.replies.href = ROOT + "mentions";
+      g.replies.href = U.ROOT + "mentions";
       g.replies.add(D.ct("@" + my.screen_name));
 
-      g.inbox.href = ROOT + "inbox";
+      g.inbox.href = U.ROOT + "inbox";
       g.inbox.add(D.ct("Inbox"));
 
-      g.sent.href = ROOT + "sent";
+      g.sent.href = U.ROOT + "sent";
       g.sent.add(D.ct("Sent"));
 
-      g.favorites.href = ROOT + "favorites";
+      g.favorites.href = U.ROOT + "favorites";
       g.favorites.add(D.ct("Favorites:" + my.favourites_count));
 
-      g.following.href = ROOT + "following";
+      g.following.href = U.ROOT + "following";
       g.following.add(D.ct("Following:" + my.friends_count));
 
-      g.followers.href = ROOT + "followers";
+      g.followers.href = U.ROOT + "followers";
       g.followers.add(D.ct("Followers:" + my.followers_count));
 
-      g.follow_req_in.href = ROOT + "followers/requests";
+      g.follow_req_in.href = U.ROOT + "followers/requests";
       g.follow_req_in.add(D.ct("req"));
 
-      g.follow_req_out.href = ROOT + "following/requests";
+      g.follow_req_out.href = U.ROOT + "following/requests";
       g.follow_req_out.add(D.ct("req"));
 
-      g.lists.href = ROOT + "lists";
+      g.lists.href = U.ROOT + "lists";
       g.lists.add(D.ct("Lists"));
 
-      g.listsub.href = ROOT + "lists/subscriptions";
+      g.listsub.href = U.ROOT + "lists/subscriptions";
       g.listsub.add(D.ct("Subscriptions"));
 
-      g.listed.href = ROOT + "lists/memberships";
+      g.listed.href = U.ROOT + "lists/memberships";
       g.listed.add(D.ct("Listed:" + my.listed_count));
 
-      g.blocking.href = ROOT + "blocking";
+      g.blocking.href = U.ROOT + "blocking";
       g.blocking.add(D.ct("Blocking"));
 
       g.logout.add(D.ct("logout"));
       g.logout.addEventListener("click", function() {
-        API.logout(function(xhr) { location = ROOT; });
+        API.logout(function(xhr) { location.href = U.ROOT; });
       }, false);
 
       g.bar.add(
@@ -1816,9 +1858,9 @@ addEventListener("DOMContentLoaded", function() {
         add: D.ce("button").add(D.ct("Add")),
         del: D.ce("button").add(D.ct("Delete"))
       };
+      var curl = U.getURL();
 
-      um.dir.value = location.pathname.substring(ROOT.length).
-                     match(/[^/]+(?:[/][^/]+)?/);
+      um.dir.value = curl.path.match(/[^/]+(?:[/][^/]+)?/);
 
       um.add.addEventListener("click", onBtn, false);
       um.del.addEventListener("click", onBtn, false);
@@ -1986,7 +2028,7 @@ addEventListener("DOMContentLoaded", function() {
 
       key.split("/").forEach(function(name, i, key) {
         var dir = D.ce("a");
-        dir.href = ROOT + key.slice(0, i + 1).join("/");
+        dir.href = U.ROOT + key.slice(0, i + 1).join("/");
         dir.add(D.ct(name));
         i && sub.add(D.ct("/"));
         sub.add(dir);
@@ -1997,16 +2039,17 @@ addEventListener("DOMContentLoaded", function() {
 
     // Change CSS(text color, background-image) by user settings
     changeDesign: function(user) {
-      document.body.style.backgroundColor = "#" + user.profile_background_color;
+      var background = D.tag("html");
+      background.style.backgroundColor = "#" + user.profile_background_color;
 
       if (user.profile_use_background_image) {
         var bgImgUrl = "url(" + user.profile_background_image_url + ")";
         var bgImgRepeat = user.profile_background_tile ?
                           "repeat" : "no-repeat";
-        document.body.style.backgroundImage = bgImgUrl;
-        document.body.style.backgroundRepeat = bgImgRepeat;
+        background.style.backgroundImage = bgImgUrl;
+        background.style.backgroundRepeat = bgImgRepeat;
       } else {
-        document.body.style.backgroundImage = "none";
+        background.style.backgroundImage = "none";
       }
 
       var colorSideFill = user.profile_sidebar_fill_color ?
@@ -2035,7 +2078,7 @@ addEventListener("DOMContentLoaded", function() {
     // Step to Render list outline and color
     showListOutline: function(hash, my, mode) {
       var that = this;
-      var url = APV + "lists/show.json?" +
+      var url = U.APV + "lists/show.json?" +
                 "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
 
       X.get(url, function(xhr) {
@@ -2062,10 +2105,10 @@ addEventListener("DOMContentLoaded", function() {
       li.st.className = "list-profile";
       if (list.mode === "private") li.st.className += " private";
 
-      li.members.href = ROOT + list.uri.substring(1) + "/members";
+      li.members.href = U.ROOT + list.uri.substring(1) + "/members";
       li.members.add(D.ct("Members"));
 
-      li.followers.href = ROOT + list.uri.substring(1) + "/subscribers";
+      li.followers.href = U.ROOT + list.uri.substring(1) + "/subscribers";
       li.followers.add(D.ct("Subscribers"));
 
       li.st.add(
@@ -2112,7 +2155,7 @@ addEventListener("DOMContentLoaded", function() {
         API.unblock(screen_name, onGet);
       }
 
-      X.get(APV + "users/show.json?screen_name=" + screen_name, onGet, onErr);
+      X.get(U.APV + "users/show.json?screen_name=" + screen_name, onGet, onErr);
     },
 
     // Render outline of User Profile
@@ -2152,29 +2195,29 @@ addEventListener("DOMContentLoaded", function() {
       p.bio.innerHTML = user.description ? T.linkifyText(user.description) : "";
 
       p.tweets.add(D.ct("Tweets"));
-      p.tweets.href = ROOT + user.screen_name + "/status";
+      p.tweets.href = U.ROOT + user.screen_name + "/status";
 
       p.following.add(D.ct("Following"));
-      p.following.href = ROOT + user.screen_name + "/following";
+      p.following.href = U.ROOT + user.screen_name + "/following";
 
       p.following_timeline.add(D.ct("Timeline"));
-      p.following_timeline.href = ROOT + user.screen_name +
+      p.following_timeline.href = U.ROOT + user.screen_name +
                                   "/following/timeline";
 
       p.followers.add(D.ct("Followers"));
-      p.followers.href = ROOT + user.screen_name + "/followers";
+      p.followers.href = U.ROOT + user.screen_name + "/followers";
 
       p.lists.add(D.ct("Lists"));
-      p.lists.href = ROOT + user.screen_name + "/lists";
+      p.lists.href = U.ROOT + user.screen_name + "/lists";
 
       p.listsub.add(D.ct("Subscriptions"));
-      p.listsub.href = ROOT + user.screen_name + "/lists/subscriptions";
+      p.listsub.href = U.ROOT + user.screen_name + "/lists/subscriptions";
 
       p.listed.add(D.ct("Listed"));
-      p.listed.href = ROOT + user.screen_name + "/lists/memberships";
+      p.listed.href = U.ROOT + user.screen_name + "/lists/memberships";
 
       p.favorites.add(D.ct("Favorites"));
-      p.favorites.href = ROOT + user.screen_name + "/favorites";
+      p.favorites.href = U.ROOT + user.screen_name + "/favorites";
 
       p.box.add(
         D.ce("dt").add(D.ct("Screen Name")),
@@ -2220,7 +2263,7 @@ addEventListener("DOMContentLoaded", function() {
 
   // Check if my Logged-in
   function main() {
-    X.get(APV + "account/verify_credentials.json",
+    X.get(U.APV + "account/verify_credentials.json",
       function(xhr) {
         var my = JSON.parse(xhr.responseText);
         init.initDOM(my);
