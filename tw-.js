@@ -1287,11 +1287,16 @@ addEventListener("DOMContentLoaded", function() {
         ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
-        ent.src.innerHTML = tweet.source;
-        if (ent.src.lastChild.nodeType === 1 &&
-            ent.src.lastChild.lastChild.nodeType === 3) {
-          ent.src = D.ce("a").sa("href", ent.src.lastChild.href).
-                    add(ent.src.lastChild.lastChild);
+        var sandbox = D.ce("p");
+        sandbox.innerHTML = tweet.source;
+        if (sandbox.childNodes.length === 1 &&
+            sandbox.lastChild.nodeName === "A" &&
+            sandbox.lastChild.childNodes.length === 1 &&
+            sandbox.lastChild.lastChild.nodeType === 3) {
+          ent.src = D.ce("a").sa("href", sandbox.lastChild.href).
+                    add(sandbox.lastChild.lastChild);
+        } else {
+          ent.src.add(D.ct(tweet.source));
         }
         ent.src.className = "source";
 
