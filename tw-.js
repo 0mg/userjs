@@ -1324,7 +1324,6 @@ addEventListener("DOMContentLoaded", function() {
                    U.Q + "page=2&max_id=" + timeline[0].id_str;
 
         var past = D.ce("a").
-                   //sa("href", "?page=2&max_id=" + timeline[0].id_str).
                    sa("href", href).
                    add(D.ct("past"));
 
@@ -1347,7 +1346,6 @@ addEventListener("DOMContentLoaded", function() {
         var curl = U.getURL();
 
         if (data.previous_cursor) {
-          //cur.prev.href = "?cursor=" + data.previous_cursor;
           cur.prev.href = U.ROOT + curl.path +
                           U.Q + "cursor=" + data.previous_cursor;
           cur.prev.add(D.ct("Prev"));
@@ -1355,7 +1353,6 @@ addEventListener("DOMContentLoaded", function() {
         }
 
         if (data.next_cursor) {
-          //cur.next.href = "?cursor=" + data.next_cursor;
           cur.next.href = U.ROOT + curl.path +
                           U.Q + "cursor=" + data.next_cursor;
           cur.next.add(D.ct("Next"));
