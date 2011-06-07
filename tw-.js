@@ -105,7 +105,6 @@ addEventListener("DOMContentLoaded", function() {
     var xssText = T.decodeHTML(innerText);
     var re = {
       url: "(?:https?://|javascript:|data:)\\S+",
-      //htmlRef: "&#x?[a-zA-Z\\d]+;",
       hashTag: "#\\w+",
       mention: "@\\w+(?:/[-\\w]+)?",
       crlf: "\r\n|\r|\n",
@@ -117,27 +116,27 @@ addEventListener("DOMContentLoaded", function() {
 
     for (var i = 0, len = splitText.length; i < len; ++i) {
       var str = splitText[i];
-      if (RegExp(re.crlf).test(str)) { // CRLF
+      if (str === "\r\n" || str === "\r" || str === "\n") { // CRLF
         fragment.add(D.ce("br"));
 
       } else if (str.length === 1) { // NormalText
         fragment.add(D.ct(str));
 
-      } else if (RegExp(re.url).test(str)) { // http://URL/
+      } else if (str.indexOf(":") !== -1) { // http://URL/
         var url = str;
         var a = D.ce("a");
         a.href = url;
         a.add(D.ct(url));
         fragment.add(a);
 
-      } else if (RegExp(re.mention).test(str)) { // @mention
+      } else if (str.indexOf("@") !== -1) { // @mention
         var userName = str.substring(1);
         var a = D.ce("a");
         a.href = U.ROOT + userName;
         a.add(D.ct(userName));
         fragment.add(D.ct("@"), a);
 
-      } else if (RegExp(hashTag).test(str)) { // #hashtag
+      } else { // #hashtag
         var hashTag = str;
         var a = D.ce("a");
         a.href = "http://search.twitter.com/search?q=" +
@@ -145,8 +144,6 @@ addEventListener("DOMContentLoaded", function() {
         a.add(D.ct(hashTag));
         fragment.add(a);
 
-      } else { // &htmlRef;
-        fragment.add(D.ct(str));
       }
     }
     fragment.normalize();
