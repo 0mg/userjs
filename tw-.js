@@ -94,6 +94,64 @@ addEventListener("DOMContentLoaded", function() {
       del: function(e) { return e.parentNode.removeChild(e); }
     };
   };
+  // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
+  D.tweetize = function(innerText) {
+    var fragment = D.cf();
+    if (!innerText) { // "", null, false, undefined.,
+      fragment.add(D.ct(""));
+      return fragment;
+    }
+
+    var xssText = T.decodeHTML(innerText);
+    var re = {
+      url: "(?:https?://|javascript:|data:)\\S+",
+      //htmlRef: "&#x?[a-zA-Z\\d]+;",
+      hashTag: "#\\w+",
+      mention: "@\\w+(?:/[-\\w]+)?",
+      crlf: "\r\n|\r|\n",
+      normalText: "."
+    };
+    var splitter = RegExp([re.url, re.hashTag, re.mention,
+                           re.normalText, re.crlf].join("|"), "g");
+    var splitText = xssText.match(splitter);
+
+    for (var i = 0, len = splitText.length; i < len; ++i) {
+      var str = splitText[i];
+      if (RegExp(re.crlf).test(str)) { // CRLF
+        fragment.add(D.ce("br"));
+
+      } else if (str.length === 1) { // NormalText
+        fragment.add(D.ct(str));
+
+      } else if (RegExp(re.url).test(str)) { // http://URL/
+        var url = str;
+        var a = D.ce("a");
+        a.href = url;
+        a.add(D.ct(url));
+        fragment.add(a);
+
+      } else if (RegExp(re.mention).test(str)) { // @mention
+        var userName = str.substring(1);
+        var a = D.ce("a");
+        a.href = U.ROOT + userName;
+        a.add(D.ct(userName));
+        fragment.add(D.ct("@"), a);
+
+      } else if (RegExp(hashTag).test(str)) { // #hashtag
+        var hashTag = str;
+        var a = D.ce("a");
+        a.href = "http://search.twitter.com/search?q=" +
+                  encodeURIComponent(hashTag);
+        a.add(D.ct(hashTag));
+        fragment.add(a);
+
+      } else { // &htmlRef;
+        fragment.add(D.ct(str));
+      }
+    }
+    fragment.normalize();
+    return fragment;
+  };
 
 
   // JSON Functions
@@ -170,62 +228,14 @@ addEventListener("DOMContentLoaded", function() {
 
 
   // Text Functions
-
   var T = {
-    // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
-    linkifyText: function(text) {
-      text = text.replace(/"/g, "&quot;");
-
-      var re = {
-        url: "(?:https?://|javascript:|data:)\\S+",
-        htmlRef: "&#x?[a-zA-Z\\d]+;",
-        hashTag: "#\\w+",
-        mention: "@\\w+(?:/[-\\w]+)?",
-        normalText: "[\\S\\s]",
-        emptyText: ""
-      };
-
-      var splitter = RegExp([re.url, re.htmlRef, re.hashTag, re.mention,
-                             re.normalText, re.emptyText].join("|"), "g");
-
-      var linkifiedText = text.match(splitter).map(linkify).join("");
-
-      function linkify(str) {
-        if (str.length <= 1) { // re.normalText, re.emptyText
-          // this `if` section is removable why it just be for acceleration.
-          return str;
-
-        } else if (RegExp(re.url).test(str)) { // re.url
-          var url = str;
-          if (/^https?:\/\/twitter\.com\/(?:#!\/)?(.*)/.test(url)) {
-            url = U.ROOT + RegExp.$1;
-          }
-          var aHref = url;
-          var aText = url;
-          return aText.link(aHref);
-
-        } else if (RegExp(re.mention).test(str)) { // re.mention
-         var userName = str.substring(1);
-         var aHref = U.ROOT + userName;
-         var aText = userName;
-         return '@' + aText.link(aHref);
-
-        } else if (RegExp(hashTag).test(str)) { // re.hashTag
-          var hashTag = str;
-          var aHref = "http://search.twitter.com/search?q=" +
-                      encodeURIComponent(hashTag);
-          var aText = hashTag;
-          return aText.link(aHref);
-
-        } else { // re.htmlRef
-                 // (re.normalText, re.emptyText) if 1st `if` section removed
-          return str;
-        }
-      }
-
-      return linkifiedText;
+    // eg. '&lt;' to '<', '&#x70;' to 'p'
+    decodeHTML: function(innerText) {//.replace(/"/g, "&quot;");
+      var e = D.ce("p");
+      e.innerHTML = innerText.replace(/</g, "&lt;");
+                    // all tags be serialized
+      return e.textContent;
     },
-
     // eg. '2011/5/27 11:11' to '3 minutes ago'
     gapTime: function(n, p) {
       var g = n - p;
@@ -489,6 +499,7 @@ addEventListener("DOMContentLoaded", function() {
 
       var html = D.ce("html");
       var head = D.ce("head");
+      var meta = D.ce("meta");
       var title = D.ce("title");
       var style = D.ce("style");
       var body = D.ce("body");
@@ -496,11 +507,12 @@ addEventListener("DOMContentLoaded", function() {
       if (!("body" in document)) document.body = body;
 
       // Original page Overlayer
-      // css 'height' does work too, but scrollable area be narrower in XML.
+      // css 'height' does work, but scrollable area be narrower in XML.
       html.style.minHeight = "100%";
       // Opera 10.5x Fonts Fix
       html.lang = "ja";
 
+      meta.sa("charset", "utf-8");
       title.add(D.ct("tw-"));
       style.add(D.ct('\
         * {\
@@ -610,6 +622,14 @@ addEventListener("DOMContentLoaded", function() {
         .tweet .meta {\
           color: #999;\
         }\
+        .user .meta,\
+        .tweet .meta {\
+          font-size: smaller;\
+        }\
+        .user .meta a,\
+        .tweet .meta a {\
+          color: inherit;\
+        }\
         .tweet.retweet::before {\
           content: "RT";\
           margin-right: 0.5ex;\
@@ -625,22 +645,17 @@ addEventListener("DOMContentLoaded", function() {
         .tweet .in_reply_to {\
           font-size: smaller;\
         }\
-        .user .icon,\
-        .tweet .icon {\
+        .user .user-icon,\
+        .tweet .user-icon {\
           position: absolute;\
           left: 1ex;\
           top: 1ex;\
           width: 48px;\
           height: 48px;\
         }\
-        .user .meta,\
-        .tweet .meta {\
-          font-size: smaller;\
-        }\
-        .user .created_at,\
-        .tweet .created_at,\
-        .tweet .source * {\
-          color: inherit;\
+        .user-profile .user-icon {\
+          width: 73px;\
+          height: 73px;\
         }\
         .tweet-action {\
           font-size: smaller;\
@@ -655,7 +670,7 @@ addEventListener("DOMContentLoaded", function() {
         }\
       '));
 
-      document.appendChild(html.add(head.add(style, title), body));
+      document.appendChild(html.add(head.add(meta, title, style), body));
     },
 
     // Set DOM struct of tw-
@@ -699,20 +714,12 @@ addEventListener("DOMContentLoaded", function() {
 
     // Switch content by path in URL
     startPage: function(my) {
-/*
-      var path = location.pathname.substring(U.ROOT.length).
-                 replace(/[/]+$/, "");
-      var hash = path.split("/");
-      var q = location.search.substring(1);
-*/
       var curl = U.getURL();
       var path = curl.path;
       var hash = path.split("/");
       var q = curl.query;
-//      alert([path,hash,q].join("\n"));
-//      return;
       D.tag("title").textContent = "tw-/" + path;
-      outline.showSubTitle(path);
+      outline.showSubTitle(hash);
       panel.showGlobalBar(my);
       panel.showTweetBox();
       switch (hash.length) {
@@ -818,6 +825,7 @@ addEventListener("DOMContentLoaded", function() {
             case ("subscriptions"): {
               if (hash[0] === "lists") {
                 content.showLists(U.APV + "lists/subscriptions.json?" + q, my);
+                panel.showUserManager(my);
               }
               break;
             }
@@ -1121,15 +1129,15 @@ addEventListener("DOMContentLoaded", function() {
         lu.screen_name.add(D.ct(user.screen_name));
         lu.screen_name.href = U.ROOT + user.screen_name;
 
-        lu.icon.className = "icon";
+        lu.icon.className = "user-icon";
+        lu.icon.alt = user.screen_name;
         lu.icon.src = user.profile_image_url;
-        lu.icon.alt = user.name;
 
         lu.name.className = "name";
-        lu.name.add(D.ct(user.name));
+        lu.name.add(D.tweetize(user.name));
 
         lu.description.className = "description";
-        lu.description.innerHTML = T.linkifyText(user.description || "");
+        lu.description.add(D.tweetize(user.description));
 
         lu.created_at.className = "created_at";
         lu.created_at.href = user.url || lu.screen_name.href;
@@ -1184,7 +1192,7 @@ addEventListener("DOMContentLoaded", function() {
             D.ce("dt").sa("class", l.mode).add(
               D.ce("a").sa("href", listPath).add(D.ct(l.full_name))
             ),
-            D.ce("dd").add(D.ct(l.description))
+            D.ce("dd").add(D.tweetize(l.description))
           );
         });
 
@@ -1250,10 +1258,10 @@ addEventListener("DOMContentLoaded", function() {
         ent.name.add(D.ct(tweet.user.screen_name));
 
         ent.nick.className = "name";
-        ent.nick.add(D.ct(tweet.user.name));
+        ent.nick.add(D.tweetize(tweet.user.name));
 
-        ent.icon.className = "icon";
-        ent.icon.alt = tweet.user.name;
+        ent.icon.className = "user-icon";
+        ent.icon.alt = tweet.user.screen_name;
         ent.icon.src = tweet.user.profile_image_url;
 
         ent.reid.className = "in_reply_to";
@@ -1268,8 +1276,7 @@ addEventListener("DOMContentLoaded", function() {
         }
 
         ent.text.className = "text";
-        ent.text.innerHTML = T.linkifyText(tweet.text);
-        ent.text.innerHTML = ent.text.innerHTML.replace(/\r\n|\r|\n/g, "<br>");
+        ent.text.add(D.tweetize(tweet.text));
 
         ent.meta.className = "meta";
 
@@ -1280,8 +1287,12 @@ addEventListener("DOMContentLoaded", function() {
         ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
-        ent.src.className = "source";
         ent.src.innerHTML = tweet.source;
+        if (ent.src.lastChild.nodeType === 1) {
+          ent.src = D.ce("a").sa("href", ent.src.lastChild.href).
+                    add(ent.src.lastChild.lastChild);
+        }
+        ent.src.className = "source";
 
         ent.meta.add(ent.date);
         if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
@@ -2029,12 +2040,12 @@ addEventListener("DOMContentLoaded", function() {
   // Render View of Outline (users profile, list profile.,)
   var outline = {
     // tw- path information
-    showSubTitle: function(key) {
+    showSubTitle: function(hash) {
       var sub = D.cf();
 
-      key.split("/").forEach(function(name, i, key) {
+      hash.forEach(function(name, i, hash) {
         var dir = D.ce("a");
-        dir.href = U.ROOT + key.slice(0, i + 1).join("/");
+        dir.href = U.ROOT + hash.slice(0, i + 1).join("/");
         dir.add(D.ct(name));
         i && sub.add(D.ct("/"));
         sub.add(dir);
@@ -2123,7 +2134,7 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(D.ct("Full Name")),
         D.ce("dd").add(D.ct(list.full_name)),
         D.ce("dt").add(D.ct("Description")),
-        D.ce("dd").add(D.ct(list.description)),
+        D.ce("dd").add(D.tweetize(list.description)),
         D.ce("dt").add(li.members),
         D.ce("dd").add(D.ct(list.member_count)),
         D.ce("dt").add(li.followers),
@@ -2185,9 +2196,8 @@ addEventListener("DOMContentLoaded", function() {
       p.box.className = "user-profile";
       if (user["protected"]) p.box.className += " protected";
 
-      p.icon.className = "icon";
-      p.icon.alt = user.name;
-      p.icon.width = "73";
+      p.icon.className = "user-icon";
+      p.icon.alt = user.screen_name;
       p.icon.src = user.profile_image_url.replace("_normal.", "_bigger.");
 
       p.icorg.add(p.icon);
@@ -2198,7 +2208,7 @@ addEventListener("DOMContentLoaded", function() {
         p.url.add(D.ct(user.url));
       }
 
-      p.bio.innerHTML = user.description ? T.linkifyText(user.description) : "";
+      p.bio.add(D.tweetize(user.description));
 
       p.tweets.add(D.ct("Tweets"));
       p.tweets.href = U.ROOT + user.screen_name + "/status";
@@ -2231,9 +2241,9 @@ addEventListener("DOMContentLoaded", function() {
         D.ce("dt").add(D.ct("Icon")),
         D.ce("dd").add(p.icorg),
         D.ce("dt").add(D.ct("Name")),
-        D.ce("dd").add(D.ct(user.name)),
+        D.ce("dd").add(D.tweetize(user.name)),
         D.ce("dt").add(D.ct("Location")),
-        D.ce("dd").add(D.ct(user.location || "")),
+        D.ce("dd").add(D.tweetize(user.location)),
         D.ce("dt").add(D.ct("Web")),
         D.ce("dd").add(p.url),
         D.ce("dt").add(D.ct("Bio")),
@@ -2276,7 +2286,7 @@ addEventListener("DOMContentLoaded", function() {
         init.structPage();
         pre.startPage(my);
       },
-      function() {
+      function(xhr) {
         location.href = "/login?redirect_after_login=" +
                         encodeURIComponent(location);
       }
