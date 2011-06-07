@@ -1290,7 +1290,7 @@ addEventListener("DOMContentLoaded", function() {
         var sandbox = D.ce("p");
         sandbox.innerHTML = tweet.source;
         if (sandbox.childNodes.length === 1 &&
-            sandbox.lastChild.nodeName === "A" &&
+            sandbox.lastChild.nodeName.toUpperCase() === "A" &&
             sandbox.lastChild.childNodes.length === 1 &&
             sandbox.lastChild.lastChild.nodeType === 3) {
           ent.src = D.ce("a").sa("href", sandbox.lastChild.href).
