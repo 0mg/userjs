@@ -1288,7 +1288,8 @@ addEventListener("DOMContentLoaded", function() {
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
         ent.src.innerHTML = tweet.source;
-        if (ent.src.lastChild.nodeType === 1) {
+        if (ent.src.lastChild.nodeType === 1 &&
+            ent.src.lastChild.lastChild.nodeType === 3) {
           ent.src = D.ce("a").sa("href", ent.src.lastChild.href).
                     add(ent.src.lastChild.lastChild);
         }
