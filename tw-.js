@@ -104,39 +104,32 @@ addEventListener("DOMContentLoaded", function() {
 
     var xssText = T.decodeHTML(innerText);
     var re = {
-      url: "(?:https?://|javascript:|data:)\\S+",
-      hashTag: "#\\w+",
-      mention: "@\\w+(?:/[-\\w]+)?",
-      crlf: "\r\n|\r|\n",
-      normalText: "."
+      url: /(^(?:https?:\/\/|javascript:|data:)\S+)/,
+      mention: /(^@\w+(?:\/[-\w]+)?)/,
+      hashTag: /(^#\w+)/,
+      crlf: /(^\r\n|^\r|^\n)/
     };
-    var splitter = RegExp([re.url, re.hashTag, re.mention,
-                           re.normalText, re.crlf].join("|"), "g");
-    var splitText = xssText.match(splitter);
 
-    for (var i = 0, len = splitText.length; i < len; ++i) {
-      var str = splitText[i];
-      if (str === "\r\n" || str === "\r" || str === "\n") { // CRLF
-        fragment.add(D.ce("br"));
-
-      } else if (str.length === 1) { // NormalText
-        fragment.add(D.ct(str));
-
-      } else if (str.indexOf(":") !== -1) { // http://URL/
+    var context = xssText;
+    for (var str = ""; context = context.slice(str.length);) {
+      if (re.url.test(context)) { // http://URL/
+        str = RegExp.$1;
         var url = str;
         var a = D.ce("a");
         a.href = url;
         a.add(D.ct(url));
         fragment.add(a);
 
-      } else if (str.indexOf("@") !== -1) { // @mention
+      } else if (re.mention.test(context)) { // @mention
+        str = RegExp.$1;
         var userName = str.substring(1);
         var a = D.ce("a");
         a.href = U.ROOT + userName;
         a.add(D.ct(userName));
         fragment.add(D.ct("@"), a);
 
-      } else { // #hashtag
+      } else if (re.hashTag.test(context)) { // #hashtag
+        str = RegExp.$1;
         var hashTag = str;
         var a = D.ce("a");
         a.href = "http://search.twitter.com/search?q=" +
@@ -144,6 +137,13 @@ addEventListener("DOMContentLoaded", function() {
         a.add(D.ct(hashTag));
         fragment.add(a);
 
+      } else if (re.crlf.test(context)) { // CRLF
+        str = RegExp.$1;
+        fragment.add(D.ce("br"));
+
+      } else { // OtherText
+        str = context.substring(0, 1);
+        fragment.add(D.ct(str));
       }
     }
     fragment.normalize();
