@@ -104,7 +104,7 @@ addEventListener("DOMContentLoaded", function() {
 
     var xssText = T.decodeHTML(innerText);
     var re = {
-      url: /(^(?:https?:\/\/|javascript:|data:)\S+)/,
+      url: /(^(?:https?:\/\/|javascript:|data:|opera:)\S+)/,
       mention: /(^@\w+(?:\/[-\w]+)?)/,
       hashTag: /(^#\w+)/,
       crlf: /(^\r\n|^\r|^\n)/
@@ -559,6 +559,7 @@ addEventListener("DOMContentLoaded", function() {
           display: table-cell;\
           width: 500px;\
           max-width: 500px;\
+          word-wrap: break-word;\
         }\
         #side {\
           display: table-cell;\
@@ -566,6 +567,7 @@ addEventListener("DOMContentLoaded", function() {
           max-width: 249px;\
           font-size: smaller;\
           border-left: 1px solid transparent;\
+          word-wrap: break-word;\
         }\
         #status {\
           width: 35em;\
