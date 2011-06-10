@@ -2072,15 +2072,13 @@ addEventListener("DOMContentLoaded", function() {
       }
 
       var colorSideFill = user.profile_sidebar_fill_color ?
-                          "#" + user.profile_sidebar_fill_color :
-                          "transparent";
+                          "#" + user.profile_sidebar_fill_color : "";
       var colorSideBorder = user.profile_sidebar_border_color ?
-                            "#" + user.profile_sidebar_border_color :
-                            "transparent";
+                            "#" + user.profile_sidebar_border_color : "";
       var colorText = user.profile_text_color ?
-                      "#" + user.profile_text_color : "transparent";
+                      "#" + user.profile_text_color : "";
       var colorLink = user.profile_link_color ?
-                      "#" + user.profile_link_color : "transparent";
+                      "#" + user.profile_link_color : "";
 
       D.id("header").style.backgroundColor =
       D.id("content").style.backgroundColor =
