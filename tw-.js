@@ -226,13 +226,124 @@ addEventListener("DOMContentLoaded", function() {
 
   // Text Functions
   var T = {
-    // eg. '&lt;' to '<', '&#x70;' to 'p'
-    decodeHTML: function(innerText) {//.replace(/"/g, "&quot;");
+    // eg. '&lt;' to '<'
+    decodeHTML: function(innerText) {
+      function dentity(entity) {
+        var html_entities = {
+          nbsp: 160, iexcl: 161, cent: 162, pound: 163,
+          curren: 164, yen: 165, brvbar: 166, sect: 167,
+          uml: 168, copy: 169, ordf: 170, laquo: 171,
+          not: 172, shy: 173, reg: 174, macr: 175,
+          deg: 176, plusmn: 177, sup2: 178, sup3: 179,
+          acute: 180, micro: 181, para: 182, middot: 183,
+          cedil: 184, sup1: 185, ordm: 186, raquo: 187,
+          frac14: 188, frac12: 189, frac34: 190, iquest: 191,
+          Agrave: 192, Aacute: 193, Acirc: 194, Atilde: 195,
+          Auml: 196, Aring: 197, AElig: 198, Ccedil: 199,
+          Egrave: 200, Eacute: 201, Ecirc: 202, Euml: 203,
+          Igrave: 204, Iacute: 205, Icirc: 206, Iuml: 207,
+          ETH: 208, Ntilde: 209, Ograve: 210, Oacute: 211,
+          Ocirc: 212, Otilde: 213, Ouml: 214, times: 215,
+          Oslash: 216, Ugrave: 217, Uacute: 218, Ucirc: 219,
+          Uuml: 220, Yacute: 221, THORN: 222, szlig: 223,
+          agrave: 224, aacute: 225, acirc: 226, atilde: 227,
+          auml: 228, aring: 229, aelig: 230, ccedil: 231,
+          egrave: 232, eacute: 233, ecirc: 234, euml: 235,
+          igrave: 236, iacute: 237, icirc: 238, iuml: 239,
+          eth: 240, ntilde: 241, ograve: 242, oacute: 243,
+          ocirc: 244, otilde: 245, ouml: 246, divide: 247,
+          oslash: 248, ugrave: 249, uacute: 250, ucirc: 251,
+          uuml: 252, yacute: 253, thorn: 254, yuml: 255,
+          fnof: 402, Alpha: 913, Beta: 914, Gamma: 915,
+          Delta: 916, Epsilon: 917, Zeta: 918, Eta: 919,
+          Theta: 920, Iota: 921, Kappa: 922, Lambda: 923,
+          Mu: 924, Nu: 925, Xi: 926, Omicron: 927,
+          Pi: 928, Rho: 929, Sigma: 931, Tau: 932,
+          Upsilon: 933, Phi: 934, Chi: 935, Psi: 936,
+          Omega: 937, alpha: 945, beta: 946, gamma: 947,
+          delta: 948, epsilon: 949, zeta: 950, eta: 951,
+          theta: 952, iota: 953, kappa: 954, lambda: 955,
+          mu: 956, nu: 957, xi: 958, omicron: 959,
+          pi: 960, rho: 961, sigmaf: 962, sigma: 963,
+          tau: 964, upsilon: 965, phi: 966, chi: 967,
+          psi: 968, omega: 969, thetasym: 977, upsih: 978,
+          piv: 982, bull: 8226, hellip: 8230, prime: 8242,
+          Prime: 8243, oline: 8254, frasl: 8260, weierp: 8472,
+          image: 8465, real: 8476, trade: 8482, alefsym: 8501,
+          larr: 8592, uarr: 8593, rarr: 8594, darr: 8595,
+          harr: 8596, crarr: 8629, lArr: 8656, uArr: 8657,
+          rArr: 8658, dArr: 8659, hArr: 8660, forall: 8704,
+          part: 8706, exist: 8707, empty: 8709, nabla: 8711,
+          isin: 8712, notin: 8713, ni: 8715, prod: 8719,
+          sum: 8721, minus: 8722, lowast: 8727, radic: 8730,
+          prop: 8733, infin: 8734, ang: 8736, and: 8743,
+          or: 8744, cap: 8745, cup: 8746, "int": 8747,
+          there4: 8756, sim: 8764, cong: 8773, asymp: 8776,
+          ne: 8800, equiv: 8801, le: 8804, ge: 8805,
+          sub: 8834, sup: 8835, nsub: 8836, sube: 8838,
+          supe: 8839, oplus: 8853, otimes: 8855, perp: 8869,
+          sdot: 8901, lceil: 8968, rceil: 8969, lfloor: 8970,
+          rfloor: 8971, lang: 9001, rang: 9002, loz: 9674,
+          spades: 9824, clubs: 9827, hearts: 9829, diams: 9830,
+          quot: 34, amp: 38, apos: 39, lt: 60,
+          gt: 62, OElig: 338, oelig: 339, Scaron: 352,
+          scaron: 353, Yuml: 376, circ: 710, tilde: 732,
+          ensp: 8194, emsp: 8195, thinsp: 8201, zwnj: 8204,
+          zwj: 8205, lrm: 8206, rlm: 8207, ndash: 8211,
+          mdash: 8212, lsquo: 8216, rsquo: 8217, sbquo: 8218,
+          ldquo: 8220, rdquo: 8221, bdquo: 8222, dagger: 8224,
+          Dagger: 8225, permil: 8240, lsaquo: 8249, rsaquo: 8250,
+          euro: 8364
+        };
+        var charCode = html_entities[entity];
+        if (typeof charCode === "number") {
+          return String.fromCharCode(charCode);
+        } else {
+          return null;
+        }
+      }
+      function dentityDec(dec) {
+        dec = parseInt(dec, 10);
+        if (typeof dec !== "number") return false;
+        else if (dec > 65535) return false;
+        return String.fromCharCode(dec);
+      }
+      function dentityHex(hex) {
+        hex = parseInt(hex, 16);
+        if (typeof hex !== "number") return false;
+        else if (hex > 65535) return false;
+        return String.fromCharCode(hex);
+      }
+      var re = {
+        entity: /(^&([a-zA-Z]+);)/,
+        entityDec: /(^&#(\d{1,5});)/,
+        entityHex: /(^&#x([\da-fA-F]{1,4});)/
+      };
+      var xssText = "";
+      var context = innerText;
+      for (var str = ""; context = context.slice(str.length);) {
+        if (re.entity.test(context)) {
+          str = RegExp.$1;
+          xssText += dentity(RegExp.$2) || str;
+        } else if (re.entityDec.test(context)) {
+          str = RegExp.$1;
+          xssText += dentityDec(RegExp.$2) || str;
+        } else if (re.entityHex.test(context)) {
+          str = RegExp.$1;
+          xssText += dentityHex(RegExp.$2) || str;
+        } else {
+          str = context.substring(0, 1);
+          xssText += str;
+        }
+      }
+      return xssText;
+    },
+    /*decodeHTML: function(innerText) {
       var e = D.ce("p");
       e.innerHTML = innerText.replace(/</g, "&lt;");
                     // all tags be serialized
       return e.textContent;
-    },
+    },*/
     // eg. '2011/5/27 11:11' to '3 minutes ago'
     gapTime: function(n, p) {
       var g = n - p;
@@ -667,7 +778,7 @@ addEventListener("DOMContentLoaded", function() {
         .user-action button.true::before {\
           content: "\u2714";\
         }\
-      '));
+      '.replace(/ +/g, " ")));
 
       document.appendChild(html.add(head.add(meta, title, style), body));
     },
@@ -2058,9 +2169,19 @@ addEventListener("DOMContentLoaded", function() {
 
     // Change CSS(text color, background-image) by user settings
     changeDesign: function(user) {
-      var background = D.tag("html");
-      background.style.backgroundColor = "#" + user.profile_background_color;
+      var colorBg = user.profile_background_color ?
+                    "#" + user.profile_background_color : "";
+      var colorSideFill = user.profile_sidebar_fill_color ?
+                          "#" + user.profile_sidebar_fill_color : "";
+      var colorSideBorder = user.profile_sidebar_border_color ?
+                            "#" + user.profile_sidebar_border_color : "";
+      var colorText = user.profile_text_color ?
+                      "#" + user.profile_text_color : "";
+      var colorLink = user.profile_link_color ?
+                      "#" + user.profile_link_color : "";
 
+      var background = D.tag("html");
+      background.style.backgroundColor = colorBg;
       if (user.profile_use_background_image) {
         var bgImgUrl = "url(" + user.profile_background_image_url + ")";
         var bgImgRepeat = user.profile_background_tile ?
@@ -2071,15 +2192,6 @@ addEventListener("DOMContentLoaded", function() {
         background.style.backgroundImage = "none";
       }
 
-      var colorSideFill = user.profile_sidebar_fill_color ?
-                          "#" + user.profile_sidebar_fill_color : "";
-      var colorSideBorder = user.profile_sidebar_border_color ?
-                            "#" + user.profile_sidebar_border_color : "";
-      var colorText = user.profile_text_color ?
-                      "#" + user.profile_text_color : "";
-      var colorLink = user.profile_link_color ?
-                      "#" + user.profile_link_color : "";
-
       D.id("header").style.backgroundColor =
       D.id("content").style.backgroundColor =
       D.id("side").style.backgroundColor = colorSideFill;
@@ -2087,9 +2199,9 @@ addEventListener("DOMContentLoaded", function() {
       D.id("subtitle").style.borderColor =
       D.id("side").style.borderColor = colorSideBorder;
 
-      var styleElement = document.getElementsByTagName("style")[0];
-      styleElement.textContent += "body { color: " + colorText + "; }" +
-                                  "a { color: " + colorLink + "; }";
+      document.body.style.color = colorText;
+
+      D.tag("style").textContent += "a { color: " + colorLink + "; }";
     },
 
     // Step to Render list outline and color
