@@ -90,7 +90,8 @@
 
     var xssText = T.decodeHTML(innerText);
     var re = {
-      url: /(^(?:https?:\/\/|javascript:|data:|opera:)\S+)/,
+      httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#]+)/,
+      url: /(^(?:javascript:|data:|opera:)\S+)/,
       mention: /(^@\w+(?:\/[-\w]+)?)/,
       hashTag: /(^#\w+)/,
       crlf: /(^\r\n|^\r|^\n)/
@@ -98,7 +99,7 @@
 
     var context = xssText;
     for (var str = ""; context = context.slice(str.length);) {
-      if (re.url.test(context)) { // http://URL/
+      if (re.httpurl.test(context) || re.url.test(context)) { // URL
         str = RegExp.$1;
         var url = str;
         var a = D.ce("a");
