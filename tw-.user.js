@@ -6,21 +6,7 @@
 // ==/UserScript==
 
 
-if (typeof opera === "object") {
-  // Disable inline Script
-  opera.addEventListener("BeforeScript", function(event) {
-    event.preventDefault();
-  }, false);
-  // Disable external Script
-  opera.addEventListener("BeforeExternalScript", function(event) {
-    event.preventDefault();
-  }, false);
-}
-
-
-// UserJS Body
-
-addEventListener("DOMContentLoaded", function() {
+(function() {
 
   // URL CONST VALUE and Functions
 
@@ -303,21 +289,13 @@ addEventListener("DOMContentLoaded", function() {
         }
       }
       function dentityDec(dec) {
-        dec = parseInt(dec, 10);
         if (typeof dec !== "number") return false;
-        else if (dec > 65535) return false;
         return String.fromCharCode(dec);
-      }
-      function dentityHex(hex) {
-        hex = parseInt(hex, 16);
-        if (typeof hex !== "number") return false;
-        else if (hex > 65535) return false;
-        return String.fromCharCode(hex);
       }
       var re = {
         entity: /(^&([a-zA-Z]+);)/,
-        entityDec: /(^&#(\d{1,5});)/,
-        entityHex: /(^&#x([\da-fA-F]{1,4});)/
+        entityDec: /(^&#(\d+);)/,
+        entityHex: /(^&#x([\da-fA-F]+);)/
       };
       var xssText = "";
       var context = innerText;
@@ -327,10 +305,10 @@ addEventListener("DOMContentLoaded", function() {
           xssText += dentity(RegExp.$2) || str;
         } else if (re.entityDec.test(context)) {
           str = RegExp.$1;
-          xssText += dentityDec(RegExp.$2) || str;
+          xssText += dentityDec(+RegExp.$2) || str;
         } else if (re.entityHex.test(context)) {
           str = RegExp.$1;
-          xssText += dentityHex(RegExp.$2) || str;
+          xssText += dentityDec(parseInt(RegExp.$2, 16)) || str;
         } else {
           str = context.substring(0, 1);
           xssText += str;
@@ -338,12 +316,6 @@ addEventListener("DOMContentLoaded", function() {
       }
       return xssText;
     },
-    /*decodeHTML: function(innerText) {
-      var e = D.ce("p");
-      e.innerHTML = innerText.replace(/</g, "&lt;");
-                    // all tags be serialized
-      return e.textContent;
-    },*/
     // eg. '2011/5/27 11:11' to '3 minutes ago'
     gapTime: function(n, p) {
       var g = n - p;
@@ -2409,4 +2381,4 @@ addEventListener("DOMContentLoaded", function() {
   main();
 
 
-}, false);
+})();
