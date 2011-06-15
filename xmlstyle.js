@@ -38,6 +38,11 @@ addEventListener("DOMContentLoaded", function() {
 			CharData.appendChild(ct(node.nodeValue));
 			return CharData;
 
+		} else if (node.nodeType === 4) { // CDATA
+			var CharData = ce("char");
+			CharData.appendChild(ct(node.nodeValue));
+			return CharData;
+
 		} else if (node.nodeType === 8) {
 			var Comment = ce("comment");
 			Comment.STag = ce("tag");
