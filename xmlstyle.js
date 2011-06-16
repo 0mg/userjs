@@ -3,181 +3,184 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
-	if (document.body ||
-		document.styleSheets.length ||
-		document.getElementsByTagNameNS(
-			"http://www.w3.org/2000/svg", "*").length ||
-		document.getElementsByTagNameNS("http://www.w3.org/1999/xhtml", "*").length
-	) return;
+  if (document.body ||
+    document.styleSheets.length ||
+    document.getElementsByTagNameNS(
+      "http://www.w3.org/2000/svg", "*").length ||
+    document.getElementsByTagNameNS("http://www.w3.org/1999/xhtml", "*").length
+  ) return;
 
-	function ce(s) { return document.createElement(s); }
-	function ct(s) { return document.createTextNode(s); }
+  function ce(s) { return document.createElement(s); }
+  function ct(s) { return document.createTextNode(s); }
 
-	function getXML(node) {
-		if (node.nodeType === 7) {
-			var PI = ce("proc");
-			PI.STag = ce("tag");
-			PI.Name = ce("name");
-			PI.Value = ce("value");
-			PI.ETag = ce("tag");
+  function getXML(node) {
+    switch (node.nodeType) {
 
-			PI.STag.appendChild(ct("<?"));
-			PI.Name.appendChild(ct(node.nodeName));
-			PI.Value.appendChild(ct(node.nodeValue));
-			PI.ETag.appendChild(ct("?>"));
+    case document.PROCESSING_INSTRUCTION_NODE:
+      var PI = ce("proc");
+      PI.STag = ce("tag");
+      PI.Name = ce("name");
+      PI.Value = ce("value");
+      PI.ETag = ce("tag");
 
-			PI.appendChild(PI.STag);
-			PI.appendChild(PI.Name);
-			PI.appendChild(ct(" "));
-			PI.appendChild(PI.Value);
-			PI.appendChild(PI.ETag);
-			return PI;
+      PI.STag.appendChild(ct("<?"));
+      PI.Name.appendChild(ct(node.nodeName));
+      PI.Value.appendChild(ct(node.nodeValue));
+      PI.ETag.appendChild(ct("?>"));
 
-		} else if (node.nodeType === 3) {
-			var CharData = ce("char");
-			CharData.appendChild(ct(node.nodeValue));
-			return CharData;
+      PI.appendChild(PI.STag);
+      PI.appendChild(PI.Name);
+      PI.appendChild(ct(" "));
+      PI.appendChild(PI.Value);
+      PI.appendChild(PI.ETag);
+      return PI;
 
-		} else if (node.nodeType === 4) { // CDATA
-			var CharData = ce("char");
-			CharData.appendChild(ct(node.nodeValue));
-			return CharData;
+    case document.TEXT_NODE:
+      var CharData = ce("char");
+      CharData.appendChild(ct(node.nodeValue));
+      return CharData;
 
-		} else if (node.nodeType === 8) {
-			var Comment = ce("comment");
-			Comment.STag = ce("tag");
-			Comment.Value = ce("value");
-			Comment.ETag = ce("tag");
+    case document.CDATA_SECTION_NODE:
+      var cdata = ce("cdata");
+      var cdataSTag = ce("tag");
+      var cdataValue = ce("value");
+      var cdataETag = ce("tag");
 
-			Comment.STag.appendChild(ct("<!-- "));
-			Comment.Value.appendChild(ct(node.nodeValue));
-			Comment.ETag.appendChild(ct(" -->"));
+      cdataSTag.appendChild(ct("<![CDATA["));
+      cdataValue.appendChild(ct(node.nodeValue));
+      cdataETag.appendChild(ct("]]>"));
 
-			Comment.appendChild(Comment.STag);
-			Comment.appendChild(Comment.Value);
-			Comment.appendChild(Comment.ETag);
-			return Comment;
+      cdata.appendChild(cdataSTag);
+      cdata.appendChild(cdataValue);
+      cdata.appendChild(cdataETag);
+      return cdata;
 
-		} else if (node.nodeType === 1) {
-			var element = ce("element");
 
-			var Attributes = document.createDocumentFragment();
-			for (var i = 0; i < node.attributes.length; ++i) {
-				var attr = node.attributes[i];
+    case document.COMMENT_NODE:
+      var Comment = ce("comment");
+      var CommentSTag = ce("tag");
+      var CommentValue = ce("value");
+      var CommentETag = ce("tag");
 
-				if (attr === void 0) break; // attr 'role' is invisible in Opera 9.6
+      CommentSTag.appendChild(ct("<!--"));
+      CommentValue.appendChild(ct(node.nodeValue));
+      CommentETag.appendChild(ct("-->"));
 
-				var Attr = ce("attr");
-				Attr.Name = ce("name");
-				Attr.Value = ce("value");
+      Comment.appendChild(CommentSTag);
+      Comment.appendChild(CommentValue);
+      Comment.appendChild(CommentETag);
+      return Comment;
 
-				Attr.Name.appendChild(ct(attr.nodeName));
-				Attr.Value.appendChild(ct(attr.nodeValue));
+    case document.ELEMENT_NODE:
+      var element = ce("element");
 
-				Attr.appendChild(Attr.Name);
-				Attr.appendChild(ct('="'));
-				Attr.appendChild(Attr.Value);
-				Attr.appendChild(ct('"'));
+      var Attributes = document.createDocumentFragment();
+      for (var i = 0; i < node.attributes.length; ++i) {
+        var attr = node.attributes[i];
 
-				Attributes.appendChild(ct(" "));
-				Attributes.appendChild(Attr);
-			}
+        if (attr === void null) break; // attr 'role' is invisible in Opera 9.6
 
-			if (node.hasChildNodes()) {
-				var STag = ce("tag");
-				STag.Name = ce("name");
+        var Attr = ce("attr");
 
-				var ETag = ce("tag");
+        var AttrName = ce("name");
+        AttrName.appendChild(ct(attr.nodeName));
 
-				STag.Name.appendChild(ct(node.nodeName));
+        var AttrValue = ce("value");
+        AttrValue.appendChild(ct(attr.nodeValue));
 
-				STag.appendChild(ct("<"));
-				STag.appendChild(STag.Name);
-				STag.appendChild(Attributes);
-				STag.appendChild(ct(">"));
+        Attr.appendChild(AttrName);
+        Attr.appendChild(ct('="'));
+        Attr.appendChild(AttrValue);
+        Attr.appendChild(ct('"'));
 
-				ETag.appendChild(ct("</"));
-				ETag.appendChild(STag.Name.cloneNode(true));
-				ETag.appendChild(ct(">"));
+        Attributes.appendChild(ct(" "));
+        Attributes.appendChild(Attr);
+      }
 
-				element.appendChild(STag);
-				element.appendChild(ETag);
+      if (node.hasChildNodes()) {
+        var STag = ce("tag");
 
-			} else {
-				var EmptyElemTag = ce("tag");
-				EmptyElemTag.Name = ce("name");
+        var STagName = ce("name");
+        STagName.appendChild(ct(node.nodeName));
 
-				EmptyElemTag.Name.appendChild(ct(node.nodeName));
+        STag.appendChild(ct("<"));
+        STag.appendChild(STagName);
+        STag.appendChild(Attributes);
+        STag.appendChild(ct(">"));
 
-				EmptyElemTag.appendChild(ct("<"));
-				EmptyElemTag.appendChild(EmptyElemTag.Name);
-				EmptyElemTag.appendChild(Attributes);
-				EmptyElemTag.appendChild(ct("/>"));
+        var ETag = ce("tag");
+        ETag.appendChild(ct("</"));
+        ETag.appendChild(STagName.cloneNode(true));
+        ETag.appendChild(ct(">"));
 
-				element.appendChild(EmptyElemTag);
-			}
+        var children = ce("children");
 
-			return element;
+        element.appendChild(STag);
+        element.appendChild(children);
+        element.appendChild(ETag);
 
-		}
-	}
+      } else {
+        var EmptyElemTag = ce("tag");
 
-	var nsuri = "http://www.w3.org/1999/xhtml";
+        var EmptyElemTagName = ce("name");
+        EmptyElemTagName.appendChild(ct(node.nodeName));
 
-	var root = ce("root");
-	var title = document.createElementNS(nsuri, "title");
-	var style = document.createElementNS(nsuri, "style");
-	var original = ce("original");
-	var arrange = ce("arrange");
+        EmptyElemTag.appendChild(ct("<"));
+        EmptyElemTag.appendChild(EmptyElemTagName);
+        EmptyElemTag.appendChild(Attributes);
+        EmptyElemTag.appendChild(ct("/>"));
 
-	original.all = document.evaluate('node()', document, null, 7, null);
-	for (var i = 0; i < original.all.snapshotLength; ++i) {
-		original.appendChild(original.all.snapshotItem(i));
-		arrange.appendChild((function(node) {
-			var element = getXML(node);
-			for (var i = 0; i < node.childNodes.length; ++i) {
-				element.insertBefore(
-					arguments.callee(node.childNodes[i]), element.lastChild
-				);
-			}
-			return element;
-		})(original.all.snapshotItem(i)));
-	}
+        element.appendChild(EmptyElemTag);
+      }
 
-	style.appendChild(ct('\
-		original {\
-			display: none;\
-		}\
-		:root {\
-			display: block;\
-			margin: 2ex;\
-			font-family: monospace;\
-		}\
-		element, char, comment, proc {\
-			display: block;\
-			margin-left: 2ex;\
-		}\
-		tag name, attr name, proc name {\
-			color: blue;\
-		}\
-		attr value, proc value {\
-			color: green;\
-		}\
-		char {\
-			color: red;\
-		}\
-		comment value {\
-			color: silver;\
-		}\
-	'));
+      return element;
+    }
+  }
 
-	title.appendChild(ct(decodeURI(document.documentURI)));
+  var root = ce("root");
 
-	root.appendChild(title);
-	root.appendChild(style);
-	root.appendChild(original);
-	root.appendChild(arrange);
+  var nsuri = "http://www.w3.org/1999/xhtml";
 
-	document.appendChild(root);
+  var title = document.createElementNS(nsuri, "title");
+  title.appendChild(ct(decodeURI(document.documentURI)));
+  root.appendChild(title);
+
+  var style = document.createElementNS(nsuri, "style");
+  style.appendChild(ct('\
+    :root {\
+      display: block;\
+      margin: 2ex;\
+      background-color: #fcfcfc;\
+      font-family: monospace;\
+    }\
+    element, char, comment, proc, cdata {\
+      display: block;\
+      padding-left: 2ex;\
+    }\
+    tag name, attr name, proc name {\
+      color: blue;\
+    }\
+    attr value, proc value {\
+      color: green;\
+    }\
+    char, cdata value {\
+      color: red;\
+    }\
+    comment value {\
+      color: silver;\
+    }\
+  '));
+  root.appendChild(style);
+
+  root.appendChild((function(cnode) {
+    var element = getXML(cnode);
+    for (var i = 0, l = cnode.childNodes.length; i < l; ++i) {
+      var children = element.getElementsByTagName("children")[0];
+      children.appendChild(arguments.callee(cnode.childNodes[i]));
+    }
+    return element;
+  })(document.documentElement));
+
+  document.replaceChild(root, document.documentElement);
 
 }, false);
