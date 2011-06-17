@@ -93,7 +93,7 @@
       httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#]+)/,
       url: /(^(?:javascript:|data:|opera:)\S+)/,
       mention: /(^@\w+(?:\/[-\w]+)?)/,
-      hashTag: /(^#\w+)/,
+      hashTag: /(^#\w*[a-zA-Z_]\w*)/,
       crlf: /(^\r\n|^\r|^\n)/
     };
 
@@ -700,10 +700,14 @@
           margin-left: 1ex;\
         }\
         .user .name,\
+        .user .name *,\
         .user .meta,\
+        .user .meta *,\
         .tweet .name,\
-        .tweet .meta {\
-          color: #999;\
+        .tweet .name *,\
+        .tweet .meta,\
+        .tweet .meta * {\
+          color: #999 !important;\
         }\
         .user .meta,\
         .tweet .meta {\
@@ -751,7 +755,7 @@
         .user-action button.true::before {\
           content: "\u2714";\
         }\
-      '.replace(/ +/g, " ")));
+      '.replace(/\s+/g, " ")));
 
       document.appendChild(html.add(head.add(meta, title, style), body));
     },
@@ -1217,7 +1221,7 @@
         lu.icon.src = user.profile_image_url;
 
         lu.name.className = "name";
-        lu.name.add(D.tweetize(user.name));
+        lu.name.add(D.ct(T.decodeHTML(user.name)));
 
         lu.description.className = "description";
         lu.description.add(D.tweetize(user.description));
@@ -1325,14 +1329,14 @@
           text: D.ce("p"),
           meta: D.ce("div"),
           date: D.ce("a"),
-          src: D.ce("span")
+          src: null
         };
 
         ent.ry.className = "tweet";
         ent.ry.className += " screen_name-" + tweet.user.screen_name;
         if (tweet.user["protected"]) ent.ry.className += " protected";
         if (isRT) ent.ry.className += " retweet";
-        if (/[RQ]T:? *@\w+:?/.test(tweet.text)) {
+        if (/[RQ]T:? *@\w+/.test(tweet.text)) {
           ent.ry.className += " quote";
         }
 
@@ -1341,7 +1345,7 @@
         ent.name.add(D.ct(tweet.user.screen_name));
 
         ent.nick.className = "name";
-        ent.nick.add(D.tweetize(tweet.user.name));
+        ent.nick.add(D.ct(T.decodeHTML(tweet.user.name)));
 
         ent.icon.className = "user-icon";
         ent.icon.alt = tweet.user.screen_name;
@@ -1370,16 +1374,12 @@
         ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
-        var sandbox = D.ce("p");
-        sandbox.innerHTML = tweet.source;
-        if (sandbox.childNodes.length === 1 &&
-            sandbox.lastChild.nodeName.toUpperCase() === "A" &&
-            sandbox.lastChild.childNodes.length === 1 &&
-            sandbox.lastChild.lastChild.nodeType === 3) {
-          ent.src = D.ce("a").sa("href", sandbox.lastChild.href).
-                    add(sandbox.lastChild.lastChild);
+        if (/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.test(tweet.source)) {
+          var aHref = RegExp.$1;
+          var aText = T.decodeHTML(RegExp.$2);
+          ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
         } else {
-          ent.src.add(D.ct(tweet.source));
+          ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
         }
         ent.src.className = "source";
 
@@ -2215,7 +2215,7 @@
 
       li.st.add(
         D.ce("dt").add(D.ct("Name")),
-        D.ce("dd").sa("class", "name").add(D.ct(list.name)),
+        D.ce("dd").sa("class", "name").add(D.ct(T.decodeHTML(list.name))),
         D.ce("dt").add(D.ct("Full Name")),
         D.ce("dd").add(D.ct(list.full_name)),
         D.ce("dt").add(D.ct("Description")),
@@ -2266,8 +2266,6 @@
         box: D.ce("dl"),
         icon: D.ce("img"),
         icorg: D.ce("a"),
-        url: D.ce("a"),
-        bio: D.ce("p"),
         tweets: D.ce("a"),
         following: D.ce("a"),
         following_timeline: D.ce("a"),
@@ -2287,13 +2285,6 @@
 
       p.icorg.add(p.icon);
       p.icorg.href = user.profile_image_url.replace("_normal.", ".");
-
-      if (user.url) {
-        p.url.href = user.url;
-        p.url.add(D.ct(user.url));
-      }
-
-      p.bio.add(D.tweetize(user.description));
 
       p.tweets.add(D.ct("Tweets"));
       p.tweets.href = U.ROOT + user.screen_name + "/status";
@@ -2326,18 +2317,18 @@
         D.ce("dt").add(D.ct("Icon")),
         D.ce("dd").add(p.icorg),
         D.ce("dt").add(D.ct("Name")),
-        D.ce("dd").add(D.tweetize(user.name)),
+        D.ce("dd").add(D.ct(T.decodeHTML(user.name))),
         D.ce("dt").add(D.ct("Location")),
-        D.ce("dd").add(D.tweetize(user.location)),
+        D.ce("dd").add(D.ct(T.decodeHTML(user.location))),
         D.ce("dt").add(D.ct("Web")),
-        D.ce("dd").add(p.url),
+        D.ce("dd").add(D.tweetize(user.url)),
         D.ce("dt").add(D.ct("Bio")),
-        D.ce("dd").add(p.bio),
+        D.ce("dd").add(D.tweetize(user.description)),
         D.ce("dt").add(p.tweets),
         D.ce("dd").add(D.ct(user.statuses_count)),
         D.ce("dt").add(p.favorites),
         D.ce("dd").add(D.ct(user.favourites_count)),
-        D.ce("dt").add(p.following).add(D.ct("/")).add(p.following_timeline),
+        D.ce("dt").add(p.following, D.ct("/"), p.following_timeline),
         D.ce("dd").add(D.ct(user.friends_count)),
         D.ce("dt").add(p.followers),
         D.ce("dd").add(D.ct(user.followers_count)),
