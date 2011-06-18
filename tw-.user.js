@@ -1374,14 +1374,16 @@
         ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
-        if (/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.test(tweet.source)) {
-          var aHref = RegExp.$1;
-          var aText = T.decodeHTML(RegExp.$2);
-          ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
-        } else {
-          ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
+        if (!isDM) {
+          if (/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.test(tweet.source)) {
+            var aHref = RegExp.$1;
+            var aText = T.decodeHTML(RegExp.$2);
+            ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
+          } else {
+            ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
+          }
+          ent.src.className = "source";
         }
-        ent.src.className = "source";
 
         ent.meta.add(ent.date);
         if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
