@@ -81,17 +81,18 @@
     };
   };
   // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
-  D.tweetize = function(innerText) {
+  D.tweetize = function(innerText, entities) {
     var fragment = D.cf();
     if (!innerText) { // "", null, false, undefined.,
       fragment.add(D.ct(""));
       return fragment;
     }
 
+    var entities_urls = entities && entities.urls || [];
     var xssText = T.decodeHTML(innerText);
     var re = {
       httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#]+)/,
-      url: /(^(?:javascript:|data:|opera:)\S+)/,
+      url: /(^(?:javascript|data|about|opera):\S+)/,
       mention: /(^@\w+(?:\/[-\w]+)?)/,
       hashTag: /(^#\w*[a-zA-Z_]\w*)/,
       crlf: /(^\r\n|^\r|^\n)/
@@ -104,7 +105,14 @@
         var url = str;
         var a = D.ce("a");
         a.href = url;
-        a.add(D.ct(url));
+        var aText;
+        for (var i = 0, l = entities_urls.length; i < l; ++i) {
+          if (url === entities_urls[i].url) {
+            aText = entities_urls[i].display_url;
+            break;
+          }
+        }
+        a.add(D.ct(aText || url));
         fragment.add(a);
 
       } else if (re.mention.test(context)) { // @mention
@@ -643,7 +651,7 @@
           display: table-cell;\
           width: 500px;\
           max-width: 500px;\
-          word-wrap: break-word;\
+          /*word-wrap: break-word;*/\
         }\
         #side {\
           display: table-cell;\
@@ -651,7 +659,7 @@
           max-width: 249px;\
           font-size: smaller;\
           border-left: 1px solid transparent;\
-          word-wrap: break-word;\
+          /*word-wrap: break-word;*/\
         }\
         #status {\
           width: 35em;\
@@ -796,235 +804,205 @@
   };
 
 
-  // Functions step to Render main content
-  var pre = {
+  // Functions of Render main content
 
-    // Switch content by path in URL
-    startPage: function(my) {
+  var content = {
+    // Show Content by path in URL
+    showPage: function(my) {
       var curl = U.getURL();
       var path = curl.path;
       var hash = path.split("/");
       var q = curl.query;
+
       D.tag("title").textContent = "tw-/" + path;
       outline.showSubTitle(hash);
       panel.showGlobalBar(my);
       panel.showTweetBox();
+
       switch (hash.length) {
-        case (1): {
-          switch (hash[0]) {
-            case ("retweeted_by_me"): {
-              content.showTL(U.APV + "statuses/retweeted_by_me.json?" + q +
-                             "&include_entities=true", my);
-              break;
-            }
-            case ("retweeted_to_me"): {
-              content.showTL(U.APV + "statuses/retweeted_to_me.json?" + q +
-                             "&include_entities=true", my);
-              break;
-            }
-            case ("retweets_of_me"): {
-              content.showTL(U.APV + "statuses/retweets_of_me.json?" + q +
-                             "&include_entities=true", my);
-              break;
-            }
-            case ("search"): {
-              location = "http://search.twitter.com/search?" + q;
-              break;
-            }
-            case ("lists"): {
-              content.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
-              panel.showListPanel(my);
-              break;
-            }
-            case ("inbox"): {
-              content.showTL(U.APV + "direct_messages.json?" + q +
-                             "&include_entities=true&cursor=-1", my);
-              break;
-            }
-            case ("sent"): {
-              content.showTL(U.APV + "direct_messages/sent.json?" + q +
-                             "&include_entities=true&cursor=-1", my);
-              break;
-            }
-            case ("favorites"): {
-              content.showTL(U.APV + "favorites.json?" + q +
-                             "&include_entities=true&cursor=-1", my);
-              break;
-            }
-            case ("following"): {
-              content.showUsers(U.APV + "statuses/friends.json?" + q +
-                                "&count=20&cursor=-1", my);
-              break;
-            }
-            case ("followers"): {
-              content.showUsers(U.APV + "statuses/followers.json?" + q +
-                                "&count=20&cursor=-1", my);
-              break;
-            }
-            case ("mentions"): {
-              content.showTL(U.APV + "statuses/mentions.json?" + q +
-                             "&include_entities=true", my);
-              break;
-            }
-            case ("blocking"): {
-              content.showUsers(U.APV + "blocks/blocking.json?" + q, my);
-              break;
-            }
-            case (""): {
-              content.showTL(U.APV + "statuses/home_timeline.json?" + q +
-                             "&include_entities=true", my);
-              break;
-            }
-            default: {
-              content.showTL(U.APV + "statuses/user_timeline.json?" + q +
-                             "&include_entities=true&include_rts=true" +
-                             "&screen_name=" + hash[0], my);
-              outline.showProfileOutline(hash[0], my);
-              break;
-            }
+      case 1:
+        on1.call(this, hash, q, my);
+        break;
+      case 2:
+        on2.call(this, hash, q, my);
+        break;
+      case 3:
+        on3.call(this, hash, q, my);
+        break;
+      }
+
+      function on1(hash, q, my) {
+        switch (hash[0]) {
+        case "retweets":
+          this.showTL(U.APV + "statuses/retweeted_by_me.json?" + q +
+                      "&include_entities=true", my);
+          break;
+        case "retweets_by_others":
+          this.showTL(U.APV + "statuses/retweeted_to_me.json?" + q +
+                      "&include_entities=true", my);
+          break;
+        case "retweeted_of_mine":
+          this.showTL(U.APV + "statuses/retweets_of_me.json?" + q +
+                      "&include_entities=true", my);
+          break;
+        case "search":
+          location = "http://search.twitter.com/search?" + q;
+          break;
+        case "lists":
+          this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
+          panel.showListPanel(my);
+          break;
+        case "inbox":
+          this.showTL(U.APV + "direct_messages.json?" + q +
+                      "&include_entities=true&cursor=-1", my);
+          break;
+        case "sent":
+          this.showTL(U.APV + "direct_messages/sent.json?" + q +
+                      "&include_entities=true&cursor=-1", my);
+          break;
+        case "favorites":
+          this.showTL(U.APV + "favorites.json?" + q +
+                      "&include_entities=true&cursor=-1", my);
+          break;
+        case "following":
+          this.showUsers(U.APV + "statuses/friends.json?" + q +
+                         "&count=20&cursor=-1", my);
+          break;
+        case "followers":
+          this.showUsers(U.APV + "statuses/followers.json?" + q +
+                         "&count=20&cursor=-1", my);
+          break;
+        case "mentions":
+          this.showTL(U.APV + "statuses/mentions.json?" + q +
+                      "&include_entities=true", my);
+          break;
+        case "blocking":
+          this.showUsers(U.APV + "blocks/blocking.json?" + q, my);
+          break;
+        case "":
+          this.showTL(U.APV + "statuses/home_timeline.json?" + q +
+                      "&include_entities=true", my);
+          break;
+        default:
+          this.showTL(U.APV + "statuses/user_timeline.json?" + q +
+                      "&include_entities=true&include_rts=true" +
+                      "&screen_name=" + hash[0], my);
+          outline.showProfileOutline(hash[0], my);
+        }
+      }
+
+      function on2(hash, q, my) {
+        switch (hash[1]) {
+        case "requests":
+          if (hash[0] === "following") {
+            this.showUsersByIds(U.APV + "friendships/outgoing.json?" + q +
+                                "&cursor=-1", my);
+          } else if (hash[0] === "followers") {
+            this.showUsersByIds(U.APV + "friendships/incoming.json?" + q +
+                                "&cursor=-1", my, 1);
           }
           break;
-        }
-        case (2): {
-          switch (hash[1]) {
-            case ("requests"): {
-              if (hash[0] === "following") {
-                content.showUsersByIds(U.APV + "friendships/outgoing.json?" +
-                                       q + "&cursor=-1", my);
-              } else if (hash[0] === "followers") {
-                content.showUsersByIds(U.APV + "friendships/incoming.json?" +
-                                       q + "&cursor=-1", my, 1);
-              }
-              break;
-            }
-            case ("design"): {
-              if (hash[0] === "settings") {
-                content.customizeDesign(my);
-              }
-              break;
-            }
-            case ("memberships"): {
-              if (hash[0] === "lists") {
-                content.showLists(U.APV + "lists/memberships.json?" + q, my);
-              }
-              break;
-            }
-            case ("subscriptions"): {
-              if (hash[0] === "lists") {
-                content.showLists(U.APV + "lists/subscriptions.json?" + q, my);
-                panel.showUserManager(my);
-              }
-              break;
-            }
-            case ("status"):
-            case ("statuses"): {
-              content.showTL(U.APV + "statuses/user_timeline.json?" + q +
-                             "&include_entities=true&include_rts=true" +
-                             "&screen_name=" + hash[0], my);
-              break;
-            }
-            case ("favorites"): {
-              // formal: fovorites/(screen_name||ID).json
-              // http://dev.twitter.com/doc/get/favorites
-              content.showTL(U.APV + "favorites.json?" + q +
-                             "&include_entities=true" +
-                             "&screen_name=" + hash[0] +
-                             "&cursor=-1", my);
-              outline.showProfileOutline(hash[0], my, 3);
-              break;
-            }
-            case ("following"): {
-              content.showUsers(U.APV + "statuses/friends.json?" + q +
-                                "&screen_name=" + hash[0] +
-                                "&count=20&cursor=-1", my);
-              outline.showProfileOutline(hash[0], my, 3);
-              break;
-            }
-            case ("followers"): {
-              content.showUsers(U.APV + "statuses/followers.json?" + q +
-                                "&screen_name=" + hash[0] +
-                                "&count=20&cursor=-1", my);
-              outline.showProfileOutline(hash[0], my, 3);
-              break;
-            }
-            case ("lists"): {
-              content.showLists(U.APV + "lists.json?" + q +
-                                "&screen_name=" + hash[0], my);
-              outline.showProfileOutline(hash[0], my, 3);
-              break;
-            }
-            default: {
-              var url = U.APV + "lists/statuses.json?" + q +
-                        "&owner_screen_name=" + hash[0] +
-                        "&slug=" + hash[1] +
-                        "&include_entities=true";
-              content.showTL(url, my);
-              outline.showListOutline(hash, my);
-              break;
-            }
+        case "design":
+          if (hash[0] === "settings") this.customizeDesign(my);
+          break;
+        case "memberships":
+          if (hash[0] === "lists") {
+            this.showLists(U.APV + "lists/memberships.json?" + q, my);
           }
           break;
-        }
-        case (3): {
-          switch (hash[2]) {
-            case ("timeline"): {
-              if (hash[1] === "following") {
-                content.showTL(U.APV + "statuses/following_timeline.json?" + q +
-                               "&include_entities=true" +
-                               "&screen_name=" + hash[0], my);
-                outline.showProfileOutline(hash[0], my, 3);
-              }
-              break;
-            }
-            case ("members"): {
-              content.showUsers(U.APV + "lists/members.json?" + q +
-                                "&owner_screen_name=" + hash[0] +
-                                "&slug=" + hash[1], my);
-              outline.showListOutline(hash, my, 3);
-              break;
-            }
-            case ("subscribers"): {
-              content.showUsers(U.APV + "lists/subscribers.json?" + q +
-                                "&owner_screen_name=" + hash[0] +
-                                "&slug=" + hash[1], my);
-              outline.showListOutline(hash, my, 3);
-              break;
-            }
-            case ("memberships"): {
-              if (hash[1] === "lists") {
-                content.showLists(U.APV + "lists/memberships.json?" + q +
-                                  "&screen_name=" + hash[0], my);
-                outline.showProfileOutline(hash[0], my, 3);
-              }
-              break;
-            }
-            case ("subscriptions"): {
-              if (hash[1] === "lists") {
-                content.showLists(U.APV + "lists/subscriptions.json?" + q +
-                                  "&screen_name=" + hash[0], my);
-                outline.showProfileOutline(hash[0], my, 3);
-              }
-              break;
-            }
-            default: {
-              if (hash[1] === "status" || hash[1] === "statuses") {
-                content.showTL(U.APV + "statuses/show/" + hash[2] + ".json?" +
-                               q, my);
-                outline.showProfileOutline(hash[0], my, 1);
-              }
-              break;
-            }
-          } // switch(hash[2])
+        case "subscriptions":
+          if (hash[0] === "lists") {
+            this.showLists(U.APV + "lists/subscriptions.json?" + q, my);
+            panel.showUserManager(my);
+          }
           break;
-        } // case(3)
-      } // switch(hash.length)
-    } // function
-  };
+        case "status":
+        case "statuses":
+          this.showTL(U.APV + "statuses/user_timeline.json?" + q +
+                      "&include_entities=true&include_rts=true" +
+                      "&screen_name=" + hash[0], my);
+          break;
+        case "favorites":
+          // formal: fovorites/(screen_name||ID).json
+          // http://dev.twitter.com/doc/get/favorites
+          this.showTL(U.APV + "favorites.json?" + q +
+                      "&include_entities=true" +
+                      "&screen_name=" + hash[0] +
+                      "&cursor=-1", my);
+          outline.showProfileOutline(hash[0], my, 3);
+          break;
+        case "following":
+          this.showUsers(U.APV + "statuses/friends.json?" + q +
+                         "&screen_name=" + hash[0] +
+                         "&count=20&cursor=-1", my);
+          outline.showProfileOutline(hash[0], my, 3);
+          break;
+        case "followers":
+          this.showUsers(U.APV + "statuses/followers.json?" + q +
+                         "&screen_name=" + hash[0] +
+                         "&count=20&cursor=-1", my);
+          outline.showProfileOutline(hash[0], my, 3);
+          break;
+        case "lists":
+          this.showLists(U.APV + "lists.json?" + q +
+                         "&screen_name=" + hash[0], my);
+          outline.showProfileOutline(hash[0], my, 3);
+          break;
+        default:
+          var url = U.APV + "lists/statuses.json?" + q +
+                    "&owner_screen_name=" + hash[0] +
+                    "&slug=" + hash[1] +
+                    "&include_entities=true";
+          this.showTL(url, my);
+          outline.showListOutline(hash, my);
+        }
+      }
 
+      function on3(hash) {
+        switch (hash[2]) {
+        case "timeline":
+          if (hash[1] === "following") {
+            this.showTL(U.APV + "statuses/following_timeline.json?" + q +
+                        "&include_entities=true" +
+                        "&screen_name=" + hash[0], my);
+            outline.showProfileOutline(hash[0], my, 3);
+          }
+          break;
+        case "members":
+          this.showUsers(U.APV + "lists/members.json?" + q +
+                         "&owner_screen_name=" + hash[0] +
+                         "&slug=" + hash[1], my);
+          outline.showListOutline(hash, my, 3);
+          break;
+        case "subscribers":
+          this.showUsers(U.APV + "lists/subscribers.json?" + q +
+                         "&owner_screen_name=" + hash[0] +
+                         "&slug=" + hash[1], my);
+          outline.showListOutline(hash, my, 3);
+          break;
+        case "memberships":
+          if (hash[1] === "lists") {
+            this.showLists(U.APV + "lists/memberships.json?" + q +
+                           "&screen_name=" + hash[0], my);
+            outline.showProfileOutline(hash[0], my, 3);
+          }
+          break;
+        case "subscriptions":
+          if (hash[1] === "lists") {
+            this.showLists(U.APV + "lists/subscriptions.json?" + q +
+                           "&screen_name=" + hash[0], my);
+            outline.showProfileOutline(hash[0], my, 3);
+          }
+          break;
+        default:
+          if (hash[1] === "status" || hash[1] === "statuses") {
+            this.showTL(U.APV + "statuses/show/" + hash[2] + ".json?" + q, my);
+            outline.showProfileOutline(hash[0], my, 1);
+          }
+        }
+      }
+    },
 
-  // Functions of Render main content
-
-  var content = {
     // Render View of Colors Setting
     // Change colors of text, link, background-color.,
     customizeDesign: function(my) {
@@ -1267,6 +1245,7 @@
 
     // Render View of list of lists
     showLists: function(url, my) {
+      var that = this;
       X.get(url, function(xhr) {
         var data = JSON.parse(xhr.responseText);
 
@@ -1284,7 +1263,7 @@
         });
 
         D.id("main").add(lists);
-        content.misc.showCursor(data);
+        that.misc.showCursor(data);
       });
     },
 
@@ -1363,7 +1342,7 @@
         }
 
         ent.text.className = "text";
-        ent.text.add(D.tweetize(tweet.text));
+        ent.text.add(D.tweetize(tweet.text, tweet.entities));
 
         ent.meta.className = "meta";
 
@@ -1890,13 +1869,11 @@
         D.ce("li").add(g.home),
         D.ce("li").add(g.profile),
         D.ce("li").add(g.replies),
-        D.ce("li").add(g.inbox),
-        D.ce("li").add(g.sent),
+        D.ce("li").add(g.inbox, D.ct("/"), g.sent),
         D.ce("li").add(g.favorites),
         D.ce("li").add(g.following, D.ct("/"), g.follow_req_out),
         D.ce("li").add(g.followers, D.ct("/"), g.follow_req_in),
-        D.ce("li").add(g.lists),
-        D.ce("li").add(g.listsub),
+        D.ce("li").add(g.lists, D.ct("/"), g.listsub),
         D.ce("li").add(g.listed),
         D.ce("li").add(g.blocking),
         D.ce("li").add(g.logout)
@@ -2219,7 +2196,7 @@
         D.ce("dt").add(D.ct("Name")),
         D.ce("dd").sa("class", "name").add(D.ct(T.decodeHTML(list.name))),
         D.ce("dt").add(D.ct("Full Name")),
-        D.ce("dd").add(D.ct(list.full_name)),
+        D.ce("dd").add(D.tweetize(list.full_name)),
         D.ce("dt").add(D.ct("Description")),
         D.ce("dd").add(D.tweetize(list.description)),
         D.ce("dt").add(li.members),
@@ -2356,23 +2333,18 @@
 
 
   // Check if my Logged-in
-  function main() {
-    X.get(U.APV + "account/verify_credentials.json",
-      function(xhr) {
-        var my = JSON.parse(xhr.responseText);
-        init.initDOM(my);
-        init.structPage();
-        pre.startPage(my);
-      },
-      function(xhr) {
-        location.href = "/login?redirect_after_login=" +
-                        encodeURIComponent(location);
-      }
-    );
-  }
-
-
-  main();
+  X.get(U.APV + "account/verify_credentials.json",
+    function(xhr) {
+      var my = JSON.parse(xhr.responseText);
+      init.initDOM(my);
+      init.structPage();
+      content.showPage(my);
+    },
+    function(xhr) {
+      location.href = "/login?redirect_after_login=" +
+                      encodeURIComponent(location.href);
+    }
+  );
 
 
 })();
