@@ -63,22 +63,53 @@
       this.setAttribute(attr, value);
       return this;
     }
+    function optimizeClass() {
+      var classList = this.className.replace(/\s+/g, " ").replace(/^ | $/g, "").
+                      split(" ");
+      var optedClass = [];
+      out: for (var i = 0, l = classList.length; i < l; ++i) {
+        for (var j = i + 1; j < l; ++j) {
+          if (classList[i] === classList[j]) continue out;
+        }
+        optedClass.push(classList[i]);
+      }
+      this.className = optedClass.join(" ");
+      return this;
+    }
+    function hasClass(str) {
+      optimizeClass.call(this);
+      return (" " + this.className + " ").indexOf(" " + str + " ") !== -1;
+    }
+    function removeClass(str) {
+      optimizeClass.call(this);
+      var classList = this.className.split(" ");
+      for (var i = 0; i < classList.length; ++i) {
+        if (str === classList[i]) {
+          classList.splice(i, 1);
+          --i;
+        }
+      }
+      this.className = classList.join(" ");
+      return this;
+    }
+    function addClass(str) {
+      if (!hasClass.call(this, str)) this.className += " " + str;
+      return this;
+    }
+    function replaceClass(newStr, currentStr) {
+      removeClass.call(this, currentStr);
+      addClass.call(this, newStr);
+      return this;
+    }
     function x(e) { // extend element
       e.add = appendChildren;
       e.sa = setAttribute;
+      e.optC = optimizeClass;
+      e.hasC = hasClass;
+      e.rmC = removeClass;
+      e.addC = addClass;
+      e.repC = replaceClass;
       return e;
-    }
-    function optClass(className) {
-      var cla = className.replace(/\s+/g, " ").replace(/^ | $/g, "");
-      cla = cla.split(" ");
-      var optCla = [];
-      out: for (var i = 0, l = cla.length; i < l; ++i) {
-        for (var j = i + 1; j < l; ++j) {
-          if (cla[i] === cla[j]) continue out;
-        }
-        optCla.push(cla[i]);
-      }
-      return optCla.join(" ");
     }
     return {
       ce: function(s) {
@@ -162,7 +193,7 @@
   };
 
 
-  // JSON Functions
+  // Modern JS Functions
 
   var JSON;
   JSON = JSON || {
@@ -361,9 +392,7 @@
 
       for (var i = 0; i < links.length; ++i) {
         var a = links[i];
-        if (a.childNodes.length === 1 &&
-            a.lastChild.nodeType === document.TEXT_NODE &&
-            (" " + a.className + " ").indexOf(" maybe_shorten_url ") >= 0) {
+        if (a.hasC("maybe_shorten_url")) {
           elements.push(a), urls.push(a.href);
         }
       }
@@ -372,7 +401,8 @@
         var data = JSON.parse(xhr.responseText);
         for (var raw_url in data) {
           var exp_url = data[raw_url];
-          if (raw_url.indexOf("#") !== -1) {
+          if (raw_url.indexOf("#") !== -1 ||
+              raw_url.indexOf("?") !== -1) {
             data[raw_url] = null;
           } else if (exp_url) {
             data[raw_url] = data[raw_url].replace(/\/(?=$|\?)/, "");
@@ -384,8 +414,7 @@
           var exp_url = data[raw_url];
           if (exp_url) {
             var a = elements[i];
-            a.className = (" " + a.className + " ").
-                          replace(/ maybe_shorten_url /g, " expanded_url ");
+            a.repC("expanded_url", "maybe_shorten_url");
             a.href = a.textContent = decodeURIComponent(escape(exp_url));
           }
         }
@@ -1342,8 +1371,7 @@
           src: null
         };
 
-        ent.ry.className = "tweet";
-        ent.ry.className += " screen_name-" + tweet.user.screen_name;
+        ent.ry.className = "tweet screen_name-" + tweet.user.screen_name;
         if (tweet.user["protected"]) ent.ry.className += " protected";
         if (isRT) ent.ry.className += " retweet";
         if (/[RQ]T:? *@\w+/.test(tweet.text)) {
@@ -1474,14 +1502,14 @@
         this.name = name;
         this.labelDefault = labelDefault;
         this.labelOn = labelOn;
-        this.node = D.ce("button").add(D.ct(labelDefault));
+        this.node = D.ce("button").add(D.ct(labelDefault)).addC(name);
       };
       Button.prototype = {
         on: false,
         turn: function(flag) {
           flag = !!flag;
           this.on = flag;
-          this.node.className = this.name + " " + flag;
+          this.node.repC(flag, !flag);
           this.node.textContent = flag ? this.labelOn : this.labelDefault;
           return this;
         },
