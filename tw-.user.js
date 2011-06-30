@@ -68,6 +68,18 @@
       e.sa = setAttribute;
       return e;
     }
+    function optClass(className) {
+      var cla = className.replace(/\s+/g, " ").replace(/^ | $/g, "");
+      cla = cla.split(" ");
+      var optCla = [];
+      out: for (var i = 0, l = cla.length; i < l; ++i) {
+        for (var j = i + 1; j < l; ++j) {
+          if (cla[i] === cla[j]) continue out;
+        }
+        optCla.push(cla[i]);
+      }
+      return optCla.join(" ");
+    }
     return {
       ce: function(s) {
         return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -104,16 +116,20 @@
         str = RegExp.$1;
         var url = str;
         var a = D.ce("a");
+        a.className = "maybe_shorten_url";
         a.href = url;
-        var aText;
+        a.add(D.ct(url));
+        fragment.add(a);
         for (var i = 0, l = entities_urls.length; i < l; ++i) {
-          if (url === entities_urls[i].url) {
-            aText = entities_urls[i].display_url;
+          if (url === entities_urls[i].url &&
+              entities_urls[i].expanded_url) {
+            var expanded_url = entities_urls[i].expanded_url;
+            a.className += " expanded_tco_url";
+            a.href = expanded_url;
+            a.textContent = expanded_url;
             break;
           }
         }
-        a.add(D.ct(aText || url));
-        fragment.add(a);
 
       } else if (re.mention.test(context)) { // @mention
         str = RegExp.$1;
@@ -345,21 +361,32 @@
 
       for (var i = 0; i < links.length; ++i) {
         var a = links[i];
-        if (a.hasChildNodes() && (a.href === a.textContent)) {
+        if (a.childNodes.length === 1 &&
+            a.lastChild.nodeType === document.TEXT_NODE &&
+            (" " + a.className + " ").indexOf(" maybe_shorten_url ") >= 0) {
           elements.push(a), urls.push(a.href);
         }
       }
 
       urls.length && API.resolveURL(urls, function(xhr) {
         var data = JSON.parse(xhr.responseText);
+        for (var raw_url in data) {
+          var exp_url = data[raw_url];
+          if (raw_url.indexOf("#") !== -1) {
+            data[raw_url] = null;
+          } else if (exp_url) {
+            data[raw_url] = data[raw_url].replace(/\/(?=$|\?)/, "");
+          }
+        }
 
         for (var i = 0; i < urls.length; ++i) {
           var raw_url = urls[i];
           var exp_url = data[raw_url];
           if (exp_url) {
             var a = elements[i];
-            a.className += " expanded_url";
-            a.textContent = decodeURIComponent(escape(exp_url));
+            a.className = (" " + a.className + " ").
+                          replace(/ maybe_shorten_url /g, " expanded_url ");
+            a.href = a.textContent = decodeURIComponent(escape(exp_url));
           }
         }
       });
@@ -651,7 +678,7 @@
           display: table-cell;\
           width: 500px;\
           max-width: 500px;\
-          /*word-wrap: break-word;*/\
+          word-wrap: break-word;\
         }\
         #side {\
           display: table-cell;\
@@ -659,7 +686,7 @@
           max-width: 249px;\
           font-size: smaller;\
           border-left: 1px solid transparent;\
-          /*word-wrap: break-word;*/\
+          word-wrap: break-word;\
         }\
         #status {\
           width: 35em;\
@@ -670,6 +697,10 @@
         #timeline {\
         }\
         #cursor {\
+        }\
+        a.maybe_shorten_url {\
+        }\
+        a.expanded_tco_url {\
         }\
         a.expanded_url {\
         }\
@@ -846,7 +877,7 @@
                       "&include_entities=true", my);
           break;
         case "search":
-          location = "http://search.twitter.com/search?" + q;
+          location.replace("http://search.twitter.com/search?" + q);
           break;
         case "lists":
           this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
