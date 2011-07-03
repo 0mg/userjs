@@ -1353,6 +1353,7 @@
 
       timeline.forEach(function(tweet) {
         var tweet_org = tweet;
+
         var isDM = "sender" in tweet && "recipient" in tweet;
         var isRT = "retweeted_status" in tweet;
 
@@ -1368,7 +1369,8 @@
           text: D.ce("p"),
           meta: D.ce("div"),
           date: D.ce("a"),
-          src: null
+          src: null,
+          retweeter: null
         };
 
         ent.ry.className = "tweet screen_name-" + tweet.user.screen_name;
@@ -1408,7 +1410,7 @@
         ent.date.className = "created_at";
         var dmhref = U.ROOT + U.getURL().path +
                      U.Q + "count=1&max_id=" + tweet.id_str;
-        var tweethref = "http://m.twitter.com/statuses/" + tweet.id_str;
+        var tweethref = "http://mobile.twitter.com/statuses/" + tweet.id_str;
         ent.date.href = isDM ? dmhref : tweethref;
         ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
 
@@ -1424,7 +1426,16 @@
         }
 
         ent.meta.add(ent.date);
-        if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
+        if (!isDM) {
+          ent.meta.add(D.ct(" via "), ent.src);
+          if (isRT) {
+            ent.retweeter = D.ce("a");
+            ent.retweeter.href = "http://mobile.twitter.com/statuses/" +
+                                 tweet_org.id_str;
+            ent.retweeter.add(D.ct(tweet_org.user.screen_name));
+            ent.meta.add(D.ct(" by "), ent.retweeter);
+          }
+        }
 
         ent.ry.add(
           ent.name,
@@ -1509,7 +1520,7 @@
         turn: function(flag) {
           flag = !!flag;
           this.on = flag;
-          this.node.repC(flag, !flag);
+          this.node.repC(String(flag), String(!flag));
           this.node.textContent = flag ? this.labelOn : this.labelDefault;
           return this;
         },
@@ -1564,6 +1575,8 @@
 
     // Action buttons panel for fav, reply, retweet
     makeTwAct: function(t, my) {
+      var rt = t.retweeted_status;
+
       var isDM = "sender" in t;
       var isRT = "retweeted_status" in t;
       var isMyRT = isRT && t.user.id_str === my.id_str;
@@ -1585,19 +1598,20 @@
 
 //ab.node.add(D.ct((isRT ? "This Tweet is a RT by " + t.user.screen_name : "This is a Tweet")+". "));ab.node.add(D.ct(""+(isMyRT ? " So, This RT is by YOU" : isRTtoMe ? "It's RT to YOU" : isTweetRTedByMe ? "You are RTing this Tweet" : isRTRTedByMe ? "You are also RTing this too." :  "")));
 
-      t.favorited && onFav();
+      (rt || t).favorited && onFav();
 
       function onFav() { ab.fav.turn(true); }
       function onUnfav() { ab.fav.turn(false); }
 
       ab.fav.node.addEventListener("click", function() {
-        ab.fav.on ? API.unfav(t.id_str, onUnfav) : API.fav(t.id_str, onFav);
+        ab.fav.on ? API.unfav((rt || t).id_str, onUnfav) :
+                    API.fav((rt || t).id_str, onFav);
       }, false);
 
       if (!isDM) ab.node.add(ab.fav.node);
 
       ab.rep.node.className = "reply";
-      ab.rep.node.href = "javascript:void'Reply'";
+      ab.rep.node.href = "javascript:void'" + (rt || t).id_str + "'";
       ab.rep.node.add(D.ct("Reply"));
 
       if (isDM) {
@@ -1611,8 +1625,8 @@
           var status = D.id("status");
           var repid = D.id("in_reply_to_status_id");
 
-          status.value = "@" + t.user.screen_name + " " + status.value;
-          repid.value = t.id_str;
+          status.value = "@" + (rt || t).user.screen_name + " " + status.value;
+          repid.value = (rt || t).id_str;
 
           status.focus();
         }, false);
@@ -1641,12 +1655,12 @@
             ab.rt.turn(false);
           });
         } else {
-          API.retweet(t.id_str, function(xhr) {
+          API.retweet((rt || t).id_str, function(xhr) {
+            var data = JSON.parse(xhr.responseText);
+            t.current_user_retweet = data;
             // do RT
             ab.rt.isTweetRTedByMe = true;
             ab.rt.turn(true);
-            var data = JSON.parse(xhr.responseText);
-            t.current_user_retweet = data;
           });
         }
       }, false);
@@ -1668,7 +1682,7 @@
       } else if (((t.user.id_str === my.id_str) && !isMyRT) || isRTtoMe) {
         // Delete button for my tweets
         ab.del.node.addEventListener("click", function() {
-          API.untweet(isRTtoMe ? t.retweeted_status.id_str : t.id_str,
+          API.untweet((rt || t).id_str,
                       function(xhr) {
                         D.del(ab.node.parentNode);
                       });
