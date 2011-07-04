@@ -914,15 +914,15 @@
           break;
         case "inbox":
           this.showTL(U.APV + "direct_messages.json?" + q +
-                      "&include_entities=true&cursor=-1", my);
+                      "&include_entities=true", my);
           break;
         case "sent":
           this.showTL(U.APV + "direct_messages/sent.json?" + q +
-                      "&include_entities=true&cursor=-1", my);
+                      "&include_entities=true", my);
           break;
         case "favorites":
           this.showTL(U.APV + "favorites.json?" + q +
-                      "&include_entities=true&cursor=-1", my);
+                      "&include_entities=true", my);
           break;
         case "following":
           this.showUsers(U.APV + "statuses/friends.json?" + q +
@@ -987,8 +987,7 @@
           // http://dev.twitter.com/doc/get/favorites
           this.showTL(U.APV + "favorites.json?" + q +
                       "&include_entities=true" +
-                      "&screen_name=" + hash[0] +
-                      "&cursor=-1", my);
+                      "&screen_name=" + hash[0], my);
           outline.showProfileOutline(hash[0], my, 3);
           break;
         case "following":
@@ -1009,12 +1008,16 @@
           outline.showProfileOutline(hash[0], my, 3);
           break;
         default:
-          var url = U.APV + "lists/statuses.json?" + q +
-                    "&owner_screen_name=" + hash[0] +
-                    "&slug=" + hash[1] +
-                    "&include_entities=true";
-          this.showTL(url, my);
-          outline.showListOutline(hash, my);
+          if (hash[0] === "status" || hash[0] === "statuses") {
+            this.showTL(U.APV + "statuses/show/" + hash[1] + ".json?" + q, my);
+          } else {
+            var url = U.APV + "lists/statuses.json?" + q +
+                      "&owner_screen_name=" + hash[0] +
+                      "&slug=" + hash[1] +
+                      "&include_entities=true";
+            this.showTL(url, my);
+            outline.showListOutline(hash, my);
+          }
         }
       }
 
@@ -1578,12 +1581,14 @@
       var rt = t.retweeted_status;
 
       var isDM = "sender" in t;
-      var isRT = "retweeted_status" in t;
+      var isRT = !!rt;
+
+      var isMyTweet = !isDM && !isRT && t.user.id_str === my.id_str;
       var isMyRT = isRT && t.user.id_str === my.id_str;
-      var isRTtoMe = isRT &&
-                     t.retweeted_status.user.screen_name === my.screen_name;
-      var isRTRTedByMe = isRT && false;
+
+      var isRTtoMe = isRT && rt.user.id_str === my.id_str;
       var isTweetRTedByMe = "current_user_retweet" in t;
+      var isRTRTedByMeToo = isRT && isTweetRTedByMe && false;
 
       if (isDM) t.user = t.sender;
 
@@ -1596,7 +1601,7 @@
         rt: new Button("retweet", "RT", "UnRT")
       };
 
-//ab.node.add(D.ct((isRT ? "This Tweet is a RT by " + t.user.screen_name : "This is a Tweet")+". "));ab.node.add(D.ct(""+(isMyRT ? " So, This RT is by YOU" : isRTtoMe ? "It's RT to YOU" : isTweetRTedByMe ? "You are RTing this Tweet" : isRTRTedByMe ? "You are also RTing this too." :  "")));
+//ab.node.add(D.ct((isRT ? "This is a RT by " + t.user.screen_name : "This is a Tweet")+". "));ab.node.add(D.ct(""+(isMyRT ? "So, by you." : isRTtoMe ? "It's RT to YOU" : isTweetRTedByMe ? "You RTed it." : isRTRTedByMeToo ? "You RTed it too." :  "")));
 
       (rt || t).favorited && onFav();
 
@@ -1639,36 +1644,29 @@
       function onRT() { ab.rt.turn(true); }
       function onUnRT() { ab.rt.turn(false); }
 
-      ab.rt.isMyRT = isMyRT;
-      ab.rt.isTweetRTedByMe = isTweetRTedByMe;
       ab.rt.node.addEventListener("click", function() {
-        if (ab.rt.isMyRT) {
-          // undo RT (button on RT by me)
+        if (isMyRT) {
+          // undo RT (button on my RT)
           API.untweet(t.id_str, function() {
             ab.rt.turn(false);
             D.del(ab.node.parentNode);
           });
-        } else if (ab.rt.isTweetRTedByMe) {
+        } else if (isTweetRTedByMe) {
+          // undo RT (button on owner tweet or others' RT)
           API.untweet(t.current_user_retweet.id_str, function() {
-            // undo RT (button on RT by others, or owner)
-            ab.rt.isTweetRTedByMe = false;
+            isTweetRTedByMe = false;
             ab.rt.turn(false);
           });
         } else {
+          // do RT
           API.retweet((rt || t).id_str, function(xhr) {
             var data = JSON.parse(xhr.responseText);
             t.current_user_retweet = data;
-            // do RT
-            ab.rt.isTweetRTedByMe = true;
+            isTweetRTedByMe = true;
             ab.rt.turn(true);
           });
         }
       }, false);
-
-      if (!isDM && ((t.user.id_str !== my.id_str) || isMyRT) && !isRTtoMe) {
-        // Show RT buttons on tweets without my tweets
-        ab.node.add(ab.rt.node);
-      }
 
       if (isDM) {
         // Delete button for DM
@@ -1679,7 +1677,7 @@
         }, false);
         ab.node.add(ab.del.node);
 
-      } else if (((t.user.id_str === my.id_str) && !isMyRT) || isRTtoMe) {
+      } else if (isMyTweet || isRTtoMe) {
         // Delete button for my tweets
         ab.del.node.addEventListener("click", function() {
           API.untweet((rt || t).id_str,
@@ -1687,8 +1685,11 @@
                         D.del(ab.node.parentNode);
                       });
         }, false);
-
         ab.node.add(ab.del.node);
+
+      } else {
+        // Show RT buttons on tweets without my tweets
+        ab.node.add(ab.rt.node);
       }
 
       return ab.node;
@@ -2238,7 +2239,7 @@
       X.get(url, function(xhr) {
         var list = JSON.parse(xhr.responseText);
 
-        if (mode === void 0) mode = 7;
+        if (typeof mode === "undefined") mode = 7;
         if ((mode & 4) && (list.mode === "private")) mode ^= 4;
 
         mode & 1 && that.changeDesign(list.user);
@@ -2289,7 +2290,7 @@
     showProfileOutline: function(screen_name, my, mode) {
       var that = this;
 
-      if (mode === void 0) mode = 15;
+      if (typeof mode === "undefined") mode = 15;
 
       function onGet(xhr) {
         var user = JSON.parse(xhr.responseText);
