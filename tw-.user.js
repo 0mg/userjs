@@ -270,6 +270,7 @@
   var T = {
     // eg. '&lt;' to '<'
     decodeHTML: function(innerText) {
+      innerText = innerText || "";
       function dentity(entity) {
         var html_entities = {
           nbsp: 160, iexcl: 161, cent: 162, pound: 163,
@@ -893,6 +894,10 @@
 
       function on1(hash, q, my) {
         switch (hash[0]) {
+        case "public_timeline":
+          this.showTL(U.APV + "statuses/public_timeline.json?" + q +
+                      "&include_entities=true", my);
+          break;
         case "retweets":
           this.showTL(U.APV + "statuses/retweeted_by_me.json?" + q +
                       "&include_entities=true", my);
@@ -1373,6 +1378,7 @@
           meta: D.ce("div"),
           date: D.ce("a"),
           src: null,
+          geo: null,
           retweeter: null
         };
 
@@ -1431,6 +1437,16 @@
         ent.meta.add(ent.date);
         if (!isDM) {
           ent.meta.add(D.ct(" via "), ent.src);
+          if (tweet.geo && tweet.geo.coordinates) {
+            ent.geo = D.ce("a");
+            ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
+            if (tweet.place && tweet.place.name && tweet.place.country) {
+              ent.geo.add(D.ct(tweet.place.name + ", " + tweet.place.country));
+            } else {
+              ent.geo.add(D.ct(tweet.geo.coordinates));
+            }
+            ent.meta.add(D.ct(" at "), ent.geo);
+          }
           if (isRT) {
             ent.retweeter = D.ce("a");
             ent.retweeter.href = "http://mobile.twitter.com/statuses/" +
@@ -1439,6 +1455,7 @@
             ent.meta.add(D.ct(" by "), ent.retweeter);
           }
         }
+        ent.meta.normalize();
 
         ent.ry.add(
           ent.name,
