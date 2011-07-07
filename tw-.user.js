@@ -78,7 +78,7 @@
     }
     function hasClass(str) {
       optimizeClass.call(this);
-      return (" " + this.className + " ").indexOf(" " + str + " ") !== -1;
+      return (" " + this.className + " ").indexOf(" " + str + " ") >= 0;
     }
     function removeClass(str) {
       optimizeClass.call(this);
@@ -402,8 +402,8 @@
         var data = JSON.parse(xhr.responseText);
         for (var raw_url in data) {
           var exp_url = data[raw_url];
-          if (raw_url.indexOf("#") !== -1 ||
-              raw_url.indexOf("?") !== -1) {
+          if (raw_url.indexOf("#") >= 0 ||
+              raw_url.indexOf("?") >= 0) {
             data[raw_url] = null;
           } else if (exp_url) {
             data[raw_url] = data[raw_url].replace(/\/(?=$|\?)/, "");
@@ -1103,30 +1103,25 @@
         var input = event.target;
         if (input.value.length !== 6 || isNaN("0x" + input.value)) return;
         switch (input) {
-          case (fm.bg.color): {
-            background.style.backgroundColor = "#" + input.value;
-            break;
-          }
-          case (fm.textColor): {
-            document.body.style.color = "#" + input.value;
-            break;
-          }
-          case (fm.linkColor): {
-            Array.prototype.forEach.call(D.tags("a"), function(a) {
-              a.style.color = "#" + input.value;
-            });
-            break;
-          }
-          case (fm.sidebar.fillColor): {
-            D.id("subtitle").style.backgroundColor =
-            D.id("side").style.backgroundColor = "#" + input.value;
-            break;
-          }
-          case (fm.sidebar.borderColor): {
-            D.id("subtitle").style.borderColor =
-            D.id("side").style.borderColor = input.value;
-            break;
-          }
+        case fm.bg.color:
+          background.style.backgroundColor = "#" + input.value;
+          break;
+        case fm.textColor:
+          document.body.style.color = "#" + input.value;
+          break;
+        case fm.linkColor:
+          Array.prototype.forEach.call(D.tags("a"), function(a) {
+            a.style.color = "#" + input.value;
+          });
+          break;
+        case fm.sidebar.fillColor:
+          D.id("subtitle").style.backgroundColor =
+          D.id("side").style.backgroundColor = "#" + input.value;
+          break;
+        case fm.sidebar.borderColor:
+          D.id("subtitle").style.borderColor =
+          D.id("side").style.borderColor = input.value;
+          break;
         }
       }, true);
 
@@ -1401,14 +1396,13 @@
         ent.icon.src = tweet.user.profile_image_url;
 
         ent.reid.className = "in_reply_to";
-        if (tweet.in_reply_to_status_id) {
-          ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
-                          tweet.in_reply_to_status_id_str;
-          ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
-        }
         if (isDM) {
           ent.reid.href = U.ROOT + tweet.recipient_screen_name;
           ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
+        } else if (tweet.in_reply_to_status_id) {
+          ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
+                          tweet.in_reply_to_status_id_str;
+          ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
         }
 
         ent.text.className = "text";
@@ -1435,25 +1429,23 @@
         }
 
         ent.meta.add(ent.date);
-        if (!isDM) {
-          ent.meta.add(D.ct(" via "), ent.src);
+        if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
+        if (tweet.place && tweet.place.name && tweet.place.country) {
+          ent.geo = D.ce("a");
+          ent.geo.add(D.ct(tweet.place.name));
           if (tweet.geo && tweet.geo.coordinates) {
-            ent.geo = D.ce("a");
             ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
-            if (tweet.place && tweet.place.name && tweet.place.country) {
-              ent.geo.add(D.ct(tweet.place.name + ", " + tweet.place.country));
-            } else {
-              ent.geo.add(D.ct(tweet.geo.coordinates));
-            }
-            ent.meta.add(D.ct(" at "), ent.geo);
+          } else {
+            ent.geo.href = "http://map.google.com/?q=" + tweet.place.full_name;
           }
-          if (isRT) {
-            ent.retweeter = D.ce("a");
-            ent.retweeter.href = "http://mobile.twitter.com/statuses/" +
-                                 tweet_org.id_str;
-            ent.retweeter.add(D.ct(tweet_org.user.screen_name));
-            ent.meta.add(D.ct(" by "), ent.retweeter);
-          }
+          ent.meta.add(D.ct(" from "), ent.geo);
+        }
+        if (isRT) {
+          ent.retweeter = D.ce("a");
+          ent.retweeter.href = "http://mobile.twitter.com/statuses/" +
+                               tweet_org.id_str;
+          ent.retweeter.add(D.ct(tweet_org.user.screen_name));
+          ent.meta.add(D.ct(" by "), ent.retweeter);
         }
         ent.meta.normalize();
 
@@ -2054,58 +2046,48 @@
         var mode = dir_is_list | target_is_list;
 
         switch (mode) {
-          case(0): {
-            switch(dir) {
-              case("following"): {
-                API[isAdd ? "follow" : "unfollow"](target, onAPI);
-                break;
-              }
-              case("followers"): {
-                API[isAdd ? "unblock" : "block"](target, onAPI);
-                break;
-              }
-              case("blocking"): {
-                API[isAdd ? "block" : "unblock"](target, onAPI);
-                break;
-              }
-            }
+        case 0:
+          switch (dir) {
+          case "following":
+            API[isAdd ? "follow" : "unfollow"](target, onAPI);
+            break;
+          case "followers":
+            API[isAdd ? "unblock" : "block"](target, onAPI);
+            break;
+          case "blocking":
+            API[isAdd ? "block" : "unblock"](target, onAPI);
             break;
           }
-          case(1): {
-            switch(dir) {
-              case("following/requests"): {
-                API[isAdd ? "requestFollow" : "unrequestFollow"](target, onAPI);
-                break;
-              }
-              default: { // add user to list
-                var myname_slug = dir.split("/");
-                var myname = myname_slug[0];
-                var slug = myname_slug[1];
-                API[isAdd ? "listing" : "unlisting"](
-                  myname, slug, target, onAPI
-                );
-                break;
-              }
-            }
+          break;
+        case 1:
+          switch (dir) {
+          case "following/requests":
+            API[isAdd ? "requestFollow" : "unrequestFollow"](target, onAPI);
+            break;
+          default: // add user to list
+            var myname_slug = dir.split("/");
+            var myname = myname_slug[0];
+            var slug = myname_slug[1];
+            API[isAdd ? "listing" : "unlisting"](
+              myname, slug, target, onAPI
+            );
             break;
           }
-          case(2): {
+          break;
+        case 2:
+          break;
+        case 3:
+          switch (dir) {
+          case "lists/subscriptions":
+            var uname_slug = target.split("/");
+            var uname = uname_slug[0];
+            var slug = uname_slug[1];
+            API[isAdd ? "followList" : "unfollowList"](
+              uname, slug, onAPI
+            );
             break;
           }
-          case(3): {
-            switch(dir) {
-              case("lists/subscriptions"): {
-                var uname_slug = target.split("/");
-                var uname = uname_slug[0];
-                var slug = uname_slug[1];
-                API[isAdd ? "followList" : "unfollowList"](
-                  uname, slug, onAPI
-                );
-                break;
-              }
-            }
-            break;
-          }
+          break;
         }
       }
 
