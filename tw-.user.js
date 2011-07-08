@@ -701,8 +701,18 @@
           border-bottom: 1px solid transparent;\
         }\
         #subaction {\
+          line-height: 1;\
           color: ButtonText;\
-          background: ButtonFace;\
+          background-color: ButtonFace;\
+        }\
+        #subaction a {\
+          display: inline-block;\
+          margin-left: 1ex;\
+        }\
+        #subaction a,\
+        .user,\
+        .tweet {\
+          background-color: #fdfdfd;\
         }\
         #content {\
           display: table-cell;\
@@ -741,7 +751,6 @@
           min-height: 48px;\
           padding: 1ex 1ex 1ex 60px;\
           border-bottom: 1px solid silver;\
-          background: #fdfdfd;\
         }\
         .user-profile.protected .name::after,\
         .user.protected .name::after,\
@@ -1712,7 +1721,8 @@
         follow: new Button("follow", "Follow", "Unfollow"),
         block: new Button("block", "Block", "Unblock"),
         spam: new Button("spam", "Spam", "Unspam"),
-        req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow")
+        req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
+        dm: D.ce("a")
       }
 
       D.id("subaction").add(ab.node);
@@ -1812,6 +1822,21 @@
             ab.spam.node
           );
         }
+
+        if (ship.followed_by) {
+          ab.dm.add(D.ct("DM"));
+          ab.dm.className = "compose_message";
+          ab.dm.href = "http://mobile.twitter.com/" + user.screen_name +
+                       "/messages";
+          ab.dm.addEventListener("click", function(event) {
+            event.preventDefault();
+            var status = D.id("status");
+            status.value = "d " + user.screen_name + " " + status.value;
+            status.focus();
+          }, false);\
+          ab.node.add(ab.dm);
+        }
+
       }
     },
 
