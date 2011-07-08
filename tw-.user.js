@@ -1478,7 +1478,7 @@
         D.tag("head").add(
           D.ce("link").sa("rel", "next").sa("href", past.href)
         );
-      }
+      } else tl_element.add(D.ct("No tweets found"));
     },
 
     misc: {
