@@ -134,9 +134,9 @@
     var entities_urls = entities && entities.urls || [];
     var xssText = T.decodeHTML(innerText);
     var re = {
-      httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#]+)/,
+      httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
       url: /(^(?:javascript|data|about|opera):\S+)/,
-      mention: /(^@\w+(?:\/[-\w]+)?)/,
+      mention: /(^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
       hashTag: /(^#\w*[a-zA-Z_]\w*)/,
       crlf: /(^\r\n|^\r|^\n)/
     };
@@ -824,10 +824,6 @@
         }\
         .tweet-action {\
           font-size: smaller;\
-        }\
-        .tweet-action > * {\
-          display: inline-block;\
-          margin-right: 1ex;\
         }\
         .tweet-action button.true::before,\
         .user-action button.true::before {\
@@ -1614,7 +1610,7 @@
       var ab = {
         node: D.ce("div").sa("class", "tweet-action"),
         fav: new Button("fav", "Fav", "Unfav"),
-        rep: {node: D.ce("a")},
+        rep: D.ce("button"),
         del: new Button("delete", "Delete", "Delete"),
         rt: new Button("retweet", "RT", "UnRT")
       };
@@ -1633,18 +1629,18 @@
 
       if (!isDM) ab.node.add(ab.fav.node);
 
-      ab.rep.node.className = "reply";
-      ab.rep.node.href = "javascript:void'" + (rt || t).id_str + "'";
-      ab.rep.node.add(D.ct("Reply"));
+      ab.rep.className = "reply";
+      ab.rep.title = (rt || t).id_str;
+      ab.rep.add(D.ct("Reply"));
 
       if (isDM) {
-        ab.rep.node.addEventListener("click", function() {
+        ab.rep.addEventListener("click", function() {
           var status = D.id("status");
           status.value = "d " + t.user.screen_name + " " + status.value;
           status.focus();
         }, false)
       } else {
-        ab.rep.node.addEventListener("click", function() {
+        ab.rep.addEventListener("click", function() {
           var status = D.id("status");
           var repid = D.id("in_reply_to_status_id");
 
@@ -1655,7 +1651,7 @@
         }, false);
       }
 
-      ab.node.add(ab.rep.node);
+      ab.node.add(ab.rep);
 
       (isMyRT || isTweetRTedByMe) && onRT();
 
@@ -1722,7 +1718,7 @@
         block: new Button("block", "Block", "Unblock"),
         spam: new Button("spam", "Spam", "Unspam"),
         req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
-        dm: D.ce("a")
+        dm: D.ce("button")
       }
 
       D.id("subaction").add(ab.node);
@@ -1825,15 +1821,11 @@
 
         if (ship.followed_by) {
           ab.dm.add(D.ct("DM"));
-          ab.dm.className = "compose_message";
-          ab.dm.href = "http://mobile.twitter.com/" + user.screen_name +
-                       "/messages";
-          ab.dm.addEventListener("click", function(event) {
-            event.preventDefault();
+          ab.dm.addEventListener("click", function() {
             var status = D.id("status");
             status.value = "d " + user.screen_name + " " + status.value;
             status.focus();
-          }, false);\
+          }, false);
           ab.node.add(ab.dm);
         }
 
@@ -2003,7 +1995,8 @@
       };
 
       function tcoUrl() {
-        var urls = t.status.value.match(/https?:\/\/\S+/g);
+        var urls = t.status.value.
+                   match(/https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g);
         urls && urls.forEach(function(input_url) {
           API.tco(input_url,
                   function(output_url) {
