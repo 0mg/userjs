@@ -1385,7 +1385,7 @@
         ent.ry.className = "tweet screen_name-" + tweet.user.screen_name;
         if (tweet.user["protected"]) ent.ry.className += " protected";
         if (isRT) ent.ry.className += " retweet";
-        if (/[RQ]T:? *@\w+/.test(tweet.text)) {
+        if (/[RQ]T:?\s*@\w+/.test(tweet.text)) {
           ent.ry.className += " quote";
         }
 
