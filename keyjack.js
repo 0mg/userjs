@@ -8,11 +8,11 @@ addEventListener("DOMContentLoaded", function() {
 		if (v.target instanceof HTMLInputElement ||
 		v.target instanceof HTMLTextAreaElement) return;
 		v.stopPropagation();
-		if (v.type === "keypress" && v.keyCode === 107) { // 107: K
+		if (v.type === "keyup" && v.keyCode === 75) { // 75, 107: K
 			if (doublePress) {
-				removeEventListener("keypress", keyJack, true);
-				removeEventListener("keydown", keyJack, true);
-				removeEventListener("keyup", keyJack, true);
+				removeEventListener("keypress", arguments.callee, true);
+				removeEventListener("keydown", arguments.callee, true);
+				removeEventListener("keyup", arguments.callee, true);
 				alert("Enabled page's keyboard shortcuts");
 			} else {
 				doublePress = true;
