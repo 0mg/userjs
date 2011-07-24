@@ -31,23 +31,25 @@
 
   // UserJS Debug Functions
 
-  // Show Props
-  var props = function(o) {
-    if (!o) return;
-    var s = [];
-    for (var p in o) {
-      s.push(p + " : " + o[p]);
+  var props = function(arg) {
+    if (arg === null || typeof arg === "undefined") return arg;
+    var proplist = [];
+    for (var i in arg) proplist.push(i + " : " + arg[i]);
+    proplist.sort().unshift(arg);
+    return proplist.join("\n");
+  }
+
+
+  // Object Functions
+
+  var O = {
+    stringify: function(arg) {
+      if (arg === null || typeof arg !== "object") return arg;
+      var proplist = [];
+      for (var i in arg) proplist.push(i + " : " + arg[i]);
+      return proplist.join("\n");
     }
-    return s.sort().join("\n");
   };
-  // API limit
-  window.addEventListener("dblclick", function(event) {
-    if (event.target === document.documentElement) {
-      X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
-        alert(xhr.responseText);
-      });
-    }
-  }, false);
 
 
   // DOM Functions
@@ -1913,6 +1915,7 @@
         listsub: D.ce("a"),
         listed: D.ce("a"),
         blocking: D.ce("a"),
+        api: D.ce("button"),
         logout: D.ce("button"),
       };
 
@@ -1960,6 +1963,15 @@
       g.blocking.href = U.ROOT + "blocking";
       g.blocking.add(D.ct("Blocking"));
 
+      g.api.add(D.ct("API rest"));
+      g.api.addEventListener("click", function() {
+        X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
+          var data = JSON.parse(xhr.responseText);
+          data.reset_time = new Date(data.reset_time);
+          alert(O.stringify(data));
+        });
+      }, false);
+
       g.logout.add(D.ct("logout"));
       g.logout.addEventListener("click", function() {
         API.logout(function(xhr) { location.href = U.ROOT; });
@@ -1976,6 +1988,7 @@
         D.ce("li").add(g.lists, D.ct("/"), g.listsub),
         D.ce("li").add(g.listed),
         D.ce("li").add(g.blocking),
+        D.ce("li").add(g.api),
         D.ce("li").add(g.logout)
       );
       D.id("header").add(g.bar);
