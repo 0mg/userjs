@@ -388,7 +388,7 @@
 
 
   // Scripts after render page
-  var after = {
+  var A = {
     expandUrls: function(parent) {
       var links = (parent || document).getElementsByTagName("a");
       var elements = [], urls = [];
@@ -1344,7 +1344,7 @@
       function onGetTLData(xhr) {
         var timeline = JSON.parse(xhr.responseText);
         that.rendTL(timeline, my);
-        after.expandUrls(D.id("timeline"));
+        A.expandUrls(D.id("timeline"));
       }
 
       function onError(xhr) {
