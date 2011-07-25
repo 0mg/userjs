@@ -29,6 +29,20 @@
   };
 
 
+  // Modern JS Functions
+
+  var JSON;
+  JSON = JSON || {
+    parse: function(s) {
+      try {
+        return eval("(" + s + ")");
+      } catch(e) {
+        return e;
+      }
+    }
+  };
+
+
   // UserJS Debug Functions
 
   var props = function(arg) {
@@ -38,18 +52,6 @@
     proplist.sort().unshift(arg);
     return proplist.join("\n");
   }
-
-
-  // Object Functions
-
-  var O = {
-    stringify: function(arg) {
-      if (arg === null || typeof arg !== "object") return arg;
-      var proplist = [];
-      for (var i in arg) proplist.push(i + " : " + arg[i]);
-      return proplist.join("\n");
-    }
-  };
 
 
   // DOM Functions
@@ -125,6 +127,30 @@
       del: function(e) { return e.parentNode.removeChild(e); }
     };
   };
+
+
+  // Object Functions
+
+  var O = {
+    stringify: function(arg) {
+      if (arg === null || typeof arg !== "object") return arg;
+      var proplist = [];
+      for (var i in arg) proplist.push(i + " : " + arg[i]);
+      return proplist.join("\n");
+    },
+    htmlify: function(arg) {
+      if (arg === null || typeof arg !== "object") {
+        return D.ce("p").add(D.ct(arg));
+      }
+      var list = D.ce("dl");
+      for (var i in arg) {
+        list.add(D.ce("dt").add(D.ct(i))).add(D.ce("dd").add(D.ct(arg[i])));
+      }
+      return list.hasChildNodes() ? list : D.ce("p").add(D.ct("Empty Object"));
+    }
+  };
+
+
   // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
   D.tweetize = function(innerText, entities) {
     var fragment = D.cf();
@@ -192,14 +218,6 @@
     }
     fragment.normalize();
     return fragment;
-  };
-
-
-  // Modern JS Functions
-
-  var JSON;
-  JSON = JSON || {
-    parse: function(s) { return eval("(" + s + ")"); }
   };
 
 
@@ -1231,6 +1249,8 @@
         var ids = ids_data.ids.join(",");
         if (ids.length) {
           X.get(U.APV + "users/lookup.json?user_id=" + ids, onGetUsers);
+        } else {
+          D.id("main").add(D.ct("No users found"));
         }
       }
       X.get(url, onGetIds);
@@ -1248,7 +1268,7 @@
       users_list.id = "users";
 
       data.users && data.users.forEach(function(user) {
-        var lu= {
+        var lu = {
           root: D.ce("li"),
           screen_name: D.ce("a"),
           icon: D.ce("img"),
@@ -1297,7 +1317,9 @@
         users_list.add(lu.root);
       });
 
-      D.id("main").add(users_list);
+      D.id("main").add(users_list.hasChildNodes() ?
+                       users_list : D.ct("No users found"));
+
       that.misc.showCursor(data);
     },
 
@@ -1348,7 +1370,13 @@
       }
 
       function onError(xhr) {
-        D.id("main").add(D.ct(xhr.responseText || "No data"));
+        var data;
+        if (xhr.responseText === "") { // protected user timeline
+          data = {"Error": "No tweets found"};
+        } else {
+          data = JSON.parse(xhr.responseText);
+        }
+        D.id("main").add(O.htmlify(data));
       }
 
       X.get(url, onGetTLData, onError);
