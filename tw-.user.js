@@ -2472,8 +2472,14 @@
       content.showPage(my);
     },
     function(xhr) {
-      location.href = "/login?redirect_after_login=" +
-                      encodeURIComponent(location.href);
+      X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        data.reset_time = new Date(data.reset_time);
+        if (data.remaining_hits > 0) {
+          location.href = "/login?redirect_after_login=" +
+                          encodeURIComponent(location.href);
+        } else alert(O.stringify(data));
+      });
     }
   );
 
