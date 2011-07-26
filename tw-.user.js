@@ -681,7 +681,7 @@
       meta.sa("charset", "utf-8");
       title.add(D.ct("tw-"));
       style.add(D.ct('\
-        * {\
+        *:not(button) {\
           margin: 0;\
           padding: 0;\
         }\
@@ -699,7 +699,6 @@
         }\
         button {\
           line-height: 1;\
-          padding: 0.4ex;\
         }\
         dl {\
           padding: 2ex;\
@@ -1250,7 +1249,7 @@
         if (ids.length) {
           X.get(U.APV + "users/lookup.json?user_id=" + ids, onGetUsers);
         } else {
-          D.id("main").add(D.ct("No users found"));
+          D.id("main").add(O.htmlify({"Empty": "No users found"}));
         }
       }
       X.get(url, onGetIds);
@@ -1372,7 +1371,7 @@
       function onError(xhr) {
         var data;
         if (xhr.responseText === "") { // protected user timeline
-          data = {"Error": "No tweets found"};
+          data = {"Empty": "No tweets found"};
         } else {
           data = JSON.parse(xhr.responseText);
         }
@@ -1513,7 +1512,7 @@
         D.tag("head").add(
           D.ce("link").sa("rel", "next").sa("href", past.href)
         );
-      } else tl_element.add(D.ct("No tweets found"));
+      } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
     },
 
     misc: {
