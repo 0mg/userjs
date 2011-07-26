@@ -752,6 +752,7 @@
           height: 7em;\
           max-width: 100%;\
           max-height: 100%;\
+          font-size: inherit;\
         }\
         #timeline {\
         }\
