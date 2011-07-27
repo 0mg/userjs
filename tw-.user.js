@@ -698,7 +698,8 @@
           font-size: 14px;\
         }\
         button {\
-          line-height: 1;\
+          margin: 0;\
+          line-height: 1.3;\
         }\
         dl {\
           padding: 2ex;\
