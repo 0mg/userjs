@@ -702,7 +702,7 @@
         }\
         button {\
           margin: 0;\
-          line-height: 1.3;\
+          line-height: 1.1;\
         }\
         dl {\
           padding: 2ex;\
