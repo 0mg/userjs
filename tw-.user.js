@@ -1103,9 +1103,10 @@
     // Render View of Colors Setting
     // Change colors of text, link, background-color.,
     customizeDesign: function(my) {
-      var timeline = my.status;
-      timeline.user = my;
-      this.rendTL(timeline, my);
+      if (my.status) {
+        my.status.user = my;
+        this.rendTL(my.status, my);
+      }
       outline.rendProfileOutline(my, my, 2);
       outline.changeDesign(my);
 
@@ -1149,7 +1150,7 @@
           break;
         case fm.sidebar.borderColor:
           D.id("subtitle").style.borderColor =
-          D.id("side").style.borderColor = input.value;
+          D.id("side").style.borderColor = "#" + input.value;
           break;
         }
       }, true);
