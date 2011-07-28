@@ -697,6 +697,9 @@
           font-family: "Lucida Console", monospace;\
           font-size: 14px;\
         }\
+        textarea {\
+          padding: 2px;\
+        }\
         button {\
           margin: 0;\
           line-height: 1.3;\
@@ -1319,7 +1322,7 @@
       });
 
       D.id("main").add(users_list.hasChildNodes() ?
-                       users_list : D.ct("No users found"));
+                       users_list : O.htmlify({"Empty": "No users found"}));
 
       that.misc.showCursor(data);
     },
