@@ -202,7 +202,7 @@
         str = RegExp.$1;
         var hashTag = str;
         var a = D.ce("a");
-        a.href = "http://search.twitter.com/search?q=" +
+        a.href = "http://mobile.twitter.com/search?q=" +
                   encodeURIComponent(hashTag);
         a.add(D.ct(hashTag));
         fragment.add(a);
@@ -940,7 +940,7 @@
                       "&include_entities=true", my);
           break;
         case "search":
-          location.replace("http://search.twitter.com/search?" + q);
+          location.replace("http://mobile.twitter.com/search?" + q);
           break;
         case "lists":
           this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
