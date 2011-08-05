@@ -159,38 +159,77 @@
       return fragment;
     }
 
-    var entities_urls = entities && entities.urls || [];
+    if (!entities) {
+      entities = {
+        urls: [],
+        hashtags: [],
+        user_mentions: [],
+        media: []
+      };
+
+    } else if (!entities.media) {
+      entities.media = [];
+    }
+
     var xssText = T.decodeHTML(innerText);
+
     var re = {
-      httpurl: /(^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
-      url: /(^(?:javascript|data|about|opera):\S+)/,
-      mention: /(^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
-      hashTag: /(^#\w*[a-zA-Z_]\w*)/,
-      crlf: /(^\r\n|^\r|^\n)/
+      httpurl: /^(https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
+      url: /^((?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
+      mention: /^(@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
+      hashTag: /^(#\w*[a-zA-Z_]\w*)/,
+      crlf: /^(\r\n|\r|\n)/
     };
 
-    var context = xssText;
-    for (var str = ""; context = context.slice(str.length);) {
-      if (re.httpurl.test(context) || re.url.test(context)) { // URL
-        str = RegExp.$1;
-        var url = str;
-        var a = D.ce("a");
-        a.className = "maybe_shorten_url";
-        a.href = url;
-        a.add(D.ct(url));
-        fragment.add(a);
-        for (var i = 0, l = entities_urls.length; i < l; ++i) {
-          if (url === entities_urls[i].url &&
-              entities_urls[i].expanded_url) {
-            var expanded_url = entities_urls[i].expanded_url;
+    L0: for (var i = 0, str = ""; i < xssText.length; i += str.length) {
+      for (var j = 0; j < entities.urls.length; ++j) {
+        var entity = entities.urls[j];
+        if (entity.indices[0] === i) {
+          str = xssText.substring(i, entity.indices[1]);
+
+          var url = str;
+          var a = D.ce("a").sa("href", url).add(D.ct(url));
+          a.className = "maybe_shorten_url";
+          fragment.add(a);
+
+          var expanded_url = entities.urls[j].expanded_url;
+          if (expanded_url) {
             a.className += " expanded_tco_url";
             a.href = expanded_url;
             a.textContent = expanded_url;
-            break;
           }
-        }
 
-      } else if (re.mention.test(context)) { // @mention
+          continue L0;
+        }
+      }
+      for (var j = 0; j < entities.media.length; ++j) {
+        var entity = entities.media[j];
+        if (entity.indices[0] === i) {
+          str = xssText.substring(i, entity.indices[1]);
+
+          var url = entity.media_url;
+          var a = D.ce("a").sa("href", url).add(D.ct(url));
+          fragment.add(a);
+
+          continue L0;
+        }
+      }
+      if (re.httpurl.test(xssText.substring(i))) {
+        str = RegExp.$1;
+        var a = D.ce("a").sa("href", str).add(D.ct(str));
+        a.className = "maybe_shorten_url";
+        fragment.add(a);
+
+        continue L0;
+      }
+      if (re.url.test(xssText.substring(i))) {
+        str = RegExp.$1;
+        var a = D.ce("a").sa("href", str).add(D.ct(str));
+        fragment.add(a);
+
+        continue L0;
+      }
+      if (re.mention.test(xssText.substring(i))) {
         str = RegExp.$1;
         var userName = str.substring(1);
         var a = D.ce("a");
@@ -198,8 +237,40 @@
         a.add(D.ct(userName));
         fragment.add(D.ct("@"), a);
 
-      } else if (re.hashTag.test(context)) { // #hashtag
+        continue L0;
+      }
+      for (var j = 0; j < entities.user_mentions.length; ++j) {
+        var entity = entities.user_mentions[j];
+        if (entity.indices[0] === i) {
+          str = xssText.substring(i, entity.indices[1]);
+
+          var userName = str.substring(1);
+          var a = D.ce("a");
+          a.href = U.ROOT + userName;
+          a.add(D.ct(userName));
+          fragment.add(D.ct("@"), a);
+
+          continue L0;
+        }
+      }
+      for (var j = 0; j < entities.hashtags.length; ++j) {
+        var entity = entities.hashtags[j];
+        if (entity.indices[0] === i) {
+          str = xssText.substring(i, entity.indices[1]);
+
+          var hashTag = str;
+          var a = D.ce("a");
+          a.href = "http://mobile.twitter.com/search?q=" +
+                    encodeURIComponent(hashTag);
+          a.add(D.ct(hashTag));
+          fragment.add(a);
+
+          continue L0;
+        }
+      }
+      if (re.hashTag.test(xssText.substring(i))) {
         str = RegExp.$1;
+
         var hashTag = str;
         var a = D.ce("a");
         a.href = "http://mobile.twitter.com/search?q=" +
@@ -207,15 +278,17 @@
         a.add(D.ct(hashTag));
         fragment.add(a);
 
-      } else if (re.crlf.test(context)) { // CRLF
+        continue L0;
+      }
+      if (re.crlf.test(xssText.substring(i))) {
         str = RegExp.$1;
         fragment.add(D.ce("br"));
-
-      } else { // OtherText
-        str = context.substring(0, 1);
+      } else {
+        str = xssText[i];
         fragment.add(D.ct(str));
       }
     }
+
     fragment.normalize();
     return fragment;
   };
