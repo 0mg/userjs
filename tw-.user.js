@@ -621,6 +621,16 @@
              "screen_name=" + uname, callback, onErr);
     },
 
+    wantRT: function(uname, callback, onErr) {
+      X.post(U.APV + "friendships/update.xml",
+             "screen_name=" + uname + "&retweets=true", callback, onErr);
+    },
+
+    unwantRT: function(uname, callback, onErr) {
+      X.post(U.APV + "friendships/update.xml",
+             "screen_name=" + uname + "&retweets=false", callback, onErr);
+    },
+
     requestFollow: function(uname, callback, onErr) {
       this.follow(uname, callback, onErr);
     },
@@ -1826,7 +1836,8 @@
         block: new Button("block", "Block", "Unblock"),
         spam: new Button("spam", "Spam", "Unspam"),
         req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
-        dm: D.ce("button")
+        dm: new Button("dm", "DM"),
+        want_rt: new Button("want_rt", "WantRT", "UnwantRT")
       }
 
       D.id("subaction").add(ab.node);
@@ -1851,6 +1862,8 @@
           ab.follow.turn(false).disable().hide();
           ab.block.turn(true).enable().show();
           ab.spam.turn(false).enable().show();
+          ab.dm.turn(false).disable().hide();
+          ab.want_rt.turn(false).disable().hide();
         }
         function onUnBlock() {
           ab.req_follow.turn(false).enable().show();
@@ -1872,6 +1885,8 @@
           ab.follow.turn(false).disable().hide();
           ab.block.turn(true).enable().show();
           ab.spam.turn(true).disable().hide();
+          ab.dm.turn(false).disable().hide();
+          ab.want_rt.turn(false).disable().hide();
         }
         function onUnSpam() {
           ab.req_follow.turn(false).enable().show();
@@ -1889,17 +1904,33 @@
 
         function onFollow() {
           ab.follow.turn(true).enable();
+          ab.want_rt.turn(true).enable().show();
         }
         function onUnfollow() {
           changeFollowBtn();
           ab.follow.turn(false).enable();
+          ab.want_rt.turn(false).disable().hide();
         }
 
-        ship.following && onFollow();
+        ship.following ? onFollow() : onUnfollow();
 
         ab.follow.node.addEventListener("click", function() {
           ab.follow.on ? API.unfollow(user.screen_name, onUnfollow) :
                          API.follow(user.screen_name, onFollow);
+        }, false);
+
+        function onWantRT() {
+          ab.want_rt.turn(true);
+        }
+        function onUnwantRT() {
+          ab.want_rt.turn(false);
+        }
+
+        ship.want_retweets ? onWantRT() : onUnwantRT();
+
+        ab.want_rt.node.addEventListener("click", function() {
+          ab.want_rt.on ? API.unwantRT(user.screen_name, onUnwantRT) :
+                          API.wantRT(user.screen_name, onWantRT);
         }, false);
 
         function onReqFollow() { ab.req_follow.turn(true).enable(); }
@@ -1923,18 +1954,18 @@
           ab.node.add(
             ab.follow.node,
             ab.block.node,
-            ab.spam.node
+            ab.spam.node,
+            ab.want_rt.node
           );
         }
 
         if (ship.followed_by) {
-          ab.dm.add(D.ct("DM"));
-          ab.dm.addEventListener("click", function() {
+          ab.dm.node.addEventListener("click", function() {
             var status = D.id("status");
             status.value = "d " + user.screen_name + " " + status.value;
             status.focus();
           }, false);
-          ab.node.add(ab.dm);
+          ab.node.add(ab.dm.node);
         }
 
       }
