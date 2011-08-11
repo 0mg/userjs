@@ -199,6 +199,11 @@
             a.textContent = expanded_url;
           }
 
+          if (a.href.indexOf("#") >= 0 ||
+              a.href.indexOf("?") >= 0) {
+            a.rmC("maybe_shorten_url");
+          }
+
           continue L0;
         }
       }
@@ -219,6 +224,11 @@
         var a = D.ce("a").sa("href", str).add(D.ct(str));
         a.className = "maybe_shorten_url";
         fragment.add(a);
+
+        if (a.href.indexOf("#") >= 0 ||
+            a.href.indexOf("?") >= 0) {
+          a.rmC("maybe_shorten_url");
+        }
 
         continue L0;
       }
@@ -495,10 +505,7 @@
         var data = JSON.parse(xhr.responseText);
         for (var raw_url in data) {
           var exp_url = data[raw_url];
-          if (raw_url.indexOf("#") >= 0 ||
-              raw_url.indexOf("?") >= 0) {
-            data[raw_url] = null;
-          } else if (exp_url) {
+          if (exp_url) {
             data[raw_url] = data[raw_url].replace(/\/(?=$|\?)/, "");
           }
         }
