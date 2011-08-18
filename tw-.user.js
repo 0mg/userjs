@@ -730,7 +730,7 @@
       X.post("/sessions/destroy/", "", callback, onErr);
     },
 
-    tco: function(input_url, callback, onErr) {
+    /*tco: function(input_url, callback, onErr) {
       function onSuccess(xhr) {
         var text = xhr.responseText;
         var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
@@ -740,7 +740,7 @@
         } else (onErr || alert)(xhr);
       }
       X.get("/intent/tweet?url=" + encodeURIComponent(input_url), onSuccess);
-    }
+    }*/
   };
 
 
@@ -1843,7 +1843,7 @@
         block: new Button("block", "Block", "Unblock"),
         spam: new Button("spam", "Spam", "Unspam"),
         req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
-        dm: new Button("dm", "DM"),
+        dm: new Button("dm", "D"),
         want_rt: new Button("want_rt", "WantRT", "UnwantRT")
       }
 
@@ -2111,7 +2111,7 @@
       g.api.addEventListener("click", function() {
         X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
           var data = JSON.parse(xhr.responseText);
-          data.reset_time = new Date(data.reset_time);
+          data.reset_time = new Date(data.reset_time).toString();
           alert(O.stringify(data));
         });
       }, false);
@@ -2146,12 +2146,12 @@
         status: D.ce("textarea"),
         id: D.ce("input"),
         update: D.ce("button"),
-        tco: {
+        /*tco: {
           apply: D.ce("button")
-        }
+        }*/
       };
 
-      function tcoUrl() {
+      /*function tcoUrl() {
         var urls = t.status.value.
                    match(/https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g);
         urls && urls.forEach(function(input_url) {
@@ -2164,15 +2164,23 @@
                     alert(xhr.responseText);
                   });
         });
-      }
+      }*/
 
       t.status.id = "status";
       t.id.id = "in_reply_to_status_id";
       t.update.id = "update";
-      t.tco.apply.id = "tco_apply";
+      //t.tco.apply.id = "tco_apply";
 
       t.status.addEventListener("keyup", function() {
-        t.update.disabled = this.value.replace(/^d \w+ /, "").length > 140;
+        var red = /^(d \w+) /;
+        var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
+        if (red.test(t.status.value)) {
+          t.update.textContent = "D";
+        } else {
+          t.update.textContent = "Tweet";
+        }
+        t.update.disabled = t.status.value.replace(red, "").
+                        replace(reurl, "$1http://t.co/1234567").length > 140;
       }, false);
 
       t.update.add(D.ct("Tweet"));
@@ -2181,10 +2189,10 @@
         function(xhr) { alert(xhr.responseText); });
       }, false);
 
-      t.tco.apply.add(D.ct("t.co"));
-      t.tco.apply.addEventListener("click", tcoUrl, false);
+      //t.tco.apply.add(D.ct("t.co"));
+      //t.tco.apply.addEventListener("click", tcoUrl, false);
 
-      t.box.add(t.status, t.id, t.update, t.tco.apply);
+      t.box.add(t.status, t.id, t.update);//, t.tco.apply);
 
       D.id("header").add(t.box);
     },
@@ -2591,7 +2599,7 @@
     function(xhr) {
       X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
         var data = JSON.parse(xhr.responseText);
-        data.reset_time = new Date(data.reset_time);
+        data.reset_time = new Date(data.reset_time).toString();
         if (data.remaining_hits > 0) {
           location.href = "/login?redirect_after_login=" +
                           encodeURIComponent(location.href);
