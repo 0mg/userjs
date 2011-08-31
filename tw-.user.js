@@ -212,7 +212,7 @@
         if (entity.indices[0] === i) {
           str = xssText.substring(i, entity.indices[1]);
 
-          var url = entity.media_url;
+          var url = entity.media_url + ":large";
           var a = D.ce("a").sa("href", url).add(D.ct(url));
           fragment.add(a);
 
@@ -1504,7 +1504,8 @@
           date: D.ce("a"),
           src: null,
           geo: null,
-          retweeter: null
+          retweeter: null,
+          retweeter_tweet: null
         };
 
         ent.ry.className = "tweet screen_name-" + tweet.user.screen_name;
@@ -1572,10 +1573,19 @@
         }
         if (isRT) {
           ent.retweeter = D.ce("a");
-          ent.retweeter.href = "http://mobile.twitter.com/statuses/" +
-                               tweet_org.id_str;
+          ent.retweeter.href = U.ROOT + tweet_org.user.screen_name;
           ent.retweeter.add(D.ct(tweet_org.user.screen_name));
-          ent.meta.add(D.ct(" by "), ent.retweeter);
+
+          /*ent.retweeter_tweet = D.ce("a");
+          ent.retweeter_tweet.href = "http://mobile.twitter.com/statuses/" +
+                                      tweet_org.id_str;
+          ent.retweeter_tweet.add(D.ct(tweet_org.id_str));*/
+
+          ent.meta.add(
+            D.ct(" by "),
+            ent.retweeter/*,
+            ent.retweeter_tweet*/
+          );
         }
         ent.meta.normalize();
 
@@ -2146,30 +2156,13 @@
         status: D.ce("textarea"),
         id: D.ce("input"),
         update: D.ce("button"),
-        /*tco: {
-          apply: D.ce("button")
-        }*/
+        //media: D.ce("input")
       };
-
-      /*function tcoUrl() {
-        var urls = t.status.value.
-                   match(/https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g);
-        urls && urls.forEach(function(input_url) {
-          API.tco(input_url,
-                  function(output_url) {
-                    t.status.value = t.status.value.
-                                     replace(input_url, output_url);
-                  },
-                  function(xhr) {
-                    alert(xhr.responseText);
-                  });
-        });
-      }*/
 
       t.status.id = "status";
       t.id.id = "in_reply_to_status_id";
       t.update.id = "update";
-      //t.tco.apply.id = "tco_apply";
+      //t.media.id = "media_upload";
 
       t.status.addEventListener("keyup", function() {
         var red = /^(d \w+) /;
@@ -2189,10 +2182,20 @@
         function(xhr) { alert(xhr.responseText); });
       }, false);
 
-      //t.tco.apply.add(D.ct("t.co"));
-      //t.tco.apply.addEventListener("click", tcoUrl, false);
+      /*t.media.type = "file";
+      t.media.addEventListener("change", function(e) {
+        var file = t.media.files[0];
+        var fr = new FileReader;
+        fr.onload = function() {
+          var img = document.createElement("img");
+          img.src = fr.result;
+          img.alt = file.name;
+          document.body.appendChild(img);
+        };
+        fr.readAsDataURL(file);
+      }, false);*/
 
-      t.box.add(t.status, t.id, t.update);//, t.tco.apply);
+      t.box.add(t.status, t.id, /*t.media,*/ t.update);
 
       D.id("header").add(t.box);
     },
