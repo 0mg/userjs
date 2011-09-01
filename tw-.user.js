@@ -1147,6 +1147,7 @@
 
       function on3(hash) {
         switch (hash[2]) {
+        case "tweets":
         case "timeline":
           if (hash[1] === "following") {
             this.showTL(U.APV + "statuses/following_timeline.json?" + q +
@@ -2530,9 +2531,9 @@
       p.following.add(D.ct("Following"));
       p.following.href = U.ROOT + user.screen_name + "/following";
 
-      p.following_timeline.add(D.ct("Timeline"));
+      p.following_timeline.add(D.ct("Tweets"));
       p.following_timeline.href = U.ROOT + user.screen_name +
-                                  "/following/timeline";
+                                  "/following/tweets";
 
       p.followers.add(D.ct("Followers"));
       p.followers.href = U.ROOT + user.screen_name + "/followers";
