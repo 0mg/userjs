@@ -270,7 +270,7 @@
 
           var hashTag = str;
           var a = D.ce("a");
-          a.href = "http://mobile.twitter.com/search?q=" +
+          a.href = "http://mobile.twitter.com/searches?q=" +
                     encodeURIComponent(hashTag);
           a.add(D.ct(hashTag));
           fragment.add(a);
@@ -283,7 +283,7 @@
 
         var hashTag = str;
         var a = D.ce("a");
-        a.href = "http://mobile.twitter.com/search?q=" +
+        a.href = "http://mobile.twitter.com/searches?q=" +
                   encodeURIComponent(hashTag);
         a.add(D.ct(hashTag));
         fragment.add(a);
@@ -298,8 +298,8 @@
         fragment.add(D.ct(str));
       }
     }
-
     fragment.normalize();
+
     return fragment;
   };
 
@@ -1030,7 +1030,7 @@
                       "&include_entities=true", my);
           break;
         case "search":
-          location.replace("http://mobile.twitter.com/search?" + q);
+          location.replace("http://mobile.twitter.com/searches?" + q);
           break;
         case "lists":
           this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
@@ -1077,6 +1077,13 @@
 
       function on2(hash, q, my) {
         switch (hash[1]) {
+        case "all":
+          if (hash[0] === "lists") {
+            this.showLists(U.APV + "lists/all.json?" + q +
+                            "&user_id=" + my.id_str + "&cursor=-1", my);
+            panel.showListPanel(my);
+          }
+          break;
         case "requests":
           if (hash[0] === "following") {
             this.showUsersByIds(U.APV + "friendships/outgoing.json?" + q +
@@ -1436,6 +1443,7 @@
       var that = this;
       X.get(url, function(xhr) {
         var data = JSON.parse(xhr.responseText);
+        if (!data.lists) data.lists = data; // lists/all.json
 
         var lists = D.ce("dl");
         lists.className = "listslist";
@@ -2594,7 +2602,24 @@
 
   // Check if my Logged-in
   X.get(U.APV + "account/verify_credentials.json",
-    function(xhr) {
+    function(xhr) {/*
+      X.get(U.APV + "friends/ids.json", function(x) {
+        var wee = JSON.parse(x.responseText);
+        X.get(U.APV + "followers/ids.json", function(y) {
+          var wer = JSON.parse(y.responseText);
+          var c = [];
+          out: for (var i = 0; i < wee.length; ++i) {
+            for (var j = 0; j < wer.length; ++j) {
+              if (wee[i] === wer[j]) {
+                continue out;
+              }
+            }
+            c.push(wee[i]);
+          }
+          alert(c);
+        });
+      });
+      return;*/
       var my = JSON.parse(xhr.responseText);
       init.initDOM(my);
       init.structPage();
