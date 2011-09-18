@@ -171,14 +171,15 @@
       entities.media = [];
     }
 
-    var xssText = T.decodeHTML(innerText);
+    var xssText = innerText;
 
     var re = {
       httpurl: /^(https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
       url: /^((?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
       mention: /^(@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
       hashTag: /^(#\w*[a-zA-Z_]\w*)/,
-      crlf: /^(\r\n|\r|\n)/
+      crlf: /^(\r\n|\r|\n)/,
+      entity: /^(&#)/
     };
 
     L0: for (var i = 0, str = ""; i < xssText.length; i += str.length) {
@@ -221,7 +222,8 @@
       }
       if (re.httpurl.test(xssText.substring(i))) {
         str = RegExp.$1;
-        var a = D.ce("a").sa("href", str).add(D.ct(str));
+        var fstr = T.decodeHTML(str);
+        var a = D.ce("a").sa("href", fstr).add(D.ct(fstr));
         a.className = "maybe_shorten_url";
         fragment.add(a);
 
@@ -234,7 +236,8 @@
       }
       if (re.url.test(xssText.substring(i))) {
         str = RegExp.$1;
-        var a = D.ce("a").sa("href", str).add(D.ct(str));
+        var fstr = T.decodeHTML(str);
+        var a = D.ce("a").sa("href", fstr).add(D.ct(fstr));
         fragment.add(a);
 
         continue L0;
@@ -290,6 +293,12 @@
 
         continue L0;
       }
+      if (re.entity.test(xssText.substring(i))) {
+        str = RegExp.$1;
+        fragment.add(D.ct(str));
+
+        continue L0;
+      }
       if (re.crlf.test(xssText.substring(i))) {
         str = RegExp.$1;
         fragment.add(D.ce("br"));
@@ -300,6 +309,11 @@
     }
     fragment.normalize();
 
+    var texts = document.evaluate(".//text()", fragment, null, 7, null);
+    for (var i = 0; i < texts.snapshotLength; ++i) {
+      texts.snapshotItem(i).nodeValue =
+        T.decodeHTML(texts.snapshotItem(i).nodeValue);
+    }
     return fragment;
   };
 
@@ -2602,24 +2616,7 @@
 
   // Check if my Logged-in
   X.get(U.APV + "account/verify_credentials.json",
-    function(xhr) {/*
-      X.get(U.APV + "friends/ids.json", function(x) {
-        var wee = JSON.parse(x.responseText);
-        X.get(U.APV + "followers/ids.json", function(y) {
-          var wer = JSON.parse(y.responseText);
-          var c = [];
-          out: for (var i = 0; i < wee.length; ++i) {
-            for (var j = 0; j < wer.length; ++j) {
-              if (wee[i] === wer[j]) {
-                continue out;
-              }
-            }
-            c.push(wee[i]);
-          }
-          alert(c);
-        });
-      });
-      return;*/
+    function(xhr) {
       var my = JSON.parse(xhr.responseText);
       init.initDOM(my);
       init.structPage();
