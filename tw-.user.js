@@ -727,7 +727,7 @@
     },
 
     listing: function(myname, slug, uname, callback, onErr) {
-      X.post(U.APV + "lists/members/create.xml",
+      X.post(U.APV + "lists/members/create_all.xml",
              "owner_screen_name=" + myname + "&slug=" + slug +
              "&screen_name=" + uname,
              callback, onErr);
