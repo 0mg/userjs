@@ -1177,6 +1177,13 @@
             outline.showProfileOutline(hash[0], my, 3);
           }
           break;
+        case "all":
+          if (hash[1] === "lists") {
+            this.showLists(U.APV + "lists/all.json?" + q +
+                            "&screen_name=" + hash[0], my);
+            panel.showListPanel(my);
+          }
+          break;
         case "members":
           this.showUsers(U.APV + "lists/members.json?" + q +
                          "&owner_screen_name=" + hash[0] +
