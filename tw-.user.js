@@ -2032,14 +2032,13 @@
       function lifeListButtons(xhr) {
         var data = JSON.parse(xhr.responseText);
         var lists = data.lists;
+        var list_btns = {};
 
         lists.forEach(function(l) {
 
           var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
           var lb = new Button("list", lb_label, lb_label);
-
-          API.isMemberOfList(l.user.screen_name, l.slug, user.screen_name,
-                             onListing, onUnlisting);
+          list_btns[l.slug] = lb;
 
           function onListing() { lb.turn(true); }
           function onUnlisting() { lb.turn(false); }
@@ -2053,6 +2052,19 @@
 
           al.node.add(lb.node);
         });
+
+        X.get(U.APV + "lists/memberships.json?" +
+                      "filter_to_owned_lists=true&" +
+                      "screen_name=" + user.screen_name, checkOnIfListedByMe);
+
+        function checkOnIfListedByMe(xhr) {
+          var data = JSON.parse(xhr.responseText);
+
+          data.lists.forEach(function(l) {
+            list_btns[l.slug].turn(true);
+          });
+        }
+
       }
     },
 
