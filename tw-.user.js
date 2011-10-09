@@ -1154,7 +1154,9 @@
           break;
         default:
           if (hash[0] === "status" || hash[0] === "statuses") {
-            this.showTL(U.APV + "statuses/show/" + hash[1] + ".json?" + q, my);
+            this.showTL(U.APV + "statuses/show.json?" + q +
+                                "&id=" + hash[1] +
+                                "&include_entities=true", my);
           } else {
             var url = U.APV + "lists/statuses.json?" + q +
                       "&owner_screen_name=" + hash[0] +
@@ -1212,7 +1214,9 @@
           break;
         default:
           if (hash[1] === "status" || hash[1] === "statuses") {
-            this.showTL(U.APV + "statuses/show/" + hash[2] + ".json?" + q, my);
+            this.showTL(U.APV + "statuses/show.json?" + q +
+                                "&id=" + hash[2] +
+                                "&include_entities=true", my);
             outline.showProfileOutline(hash[0], my, 1);
           }
         }
