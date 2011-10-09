@@ -366,6 +366,10 @@
 
     // Twitter Auth token Getter
     function getAuthToken(f) {
+      get("/account/bootstrap_data", function(xhr) {
+        f(JSON.parse(xhr.responseText).postAuthenticityToken);
+      });
+      return;
       get("/about/contact", function(xhr) {
         var data = xhr.responseText;
         var key = "authenticity_token = '";
