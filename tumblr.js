@@ -28,3 +28,13 @@ addEventListener("DOMContentLoaded", function() {
   });
 }, false);
 
+/* link for Opera fast forward */
+addEventListener("DOMContentLoaded", function() {
+  var nexta = document.getElementById("next_page_link");
+  if (nexta) {
+    var link = document.createElement("link");
+    link.rel = "next";
+    link.href = nexta.href;
+    document.head.appendChild(link);
+  }
+}, false);
