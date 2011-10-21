@@ -712,9 +712,11 @@
                          callback, onErr) {
       X.post(U.APV + "lists/update.xml",
              "owner_screen_name=" + myname +
-             "&slug=" + slug + "&name=" + lname +
-             "&mode=" + mode + "&description=" + description,
-             callback, onErr);
+             "&slug=" + slug +
+             (lname ? "&name=" + lname : "") +
+             "&mode=" + mode +
+             "&description=" + description,
+              callback, onErr);
     },
 
     deleteList: function(myname, slug, callback, onErr) {
