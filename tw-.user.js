@@ -847,6 +847,9 @@
         .tweet {\
           background-color: #fdfdfd;\
         }\
+        #content, #side {\
+          vertical-align: top;\
+        }\
         #content {\
           display: table-cell;\
           width: 500px;\
