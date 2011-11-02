@@ -1032,6 +1032,9 @@
       case 3:
         on3.call(this, hash, q, my);
         break;
+      default:
+        on3.call(this, hash, q, my);
+        break;
       }
 
       function on1(hash, q, my) {
