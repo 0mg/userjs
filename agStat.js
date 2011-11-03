@@ -9,7 +9,7 @@ addEventListener("keyup", function(event) {
   function get_statistics(s) {
     var a  = [0, 0, 0, 0];
     var an = /[a-zA-Z0-9]/;
-    var ws = /[ \t\r\n]/;
+    var ws = /[ \t\n]/;
     s.split("").forEach(function(c) {
       var x = c.charCodeAt(0);
       var z = encodeURI(c).substring(1).split("%").length;
