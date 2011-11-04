@@ -5,131 +5,84 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
-  function showElement(element) {
-    element.style.display = "";
-  }
-  function hideElement(element) {
-    element.style.display = "none";
-  }
-  function isEndlessProblem(element) {
-    return element.lastChild.nodeValue === " (endless)";
-  }
-  function isPostMortemProblem(element) {
-    return element.lastChild.nodeValue === " (post mortem)";
-  }
-  function isActiveProblem(element) {
-    return !(isEndlessProblem(element) || isPostMortemProblem(element));
-  }
-  function toggleButtons(element, buttons) {
-    element.disabled = true;
-    for (var i in buttons) {
-      if (buttons[i].button !== element) buttons[i].button.disabled = false;
-    }
-  }
-  function changeSubtitle(text) {
-    var siteSubtitle = document.getElementsByTagName("h2")[0];
-    siteSubtitle.firstChild.nodeValue = text;
-  }
-  function changeURLHash(hash) {
-    if (typeof history.replaceState === "function") {
-      history.replaceState("", "", "#" + hash);
-    } else {
-      location.hash = hash;
-    }
-  }
+  var ALL = "all";
+  var ACTIVE = "active";
+  var ENDLESS = "endless";
+  var POST_MORTEM = "post_mortem";
 
   var problemsList = document.getElementsByTagName("ol")[0];
   var problems = problemsList.getElementsByTagName("li");
 
-  var buttonsList = document.createElement("ul");
-  var buttons = new function() {
-    this.showAll = {};
-    this.showActive = {};
-    this.showPostMortem = {};
-    this.showEndless = {};
+  problemsList.style.padding = "0";
+
+  for (var i = 0; i < problems.length; ++i) {
+    var p = problems[i];
+    var no = document.createElement("span");
+    no.appendChild(document.createTextNode("" + (i + 1) + ". "));
+    p.insertBefore(no, p.firstChild);
+
+    p.classList.add("all");
+    switch (p.lastChild.nodeValue) {
+    case " (endless)":
+      p.classList.add(ENDLESS);
+      break;
+    case " (post mortem)":
+      p.classList.add(POST_MORTEM);
+      break;
+    default:
+      p.classList.add(ACTIVE);
+      break;
+    }
+  }
+
+  function Button(ptype, label, url, subtitle) {
+    var b = {};
+    Button.pool[ptype] = b;
+
+    b.ptype    = ptype;
+    b.url      = url;
+    b.subtitle = subtitle;
+
+    var wrapper               = document.createElement("li");
+    wrapper.style.display     = "inline-block";
+
+    b.button          = document.createElement("input");
+    b.button.type     = "button";
+    b.button.value    = label;
+    b.button.addEventListener("click", function() {
+      Button.onPush.apply(b, arguments);
+    }, false);
+
+    wrapper.appendChild(b.button);
+    Button.list.appendChild(wrapper);
+
+    return b;
+  }
+  Button.list = document.createElement("ul");
+  Button.pool = {};
+  Button.onPush = function onPush() {
+    for (var i = 0; i < problems.length; ++i) {
+      var p = problems[i];
+      p.style.display = p.classList.contains(this.ptype) ? "" : "none";
+    }
+    history.replaceState("", "", this.url || location.pathname);
+    document.querySelector("h2").textContent = this.subtitle;
+    for (var i in Button.pool) {
+      Button.pool[i].button.disabled = Button.pool[i] === this;
+    }
   };
 
-  for (var i in buttons) {
-    buttons[i].wrapper = document.createElement("li");
-    buttons[i].button = document.createElement("input");
-    buttons[i].button.type = "button";
-    buttons[i].wrapper.style.listStyle = "none";
-    buttons[i].wrapper.style.display = "inline-block";
-  }
+  new Button(ALL, "all", location.pathname, "All problems").
+    button.disabled = true;
+  new Button(ACTIVE, "active", "#" + ACTIVE, "Active problems");
+  new Button(POST_MORTEM, "post mortem", "#" + POST_MORTEM,
+    "Post mortem problems");
+  new Button(ENDLESS, "endless", "#" + ENDLESS, "Endless problems");
 
-  buttons.showAll.button.value = "all";
-  buttons.showAll.button.disabled = true;
-  buttons.showAll.button.addEventListener("click", function(event) {
-    for (var i = 0; i < problems.length; ++i) {
-      showElement(problems[i]);
-    }
-    changeURLHash("all");
-    changeSubtitle("All problems");
-    toggleButtons(event.target, buttons);
-  }, false);
+  document.body.insertBefore(Button.list, problemsList);
 
-  buttons.showActive.button.value = "active";
-  buttons.showActive.button.addEventListener("click", function() {
-    for (var i = 0; i < problems.length; ++i) {
-      if (isActiveProblem(problems[i])) {
-        showElement(problems[i]);
-      } else {
-        hideElement(problems[i]);
-      }
-    }
-    changeURLHash("active");
-    changeSubtitle("Active problems");
-    toggleButtons(event.target, buttons);
-  }, false);
-
-  buttons.showPostMortem.button.value = "post mortem";
-  buttons.showPostMortem.button.addEventListener("click", function(event) {
-    for (var i = 0; i < problems.length; ++i) {
-      if (isPostMortemProblem(problems[i])) {
-        showElement(problems[i]);
-      } else {
-        hideElement(problems[i]);
-      }
-    }
-    changeURLHash("post_mortem");
-    changeSubtitle("Post mortem problems");
-    toggleButtons(event.target, buttons);
-  }, false);
-
-  buttons.showEndless.button.value = "endless";
-  buttons.showEndless.button.addEventListener("click", function(event) {
-    for (var i = 0; i < problems.length; ++i) {
-      if (isEndlessProblem(problems[i])) {
-        showElement(problems[i]);
-      } else {
-        hideElement(problems[i]);
-      }
-    }
-    changeURLHash("endless");
-    changeSubtitle("Endless problems");
-    toggleButtons(event.target, buttons);
-  }, false);
-
-  for (var i in buttons) {
-    buttons[i].wrapper.appendChild(buttons[i].button);
-    buttonsList.appendChild(buttons[i].wrapper);
-  }
-
-  document.body.insertBefore(buttonsList, problemsList);
-
-  switch (location.hash) {
-  case "#all":
-    buttons.showAll.button.click();
-    break;
-  case "#active":
-    buttons.showActive.button.click();
-    break;
-  case "#post_mortem":
-    buttons.showPostMortem.button.click();
-    break;
-  case "#endless":
-    buttons.showEndless.button.click();
-    break;
+  if (Button.pool[location.hash.slice(1)]) {
+      Button.pool[location.hash.slice(1)].button.click();
   }
 
 }, false);
