@@ -2186,7 +2186,7 @@
 
       g.logout.add(D.ct("logout"));
       g.logout.addEventListener("click", function() {
-        API.logout(function(xhr) { location.href = U.ROOT; });
+        API.logout(function(xhr) { location.reload(); });
       }, false);
 
       g.bar.add(
