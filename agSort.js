@@ -10,16 +10,15 @@ addEventListener("DOMContentLoaded", function() {
   var ENDLESS = "endless";
   var POST_MORTEM = "post_mortem";
 
-  var problemsList = document.getElementsByTagName("ol")[0];
+  var problemsList = document.querySelector("ol");
   var problems = problemsList.getElementsByTagName("li");
 
+  problemsList.style.listStyle = "none";
   problemsList.style.padding = "0";
 
   for (var i = 0; i < problems.length; ++i) {
     var p = problems[i];
-    var no = document.createElement("span");
-    no.appendChild(document.createTextNode("" + (i + 1) + ". "));
-    p.insertBefore(no, p.firstChild);
+    p.insertBefore(document.createTextNode("" + (i + 1) + ". "), p.firstChild);
 
     p.classList.add("all");
     switch (p.lastChild.nodeValue) {
@@ -43,9 +42,6 @@ addEventListener("DOMContentLoaded", function() {
     b.url      = url;
     b.subtitle = subtitle;
 
-    var wrapper               = document.createElement("li");
-    wrapper.style.display     = "inline-block";
-
     b.button          = document.createElement("input");
     b.button.type     = "button";
     b.button.value    = label;
@@ -53,19 +49,18 @@ addEventListener("DOMContentLoaded", function() {
       Button.onPush.apply(b, arguments);
     }, false);
 
-    wrapper.appendChild(b.button);
-    Button.list.appendChild(wrapper);
+    Button.list.appendChild(b.button);
 
     return b;
   }
-  Button.list = document.createElement("ul");
+  Button.list = document.createElement("div");
   Button.pool = {};
   Button.onPush = function onPush() {
     for (var i = 0; i < problems.length; ++i) {
       var p = problems[i];
       p.style.display = p.classList.contains(this.ptype) ? "" : "none";
     }
-    history.replaceState("", "", this.url || location.pathname);
+    history.replaceState("", "", this.url);
     document.querySelector("h2").textContent = this.subtitle;
     for (var i in Button.pool) {
       Button.pool[i].button.disabled = Button.pool[i] === this;
@@ -73,7 +68,7 @@ addEventListener("DOMContentLoaded", function() {
   };
 
   new Button(ALL, "all", location.pathname, "All problems").
-    button.disabled = true;
+      button.disabled = true;
   new Button(ACTIVE, "active", "#" + ACTIVE, "Active problems");
   new Button(POST_MORTEM, "post mortem", "#" + POST_MORTEM,
     "Post mortem problems");
