@@ -54,78 +54,32 @@
   }
 
 
+  // Extend Built-in Objects
+
+  Node.prototype.add = function appendChildren() {
+    for (var i = 0; i < arguments.length; ++i) {
+      this.appendChild(arguments[i]);
+    }
+    return this;
+  };
+  Node.prototype.sa = function setAttribute() {
+    this.setAttribute.apply(this, arguments);
+    return this;
+  };
+
+
   // DOM Functions
 
-  var D = new function() {
-    function appendChildren() {
-      for (var i = 0; i < arguments.length; ++i) {
-        this.appendChild(arguments[i]);
-      }
-      return this;
-    }
-    function setAttribute(attr, value) {
-      this.setAttribute(attr, value);
-      return this;
-    }
-    function optimizeClass() {
-      var classList = this.className.replace(/\s+/g, " ").replace(/^ | $/g, "").
-                      split(" ");
-      var optedClass = [];
-      out: for (var i = 0, l = classList.length; i < l; ++i) {
-        for (var j = i + 1; j < l; ++j) {
-          if (classList[i] === classList[j]) continue out;
-        }
-        optedClass.push(classList[i]);
-      }
-      this.className = optedClass.join(" ");
-      return this;
-    }
-    function hasClass(str) {
-      optimizeClass.call(this);
-      return (" " + this.className + " ").indexOf(" " + str + " ") >= 0;
-    }
-    function removeClass(str) {
-      optimizeClass.call(this);
-      var classList = this.className.split(" ");
-      for (var i = 0; i < classList.length; ++i) {
-        if (str === classList[i]) {
-          classList.splice(i, 1);
-          --i;
-        }
-      }
-      this.className = classList.join(" ");
-      return this;
-    }
-    function addClass(str) {
-      if (!hasClass.call(this, str)) this.className += " " + str;
-      return this;
-    }
-    function replaceClass(newStr, currentStr) {
-      removeClass.call(this, currentStr);
-      addClass.call(this, newStr);
-      return this;
-    }
-    function x(e) { // extend element
-      e.add = appendChildren;
-      e.sa = setAttribute;
-      e.optC = optimizeClass;
-      e.hasC = hasClass;
-      e.rmC = removeClass;
-      e.addC = addClass;
-      e.repC = replaceClass;
-      return e;
-    }
-    return {
-      ce: function(s) {
-        return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
-      },
-      ct: function(s) { return document.createTextNode(s); },
-      id: function(s) { return x(document.getElementById(s)); },
-      tag: function(s) { return x(document.getElementsByTagName(s)[0]); },
-      tags: function(s) { return document.getElementsByTagName(s); },
-      cf: function() { return x(document.createDocumentFragment()); },
-      del: function(e) { return e.parentNode.removeChild(e); }
-    };
+  var D = {
+    ce: function(s) {
+      return document.createElementNS("http://www.w3.org/1999/xhtml", s);
+    },
+    ct: function(s) { return document.createTextNode(s); },
+    id: function(s) { return document.getElementById(s); },
+    q: function(s) { return document.querySelector(s); },
+    qs: function(s) { return document.querySelectorAll(s); },
+    cf: function() { return document.createDocumentFragment(); },
+    rm: function(e) { return e.parentNode.removeChild(e); }
   };
 
 
@@ -202,7 +156,7 @@
 
           if (a.href.indexOf("#") >= 0 ||
               a.href.indexOf("?") >= 0) {
-            a.rmC("maybe_shorten_url");
+            a.classList.remove("maybe_shorten_url");
           }
 
           continue L0;
@@ -229,7 +183,7 @@
 
         if (a.href.indexOf("#") >= 0 ||
             a.href.indexOf("?") >= 0) {
-          a.rmC("maybe_shorten_url");
+          a.classList.remove("maybe_shorten_url");
         }
 
         continue L0;
@@ -369,13 +323,6 @@
       get("/account/bootstrap_data", function(xhr) {
         f(JSON.parse(xhr.responseText).postAuthenticityToken);
       });
-      return;
-      get("/about/contact", function(xhr) {
-        var data = xhr.responseText;
-        var key = "authenticity_token = '";
-        var authtoken = data.substr(data.indexOf(key) + key.length, 40);
-        f(authtoken);
-      });
     }
 
     return {
@@ -514,7 +461,7 @@
 
       for (var i = 0; i < links.length; ++i) {
         var a = links[i];
-        if (a.hasC("maybe_shorten_url")) {
+        if (a.classList.contains("maybe_shorten_url")) {
           elements.push(a), urls.push(a.href);
         }
       }
@@ -533,7 +480,8 @@
           var exp_url = data[raw_url];
           if (exp_url) {
             var a = elements[i];
-            a.repC("expanded_url", "maybe_shorten_url");
+            a.classList.add("expanded_url");
+            a.classList.remove("maybe_shorten_url");
             a.href = a.textContent = decodeURIComponent(escape(exp_url));
           }
         }
@@ -748,19 +696,7 @@
 
     logout: function(callback, onErr) {
       X.post("/sessions/destroy/", "", callback, onErr);
-    },
-
-    /*tco: function(input_url, callback, onErr) {
-      function onSuccess(xhr) {
-        var text = xhr.responseText;
-        var re = /<input name="shortened_url" type="hidden" value="([^"]+)/;
-        if (re.test(text)) {
-          var output_url = RegExp.$1;
-          callback(output_url);
-        } else (onErr || alert)(xhr);
-      }
-      X.get("/intent/tweet?url=" + encodeURIComponent(input_url), onSuccess);
-    }*/
+    }
   };
 
 
@@ -768,10 +704,10 @@
 
   var init = {
 
-    // Clear all DOM and set new base
-    initDOM: function(my) {
+    // Clear all node and set new one
+    initNode: function(my) {
 
-      D.del(document.documentElement);
+      D.rm(document.documentElement);
 
       var html = D.ce("html");
       var head = D.ce("head");
@@ -993,7 +929,7 @@
 
       fw.subaction.className = "user-action";
 
-      D.tag("body").add(
+      document.body.add(
         fw.header,
         fw.content.add(
           fw.subtitle,
@@ -1017,7 +953,7 @@
       var hash = path.split("/");
       var q = curl.query;
 
-      D.tag("title").textContent = "tw-/" + path;
+      D.q("title").textContent = "tw-/" + path;
       outline.showSubTitle(hash);
       panel.showGlobalBar(my);
       panel.showTweetBox();
@@ -1140,8 +1076,6 @@
                       "&screen_name=" + hash[0], my);
           break;
         case "favorites":
-          // formal: fovorites/(screen_name||ID).json
-          // http://dev.twitter.com/doc/get/favorites
           this.showTL(U.APV + "favorites.json?" + q +
                       "&include_entities=true" +
                       "&screen_name=" + hash[0], my);
@@ -1245,7 +1179,7 @@
       outline.rendProfileOutline(my, my, 2);
       outline.changeDesign(my);
 
-      var background = D.tag("html");
+      var background = D.q("html");
       var fm = {
         form: D.ce("dl"),
         bg: {
@@ -1275,7 +1209,7 @@
           document.body.style.color = "#" + input.value;
           break;
         case fm.linkColor:
-          Array.prototype.forEach.call(D.tags("a"), function(a) {
+          Array.prototype.forEach.call(D.qs("a"), function(a) {
             a.style.color = "#" + input.value;
           });
           break;
@@ -1661,7 +1595,7 @@
 
         D.id("cursor").add(past);
 
-        D.tag("head").add(
+        D.q("head").add(
           D.ce("link").sa("rel", "next").sa("href", past.href)
         );
       } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
@@ -1693,7 +1627,7 @@
           var link = D.ce("link");
           link.rel = "next";
           link.href = cur.next.href;
-          D.tag("head").add(link);
+          D.q("head").add(link);
         }
 
         D.id("cursor").add(cur.sor);
@@ -1711,14 +1645,15 @@
         this.name = name;
         this.labelDefault = labelDefault;
         this.labelOn = labelOn;
-        this.node = D.ce("button").add(D.ct(labelDefault)).addC(name);
+        this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", name);
       };
       Button.prototype = {
         on: false,
         turn: function(flag) {
           flag = !!flag;
           this.on = flag;
-          this.node.repC(String(flag), String(!flag));
+          this.node.classList.add(String(flag));
+          this.node.classList.remove(String(!flag));
           this.node.textContent = flag ? this.labelOn : this.labelDefault;
           return this;
         },
@@ -1752,7 +1687,7 @@
       };
 
       function onDecide() {
-        D.del(ad.node.parentNode);
+        D.rm(ad.node.parentNode);
       }
 
       var onAccept = onDecide;
@@ -1844,7 +1779,7 @@
           // undo RT (button on my RT)
           API.untweet(t.id_str, function() {
             ab.rt.turn(false);
-            D.del(ab.node.parentNode);
+            D.rm(ab.node.parentNode);
           });
         } else if (isTweetRTedByMe) {
           // undo RT (button on owner tweet or others' RT)
@@ -1867,7 +1802,7 @@
         // Delete button for DM
         ab.del.node.addEventListener("click", function() {
           API.deleteMessage(t.id_str, function(xhr) {
-            D.del(ab.node.parentNode);
+            D.rm(ab.node.parentNode);
           });
         }, false);
         ab.node.add(ab.del.node);
@@ -1877,7 +1812,7 @@
         ab.del.node.addEventListener("click", function() {
           API.untweet((rt || t).id_str,
                       function(xhr) {
-                        D.del(ab.node.parentNode);
+                        D.rm(ab.node.parentNode);
                       });
         }, false);
         ab.node.add(ab.del.node);
@@ -2449,7 +2384,7 @@
       var colorLink = user.profile_link_color ?
                       "#" + user.profile_link_color : "";
 
-      var background = D.tag("html");
+      var background = D.q("html");
       background.style.backgroundColor = colorBg;
       if (user.profile_use_background_image) {
         var bgImgUrl = "url(" + user.profile_background_image_url + ")";
@@ -2470,7 +2405,7 @@
 
       document.body.style.color = colorText;
 
-      D.tag("style").textContent += "a { color: " + colorLink + "; }";
+      D.q("style").textContent += "a { color: " + colorLink + "; }";
     },
 
     // Step to Render list outline and color
@@ -2653,7 +2588,7 @@
   X.get(U.APV + "account/verify_credentials.json",
     function(xhr) {
       var my = JSON.parse(xhr.responseText);
-      init.initDOM(my);
+      init.initNode(my);
       init.structPage();
       content.showPage(my);
     },
