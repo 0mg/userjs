@@ -51,36 +51,39 @@
     for (var i in arg) proplist.push(i + " : " + arg[i]);
     proplist.sort().unshift(arg);
     return proplist.join("\n");
-  }
-
-
-  // Extend Built-in Objects
-
-  Node.prototype.add = function appendChildren() {
-    for (var i = 0; i < arguments.length; ++i) {
-      this.appendChild(arguments[i]);
-    }
-    return this;
-  };
-  Node.prototype.sa = function setAttribute() {
-    this.setAttribute.apply(this, arguments);
-    return this;
   };
 
 
   // DOM Functions
 
-  var D = {
-    ce: function(s) {
-      return document.createElementNS("http://www.w3.org/1999/xhtml", s);
-    },
-    ct: function(s) { return document.createTextNode(s); },
-    id: function(s) { return document.getElementById(s); },
-    q: function(s) { return document.querySelector(s); },
-    qs: function(s) { return document.querySelectorAll(s); },
-    cf: function() { return document.createDocumentFragment(); },
-    rm: function(e) { return e.parentNode.removeChild(e); }
-  };
+  var D = (function() {
+    function appendChildren() {
+      for (var i = 0; i < arguments.length; ++i) {
+        this.appendChild(arguments[i]);
+      }
+      return this;
+    }
+    function setAttribute() {
+      this.setAttribute.apply(this, arguments);
+      return this;
+    }
+    function x(e) { // extend element
+      e.add = appendChildren;
+      e.sa = setAttribute;
+      return e;
+    }
+    return {
+      ce: function(s) {
+        return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
+      },
+      ct: function(s) { return document.createTextNode(s); },
+      id: function(s) { return x(document.getElementById(s)); },
+      q: function(s) { return x(document.querySelector(s)); },
+      qs: function(s) { return document.querySelectorAll(s); },
+      cf: function() { return x(document.createDocumentFragment()); },
+      rm: function(e) { return e.parentNode.removeChild(e); }
+    };
+  })();
 
 
   // Object Functions
@@ -263,10 +266,10 @@
     }
     fragment.normalize();
 
-    var texts = document.evaluate(".//text()", fragment, null, 7, null);
-    for (var i = 0; i < texts.snapshotLength; ++i) {
-      texts.snapshotItem(i).nodeValue =
-        T.decodeHTML(texts.snapshotItem(i).nodeValue);
+    var chs = fragment.childNodes;
+    for (var i = 0; i < chs.length; ++i) {
+      var c = chs[i];
+      if (c.nodeType === 3) c.nodeValue = T.decodeHTML(c.nodeValue);
     }
     return fragment;
   };
