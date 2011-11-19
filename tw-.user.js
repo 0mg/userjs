@@ -2026,7 +2026,7 @@
     showListFollowPanel: function(list) {
       var Button = this.Button;
       var ab = {
-        node: D.ce("div").sa("list-action"),
+        node: D.ce("div"),
         follow: new Button("follow", "Follow", "Unfollow")
       };
 
