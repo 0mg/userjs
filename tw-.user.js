@@ -29,20 +29,6 @@
   };
 
 
-  // Modern JS Functions
-
-  var JSON;
-  JSON = JSON || {
-    parse: function(s) {
-      try {
-        return eval("(" + s + ")");
-      } catch(e) {
-        return e;
-      }
-    }
-  };
-
-
   // UserJS Debug Functions
 
   var props = function(arg) {
@@ -67,11 +53,11 @@
       this.setAttribute.apply(this, arguments);
       return this;
     }
-    function x(e) { // extend element
+    var x = function extendElement(e) {
       e.add = appendChildren;
       e.sa = setAttribute;
       return e;
-    }
+    };
     return {
       ce: function(s) {
         return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -107,7 +93,6 @@
     }
   };
 
-
   // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
   D.tweetize = function(innerText, entities) {
     var fragment = D.cf();
@@ -136,10 +121,11 @@
       mention: /^(@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
       hashTag: /^(#\w*[a-zA-Z_]\w*)/,
       crlf: /^(\r\n|\r|\n)/,
-      entity: /^(&#)/
+      entity: /^(&#)/,
+      text: /^([^hjdao@#\r\n&]+)/,
     };
 
-    L0: for (var i = 0, str = ""; i < xssText.length; i += str.length) {
+    L0: for (var i = 0, str = ""; i < xssText.length; i += str.length || 1) {
       for (var j = 0; j < entities.urls.length; ++j) {
         var entity = entities.urls[j];
         if (entity.indices[0] === i) {
@@ -147,19 +133,17 @@
 
           var url = str;
           var a = D.ce("a").sa("href", url).add(D.ct(url));
-          a.className = "maybe_shorten_url";
           fragment.add(a);
 
           var expanded_url = entities.urls[j].expanded_url;
           if (expanded_url) {
-            a.className += " expanded_tco_url";
             a.href = expanded_url;
             a.textContent = expanded_url;
+            a.classList.add("expanded_tco_url");
           }
 
-          if (a.href.indexOf("#") >= 0 ||
-              a.href.indexOf("?") >= 0) {
-            a.classList.remove("maybe_shorten_url");
+          if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
+            a.classList.add("maybe_shorten_url");
           }
 
           continue L0;
@@ -179,22 +163,21 @@
       }
       if (re.httpurl.test(xssText.substring(i))) {
         str = RegExp.$1;
-        var fstr = T.decodeHTML(str);
-        var a = D.ce("a").sa("href", fstr).add(D.ct(fstr));
-        a.className = "maybe_shorten_url";
+
+        var url = str;
+        var a = D.ce("a").sa("href", url).add(D.ct(url));
         fragment.add(a);
 
-        if (a.href.indexOf("#") >= 0 ||
-            a.href.indexOf("?") >= 0) {
-          a.classList.remove("maybe_shorten_url");
+        if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
+          a.classList.add("maybe_shorten_url");
         }
-
         continue L0;
       }
       if (re.url.test(xssText.substring(i))) {
         str = RegExp.$1;
-        var fstr = T.decodeHTML(str);
-        var a = D.ce("a").sa("href", fstr).add(D.ct(fstr));
+
+        var url = str;
+        var a = D.ce("a").sa("href", url).add(D.ct(url));
         fragment.add(a);
 
         continue L0;
@@ -259,6 +242,9 @@
       if (re.crlf.test(xssText.substring(i))) {
         str = RegExp.$1;
         fragment.add(D.ce("br"));
+      } else if (re.text.test(xssText.substring(i))) {
+        str = RegExp.$1;
+        fragment.add(D.ct(str));
       } else {
         str = xssText[i];
         fragment.add(D.ct(str));
@@ -277,7 +263,7 @@
 
   // XHR Functions
 
-  var X = new function() {
+  var X = (function() {
 
     // GET Method for Twitter API
     function get(url, f, b) {
@@ -334,7 +320,7 @@
       get: get,
       post: post
     };
-  };
+  })();
 
 
   // Text Functions
@@ -399,8 +385,8 @@
           sdot: 8901, lceil: 8968, rceil: 8969, lfloor: 8970,
           rfloor: 8971, lang: 9001, rang: 9002, loz: 9674,
           spades: 9824, clubs: 9827, hearts: 9829, diams: 9830,
-          quot: 34, amp: 38, apos: 39, lt: 60,
-          gt: 62, OElig: 338, oelig: 339, Scaron: 352,
+          quot: 34, amp: 38, apos: 39, lt: 60, gt: 62,
+          OElig: 338, oelig: 339, Scaron: 352,
           scaron: 353, Yuml: 376, circ: 710, tilde: 732,
           ensp: 8194, emsp: 8195, thinsp: 8201, zwnj: 8204,
           zwj: 8205, lrm: 8206, rlm: 8207, ndash: 8211,
