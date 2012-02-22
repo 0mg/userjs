@@ -3,9 +3,13 @@
 // @include *
 // ==/UserScript==
 
-window.addEventListener("DOMContentLoaded", function() {
-  var target =
-  document.evaluate('.//@target[.="_blank"]', document, null, 7, null);
-  for (var i = 0; i < target.snapshotLength; ++i)
-    target.snapshotItem(i).nodeValue = "_top";
+addEventListener("DOMContentLoaded", function() {
+  var bases = document.getElementsByTagName("base");
+  Array.prototype.forEach.call(bases, function(el) {
+    if (el.target === "_blank") el.target = "_top";
+  });
+}, false);
+addEventListener("click", function(event) {
+  var el = event.target;
+  if (el.target === "_blank") el.target = "_top";
 }, false);
