@@ -32,7 +32,7 @@
   // UserJS Debug Functions
 
   var props = function(arg) {
-    if (arg === null || typeof arg === "undefined") return arg;
+    if (arg === null || arg === void 0) return arg;
     var proplist = [];
     for (var i in arg) proplist.push(i + " : " + arg[i]);
     proplist.sort().unshift(arg);
@@ -704,8 +704,6 @@
       var title = D.ce("title");
       var style = D.ce("style");
       var body = D.ce("body");
-      // document.body is undefined in XML
-      if (!("body" in document)) document.body = body;
 
       // Original page Overlayer
       // css 'height' does work, but scrollable area be narrower in XML.
@@ -918,7 +916,7 @@
 
       fw.subaction.className = "user-action";
 
-      document.body.add(
+      D.q("body").add(
         fw.header,
         fw.content.add(
           fw.subtitle,
@@ -1195,7 +1193,7 @@
           background.style.backgroundColor = "#" + input.value;
           break;
         case fm.textColor:
-          document.body.style.color = "#" + input.value;
+          D.q("body").style.color = "#" + input.value;
           break;
         case fm.linkColor:
           Array.prototype.forEach.call(D.qs("a"), function(a) {
@@ -1337,7 +1335,7 @@
           icon: D.ce("img"),
           name: D.ce("span"),
           description: D.ce("p"),
-          created_at: D.ce("a"),
+          created_at: D.ce("a")
         };
 
         lu.root.className = "user";
@@ -1545,15 +1543,9 @@
           ent.retweeter.href = U.ROOT + tweet_org.user.screen_name;
           ent.retweeter.add(D.ct(tweet_org.user.screen_name));
 
-          /*ent.retweeter_tweet = D.ce("a");
-          ent.retweeter_tweet.href = "http://mobile.twitter.com/statuses/" +
-                                      tweet_org.id_str;
-          ent.retweeter_tweet.add(D.ct(tweet_org.id_str));*/
-
           ent.meta.add(
             D.ct(" by "),
-            ent.retweeter/*,
-            ent.retweeter_tweet*/
+            ent.retweeter
           );
         }
         ent.meta.normalize();
@@ -2052,7 +2044,7 @@
         listed: D.ce("a"),
         blocking: D.ce("a"),
         api: D.ce("button"),
-        logout: D.ce("button"),
+        logout: D.ce("button")
       };
 
       g.bar.id = "globalbar";
@@ -2137,7 +2129,7 @@
         box: D.ce("div"),
         status: D.ce("textarea"),
         id: D.ce("input"),
-        update: D.ce("button"),
+        update: D.ce("button")//,
         //media: D.ce("input")
       };
 
@@ -2172,7 +2164,7 @@
           var img = document.createElement("img");
           img.src = fr.result;
           img.alt = file.name;
-          document.body.appendChild(img);
+          D.q("body").appendChild(img);
         };
         fr.readAsDataURL(file);
       }, false);*/
@@ -2392,7 +2384,7 @@
       D.id("subtitle").style.borderColor =
       D.id("side").style.borderColor = colorSideBorder;
 
-      document.body.style.color = colorText;
+      D.q("body").style.color = colorText;
 
       D.q("style").textContent += "a { color: " + colorLink + "; }";
     },
@@ -2406,8 +2398,8 @@
       X.get(url, function(xhr) {
         var list = JSON.parse(xhr.responseText);
 
-        if (typeof mode === "undefined") mode = 7;
-        if ((mode & 4) && (list.mode === "private")) mode ^= 4;
+        if (mode === void 0) mode = 7;
+        if (list.mode === "private") mode &= ~4;
 
         mode & 1 && that.changeDesign(list.user);
         mode & 2 && that.showListProfile(list);
@@ -2457,12 +2449,12 @@
     showProfileOutline: function(screen_name, my, mode) {
       var that = this;
 
-      if (typeof mode === "undefined") mode = 15;
+      if (mode === void 0) mode = 15;
 
       function onGet(xhr) {
         var user = JSON.parse(xhr.responseText);
 
-        if ((mode & 4) && (user.id_str === my.id_str)) mode ^= 4;
+        if (user.id_str === my.id_str) mode &= ~4;
 
         mode & 1 && that.changeDesign(user);
         mode & 2 && that.rendProfileOutline(user);
@@ -2472,8 +2464,8 @@
 
       function onErr(xhr) { // hacking(using API bug) function
         // bug: /blocks/destroy.json returns suspended user's profile
-        if (mode & 4) mode ^= 4;
-        if (mode & 8) mode ^= 8;
+        mode &= ~4;
+        mode &= ~8;
         API.unblock(screen_name, onGet);
       }
 
