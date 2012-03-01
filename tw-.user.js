@@ -746,6 +746,9 @@
         dd {\
           margin: 0 0 1em 1em;\
         }\
+        a {\
+          text-decoration: none;\
+        }\
         #header {\
         }\
         #globalbar li {\
@@ -799,10 +802,16 @@
         #cursor {\
         }\
         a.maybe_shorten_url {\
+          background-color: #ddd;\
         }\
         a.expanded_tco_url {\
+          background-color: #ff9;\
         }\
         a.expanded_url {\
+          background-color: #9ff;\
+        }\
+        a.expanded_tco_url.expanded_url {\
+          background-color: #cfc;\
         }\
         .user,\
         .tweet {\
