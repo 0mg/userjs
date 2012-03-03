@@ -11,16 +11,15 @@
   // URL CONST VALUE and Functions
 
   var U = {
-    // HOMEPATH
     ROOT: "/1/help/test.xml?-=/",
     Q: "&",
-    // ROOT OF API PATH (API VERSION)
+    // ROOT OF API
     APV: "/1/",
     getURL: function() {
       var pathall = (location.pathname + location.search).
                      substring(this.ROOT.length).split(this.Q);
-      var path = pathall[0].replace(/[/]+$/, "");
-      var query = pathall.slice(1).join(this.Q);
+      var path = pathall[0];
+      var query = pathall.slice(1).join("&");
       return {
         path: path,
         query: query
@@ -113,116 +112,47 @@
       entities.media = [];
     }
 
-    var xssText = innerText;
-
     var re = {
-      httpurl: /^(https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
-      url: /^((?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+)/,
-      mention: /^(@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?)/,
-      hashTag: /^(#\w*[a-zA-Z_]\w*)/,
-      crlf: /^(\r\n|\r|\n)/,
-      entity: /^(&#)/,
-      text: /^([^hjdao@#\r\n&]+)/,
+      httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+      url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+      mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
+      hashTag: /^#\w*[a-zA-Z_]\w*/,
+      crlf: /^(?:\r\n|\r|\n)/,
+      entity: /^&#/,
+      text: /^[^hjdao@#\r\n&]+/
     };
 
-    L0: for (var i = 0, str = ""; i < xssText.length; i += str.length || 1) {
-      for (var j = 0; j < entities.urls.length; ++j) {
-        var entity = entities.urls[j];
-        if (entity.indices[0] === i) {
-          str = xssText.substring(i, entity.indices[1]);
+    var xssText = innerText;
+    var ctx = xssText;
+    var eUrl_i = 0, eUrl = entities.urls[eUrl_i];
+    var eHsh_i = 0, eHsh = entities.hashtags[eHsh_i];
+    var eMns_i = 0, eMns = entities.user_mentions[eMns_i];
+    var eMed_i = 0, eMed = entities.media[eMed_i];
 
-          var url = str;
-          var a = D.ce("a").sa("href", url).add(D.ct(url));
-          fragment.add(a);
-
-          var expanded_url = entities.urls[j].expanded_url;
-          if (expanded_url) {
-            a.href = expanded_url;
-            a.textContent = expanded_url;
-            a.classList.add("expanded_tco_url");
-          }
-
-          if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
-            a.classList.add("maybe_shorten_url");
-          }
-
-          continue L0;
-        }
-      }
-      for (var j = 0; j < entities.media.length; ++j) {
-        var entity = entities.media[j];
-        if (entity.indices[0] === i) {
-          str = xssText.substring(i, entity.indices[1]);
-
-          var url = entity.media_url + ":large";
-          var a = D.ce("a").sa("href", url).add(D.ct(url));
-          fragment.add(a);
-
-          continue L0;
-        }
-      }
-      if (re.httpurl.test(xssText.substring(i))) {
-        str = RegExp.$1;
+    var i = 0, s, str = "";
+    for (; ctx = ctx.substring(str.length); i += str.length) {
+      if (eUrl && eUrl.indices[0] === i) {
+        str = ctx.substring(0, eUrl.indices[1] - i);
 
         var url = str;
         var a = D.ce("a").sa("href", url).add(D.ct(url));
         fragment.add(a);
+
+        var expanded_url = eUrl.expanded_url;
+        if (expanded_url) {
+          a.href = expanded_url;
+          a.textContent = expanded_url;
+          a.classList.add("expanded_tco_url");
+        }
 
         if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
           a.classList.add("maybe_shorten_url");
         }
-        continue L0;
-      }
-      if (re.url.test(xssText.substring(i))) {
-        str = RegExp.$1;
 
-        var url = str;
-        var a = D.ce("a").sa("href", url).add(D.ct(url));
-        fragment.add(a);
+        eUrl = entities.urls[++eUrl_i];
 
-        continue L0;
-      }
-      if (re.mention.test(xssText.substring(i))) {
-        str = RegExp.$1;
-        var userName = str.substring(1);
-        var a = D.ce("a");
-        a.href = U.ROOT + userName;
-        a.add(D.ct(userName));
-        fragment.add(D.ct("@"), a);
-
-        continue L0;
-      }
-      for (var j = 0; j < entities.user_mentions.length; ++j) {
-        var entity = entities.user_mentions[j];
-        if (entity.indices[0] === i) {
-          str = xssText.substring(i, entity.indices[1]);
-
-          var userName = str.substring(1);
-          var a = D.ce("a");
-          a.href = U.ROOT + userName;
-          a.add(D.ct(userName));
-          fragment.add(D.ct("@"), a);
-
-          continue L0;
-        }
-      }
-      for (var j = 0; j < entities.hashtags.length; ++j) {
-        var entity = entities.hashtags[j];
-        if (entity.indices[0] === i) {
-          str = xssText.substring(i, entity.indices[1]);
-
-          var hashTag = str;
-          var a = D.ce("a");
-          a.href = "http://mobile.twitter.com/searches?q=" +
-                    encodeURIComponent(hashTag);
-          a.add(D.ct(hashTag));
-          fragment.add(a);
-
-          continue L0;
-        }
-      }
-      if (re.hashTag.test(xssText.substring(i))) {
-        str = RegExp.$1;
+      } else if (eHsh && eHsh.indices[0] === i) {
+        str = ctx.substring(0, eHsh.indices[1] - i);
 
         var hashTag = str;
         var a = D.ce("a");
@@ -231,22 +161,77 @@
         a.add(D.ct(hashTag));
         fragment.add(a);
 
-        continue L0;
-      }
-      if (re.entity.test(xssText.substring(i))) {
-        str = RegExp.$1;
+        eHsh = entities.hashtags[++eHsh_i];
+
+      } else if (eMns && eMns.indices[0] === i) {
+        str = ctx.substring(0, eMns.indices[1] - i);
+
+        var userName = str.substring(1);
+        var a = D.ce("a").sa("href", U.ROOT + userName).add(D.ct(userName));
+        fragment.add(D.ct("@"), a);
+
+        eMns = entities.user_mentions[++eMns_i];
+
+      } else if (eMed && eMed.indices[0] === i) {
+        str = ctx.substring(0, eMed.indices[1] - i);
+
+        var url = eMed.media_url + ":large";
+        var a = D.ce("a").sa("href", url).add(D.ct(url));
+        fragment.add(a);
+
+        eMed = entities.media[++eMed_i];
+
+      } else if (s = re.text.exec(ctx)) {
+        str = s[0];
         fragment.add(D.ct(str));
 
-        continue L0;
-      }
-      if (re.crlf.test(xssText.substring(i))) {
-        str = RegExp.$1;
+      } else if (s = re.crlf.exec(ctx)) {
+        str = s[0];
         fragment.add(D.ce("br"));
-      } else if (re.text.test(xssText.substring(i))) {
-        str = RegExp.$1;
+
+      } else if (s = re.entity.exec(ctx)) {
+        str = s[0];
         fragment.add(D.ct(str));
+
+      } else if (s = re.httpurl.exec(ctx)) {
+        str = s[0];
+
+        var url = str;
+        var a = D.ce("a").sa("href", url).add(D.ct(url));
+        fragment.add(a);
+
+        if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
+          a.classList.add("maybe_shorten_url");
+        }
+
+      } else if (s = re.url.exec(ctx)) {
+        str = s[0];
+
+        var url = str;
+        var a = D.ce("a").sa("href", url).add(D.ct(url));
+        fragment.add(a);
+
+      } else if (s = re.mention.exec(ctx)) {
+        str = s[0];
+
+        var userName = str.substring(1);
+        var a = D.ce("a");
+        a.href = U.ROOT + userName;
+        a.add(D.ct(userName));
+        fragment.add(D.ct("@"), a);
+
+      } else if (s = re.hashTag.exec(ctx)) {
+        str = s[0];
+
+        var hashTag = str;
+        var a = D.ce("a");
+        a.href = "http://mobile.twitter.com/searches?q=" +
+                  encodeURIComponent(hashTag);
+        a.add(D.ct(hashTag));
+        fragment.add(a);
+
       } else {
-        str = xssText[i];
+        str = ctx.substring(0, 1);
         fragment.add(D.ct(str));
       }
     }
@@ -259,68 +244,6 @@
     }
     return fragment;
   };
-
-
-  // XHR Functions
-
-  var X = (function() {
-
-    // GET Method for Twitter API
-    function get(url, f, b) {
-      var xhr = new XMLHttpRequest;
-      xhr.open("GET", url, true);
-      xhr.setRequestHeader("X-PHX", "true");
-      xhr.onload = function() {
-        if (this.status === 200) f(this);
-        else (b || function(x) { alert(x.responseText); })(this);
-      };
-      xhr.send(null);
-    }
-
-    // HEAD Method for Twitter API
-    function head(url, f, b) {
-      var xhr = new XMLHttpRequest;
-      xhr.open("HEAD", url, true);
-      xhr.setRequestHeader("X-PHX", "true");
-      xhr.onload = function() {
-        if (this.status === 200) f(this);
-        else (b || function(x) { alert(x.responseText); })(this);
-      };
-      xhr.send(null);
-    }
-
-    // POST Method for Twitter API
-    function post(url, q, f, b) {
-      confirm("sure?\n" + url + "?" + q) ?
-      getAuthToken(function(authtoken) {
-        xhr = new XMLHttpRequest;
-        xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type",
-                             "application/x-www-form-urlencoded");
-        xhr.setRequestHeader("X-PHX", "true");
-        xhr.onload = function() {
-          if (this.status === 200) f(this);
-          else (b || function(x) { alert(x.responseText); })(this);
-        };
-        xhr.send(q + "&post_authenticity_token=" + authtoken);
-      })//;
-      : b && b(false);
-    }
-
-    // Twitter Auth token Getter
-    function getAuthToken(f) {
-      get("/account/bootstrap_data", function(xhr) {
-        f(JSON.parse(xhr.responseText).postAuthenticityToken);
-      });
-    }
-
-    return {
-      getAuthToken: getAuthToken,
-      head: head,
-      get: get,
-      post: post
-    };
-  })();
 
 
   // Text Functions
@@ -407,32 +330,36 @@
         return String.fromCharCode(dec);
       }
       var re = {
-        entity: /(^&([a-zA-Z]+);)/,
-        entityDec: /(^&#(\d+);)/,
-        entityHex: /(^&#x([\da-fA-F]+);)/
+        entity: /^&([a-zA-Z]+);/,
+        entityDec: /^&#(\d+);/,
+        entityHex: /^&#x([\da-fA-F]+);/,
+        text: /^[^&]+/
       };
       var xssText = "";
-      var context = innerText;
-      for (var str = ""; context = context.slice(str.length);) {
-        if (re.entity.test(context)) {
-          str = RegExp.$1;
-          xssText += dentity(RegExp.$2) || str;
-        } else if (re.entityDec.test(context)) {
-          str = RegExp.$1;
-          xssText += dentityDec(+RegExp.$2) || str;
-        } else if (re.entityHex.test(context)) {
-          str = RegExp.$1;
-          xssText += dentityDec(parseInt(RegExp.$2, 16)) || str;
+      var ctx = innerText;
+      for (var s, str = ""; ctx = ctx.substring(str.length);) {
+        if (s = re.entity.exec(ctx)) {
+          str = s[0];
+          xssText += dentity(s[1]) || str;
+        } else if (s = re.entityDec.exec(ctx)) {
+          str = s[0];
+          xssText += dentityDec(+s[1]) || str;
+        } else if (s = re.entityHex.exec(ctx)) {
+          str = s[0];
+          xssText += dentityDec(parseInt(s[1], 16)) || str;
+        } else if (s = re.text.exec(ctx)) {
+          str = s[0];
+          xssText += str;
         } else {
-          str = context.substring(0, 1);
+          str = ctx.substring(0, 1);
           xssText += str;
         }
       }
       return xssText;
     },
     // eg. '2011/5/27 11:11' to '3 minutes ago'
-    gapTime: function(n, p) {
-      var g = n - p;
+    gapTime: function(p) {
+      var g = Date.now() - p;
       var gap = new Date(0, 0, 0, 0, 0, 0, g);
       return g < 60000 ? gap.getSeconds() + " seconds ago" :
              g < 60000 * 60 ? gap.getMinutes() + " minutes ago" :
@@ -445,38 +372,92 @@
   // Scripts after render page
   var A = {
     expandUrls: function(parent) {
-      var links = (parent || document).getElementsByTagName("a");
-      var elements = [], urls = [];
-
-      for (var i = 0; i < links.length; ++i) {
-        var a = links[i];
-        if (a.classList.contains("maybe_shorten_url")) {
-          elements.push(a), urls.push(a.href);
-        }
-      }
+      var links = parent.querySelectorAll("a.maybe_shorten_url");
+      var urls = [];
+      [].forEach.call(links, function(a) { urls.push(a.href); });
 
       urls.length && API.resolveURL(urls, function(xhr) {
         var data = JSON.parse(xhr.responseText);
         for (var raw_url in data) {
           var exp_url = data[raw_url];
           if (exp_url) {
-            data[raw_url] = data[raw_url].replace(/\/(?=$|\?)/, "");
+            data[raw_url] = exp_url.replace(/\/(?=$|\?)/, "");
           }
         }
-
-        for (var i = 0; i < urls.length; ++i) {
-          var raw_url = urls[i];
+        urls.forEach(function(raw_url, i) {
           var exp_url = data[raw_url];
           if (exp_url) {
-            var a = elements[i];
+            var a = links[i];
             a.classList.add("expanded_url");
             a.classList.remove("maybe_shorten_url");
             a.href = a.textContent = decodeURIComponent(escape(exp_url));
           }
-        }
+        });
       });
     }
   };
+
+
+  // XHR Functions
+
+  var X = (function() {
+
+    // GET Method for Twitter API
+    function get(url, f, b) {
+      var xhr = new XMLHttpRequest;
+      xhr.open("GET", url, true);
+      xhr.setRequestHeader("X-PHX", "true");
+      xhr.onload = function() {
+        if (this.status === 200) f(this);
+        else (b || function(x) { alert(x.responseText); })(this);
+      };
+      xhr.send(null);
+    }
+
+    // HEAD Method for Twitter API
+    function head(url, f, b) {
+      var xhr = new XMLHttpRequest;
+      xhr.open("HEAD", url, true);
+      xhr.setRequestHeader("X-PHX", "true");
+      xhr.onload = function() {
+        if (this.status === 200) f(this);
+        else (b || function(x) { alert(x.responseText); })(this);
+      };
+      xhr.send(null);
+    }
+
+    // POST Method for Twitter API
+    function post(url, q, f, b) {
+      confirm("sure?\n" + url + "?" + q) ?
+      getAuthToken(function(authtoken) {
+        xhr = new XMLHttpRequest;
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type",
+                             "application/x-www-form-urlencoded");
+        xhr.setRequestHeader("X-PHX", "true");
+        xhr.onload = function() {
+          if (this.status === 200) f(this);
+          else (b || function(x) { alert(x.responseText); })(this);
+        };
+        xhr.send(q + "&post_authenticity_token=" + authtoken);
+      })//;
+      : b && b(false);
+    }
+
+    // Twitter Auth token Getter
+    function getAuthToken(f) {
+      get("/account/bootstrap_data", function(xhr) {
+        f(JSON.parse(xhr.responseText).postAuthenticityToken);
+      });
+    }
+
+    return {
+      getAuthToken: getAuthToken,
+      head: head,
+      get: get,
+      post: post
+    };
+  })();
 
 
   // Twitter API Functions
@@ -1112,13 +1093,19 @@
 
       function on3(hash) {
         switch (hash[2]) {
-        case "tweets":
         case "timeline":
+        case "tweets":
           if (hash[1] === "following") {
             this.showTL(U.APV + "statuses/following_timeline.json?" + q +
                         "&include_entities=true" +
                         "&screen_name=" + hash[0], my);
             outline.showProfileOutline(hash[0], my, 3);
+          } else {
+            var url = U.APV + "lists/statuses.json?" + q +
+                      "&owner_screen_name=" + hash[0] +
+                      "&slug=" + hash[1] +
+                      "&include_entities=true";
+            this.showTL(url, my);
           }
           break;
         case "all":
@@ -1367,7 +1354,7 @@
         lu.created_at.className = "created_at";
         lu.created_at.href = user.url || lu.screen_name.href;
         lu.created_at.add(
-          D.ct(T.gapTime(new Date, new Date(user.created_at)))
+          D.ct(T.gapTime(new Date(user.created_at)))
         );
 
         lu.root.add(
@@ -1522,7 +1509,7 @@
                      U.Q + "count=1&max_id=" + tweet.id_str;
         var tweethref = "http://mobile.twitter.com/statuses/" + tweet.id_str;
         ent.date.href = isDM ? dmhref : tweethref;
-        ent.date.add(D.ct(T.gapTime(new Date, new Date(tweet.created_at))));
+        ent.date.add(D.ct(T.gapTime(new Date(tweet.created_at))));
 
         if (!isDM) {
           if (/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.test(tweet.source)) {
