@@ -1,5 +1,6 @@
 // ==UserScript==
 // @include http://drawr.net/*
+// @exclude http://drawr.net/show.php*
 // ==/UserScript==
 
 addEventListener("click", function(e) {
