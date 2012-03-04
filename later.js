@@ -17,7 +17,7 @@ addEventListener("keyup", (function() {
       } else {
         ++nthPress;
         clearTimeout(timer);
-        timer = setTimeout(function() { doublePress = 0; }, 180);
+        timer = setTimeout(function() { nthPress = 0; }, 180);
       }
     }
   };
