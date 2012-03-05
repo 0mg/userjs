@@ -5,13 +5,16 @@
 addEventListener("keyup", (function() {
   var nthPress = 0, timer = null;
   return function(ev) {
+    function pescape(s) {
+      return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
     if (ev.target instanceof HTMLInputElement ||
         ev.target instanceof HTMLTextAreaElement) return;
     if (ev.keyCode === 76) { // 108, 76: L
       if (nthPress) {
-        var url = location.href.replace(/'/g, "%2527");
-        var title = String(document.title).replace(/'/g, "%2527");
-        open("javascript:alert('" + title + "%5Cn" + url +
+        var url = pescape(location.href);
+        var title = pescape(document.title);
+        open("javascript:alert('" + title + "\\n" + url +
           "'),location='" + url + "'");
         close();
       } else {
