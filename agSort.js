@@ -58,7 +58,7 @@ addEventListener("DOMContentLoaded", function() {
   Button.onPush = function onPush() {
     for (var i = 0; i < problems.length; ++i) {
       var p = problems[i];
-      p.style.display = p.classList.contains(this.ptype) ? "" : "none";
+      p.hidden = !p.classList.contains(this.ptype);
     }
     history.replaceState("", "", this.url);
     document.querySelector("h2").textContent = this.subtitle;

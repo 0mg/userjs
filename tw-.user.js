@@ -1643,11 +1643,11 @@
           return this;
         },
         show: function() {
-          this.node.style.display = "";
+          this.node.hidden = false;
           return this;
         },
         hide: function() {
-          this.node.style.display = "none";
+          this.node.hidden = true;
           return this;
         }
       };
