@@ -6,7 +6,7 @@ addEventListener("keyup", (function() {
   var nthPress = 0, timer = null;
   return function(ev) {
     function pescape(s) {
-      return String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      return String(s).replace(/[\\']/g, "\\$&");
     }
     if (ev.target instanceof HTMLInputElement ||
         ev.target instanceof HTMLTextAreaElement) return;
