@@ -28,6 +28,72 @@ var U = {
 };
 
 
+// CONST VALUE
+var C = {};
+C.TWRE = {
+  httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+  url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+  mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
+  hashTag: /^#\w*[a-zA-Z_]\w*/,
+  crlf: /^(?:\r\n|\r|\n)/,
+  entity: /^&#/,
+  text: /^[^hjdao@#\r\n&]+/
+};
+C.HTML_ENTITIES = {
+  nbsp: 160, iexcl: 161, cent: 162, pound: 163, curren: 164,
+  yen: 165, brvbar: 166, sect: 167, uml: 168, copy: 169,
+  ordf: 170, laquo: 171, not: 172, shy: 173, reg: 174,
+  macr: 175, deg: 176, plusmn: 177, sup2: 178, sup3: 179,
+  acute: 180, micro: 181, para: 182, middot: 183, cedil: 184,
+  sup1: 185, ordm: 186, raquo: 187, frac14: 188, frac12: 189,
+  frac34: 190, iquest: 191, Agrave: 192, Aacute: 193, Acirc: 194,
+  Atilde: 195, Auml: 196, Aring: 197, AElig: 198, Ccedil: 199,
+  Egrave: 200, Eacute: 201, Ecirc: 202, Euml: 203, Igrave: 204,
+  Iacute: 205, Icirc: 206, Iuml: 207, ETH: 208, Ntilde: 209,
+  Ograve: 210, Oacute: 211, Ocirc: 212, Otilde: 213, Ouml: 214,
+  times: 215, Oslash: 216, Ugrave: 217, Uacute: 218, Ucirc: 219,
+  Uuml: 220, Yacute: 221, THORN: 222, szlig: 223, agrave: 224,
+  aacute: 225, acirc: 226, atilde: 227, auml: 228, aring: 229,
+  aelig: 230, ccedil: 231, egrave: 232, eacute: 233, ecirc: 234,
+  euml: 235, igrave: 236, iacute: 237, icirc: 238, iuml: 239,
+  eth: 240, ntilde: 241, ograve: 242, oacute: 243, ocirc: 244,
+  otilde: 245, ouml: 246, divide: 247, oslash: 248, ugrave: 249,
+  uacute: 250, ucirc: 251, uuml: 252, yacute: 253, thorn: 254,
+  yuml: 255, fnof: 402, Alpha: 913, Beta: 914, Gamma: 915,
+  Delta: 916, Epsilon: 917, Zeta: 918, Eta: 919, Theta: 920,
+  Iota: 921, Kappa: 922, Lambda: 923, Mu: 924, Nu: 925,
+  Xi: 926, Omicron: 927, Pi: 928, Rho: 929, Sigma: 931,
+  Tau: 932, Upsilon: 933, Phi: 934, Chi: 935, Psi: 936,
+  Omega: 937, alpha: 945, beta: 946, gamma: 947, delta: 948,
+  epsilon: 949, zeta: 950, eta: 951, theta: 952, iota: 953,
+  kappa: 954, lambda: 955, mu: 956, nu: 957, xi: 958,
+  omicron: 959, pi: 960, rho: 961, sigmaf: 962, sigma: 963,
+  tau: 964, upsilon: 965, phi: 966, chi: 967, psi: 968,
+  omega: 969, thetasym: 977, upsih: 978, piv: 982, bull: 8226,
+  hellip: 8230, prime: 8242, Prime: 8243, oline: 8254, frasl: 8260,
+  weierp: 8472, image: 8465, real: 8476, trade: 8482, alefsym: 8501,
+  larr: 8592, uarr: 8593, rarr: 8594, darr: 8595, harr: 8596,
+  crarr: 8629, lArr: 8656, uArr: 8657, rArr: 8658, dArr: 8659,
+  hArr: 8660, forall: 8704, part: 8706, exist: 8707, empty: 8709,
+  nabla: 8711, isin: 8712, notin: 8713, ni: 8715, prod: 8719,
+  sum: 8721, minus: 8722, lowast: 8727, radic: 8730, prop: 8733,
+  infin: 8734, ang: 8736, and: 8743, or: 8744, cap: 8745,
+  cup: 8746, int: 8747, there4: 8756, sim: 8764, cong: 8773,
+  asymp: 8776, ne: 8800, equiv: 8801, le: 8804, ge: 8805,
+  sub: 8834, sup: 8835, nsub: 8836, sube: 8838, supe: 8839,
+  oplus: 8853, otimes: 8855, perp: 8869, sdot: 8901, lceil: 8968,
+  rceil: 8969, lfloor: 8970, rfloor: 8971, lang: 9001, rang: 9002,
+  loz: 9674, spades: 9824, clubs: 9827, hearts: 9829, diams: 9830,
+  quot: 34, amp: 38, apos: 39, lt: 60, gt: 62,
+  OElig: 338, oelig: 339, Scaron: 352, scaron: 353, Yuml: 376,
+  circ: 710, tilde: 732, ensp: 8194, emsp: 8195, thinsp: 8201,
+  zwnj: 8204, zwj: 8205, lrm: 8206, rlm: 8207, ndash: 8211,
+  mdash: 8212, lsquo: 8216, rsquo: 8217, sbquo: 8218, ldquo: 8220,
+  rdquo: 8221, bdquo: 8222, dagger: 8224, Dagger: 8225, permil: 8240,
+  lsaquo: 8249, rsaquo: 8250, euro: 8364
+};
+
+
 // UserJS Debug Functions
 
 var props = function(arg) {
@@ -60,50 +126,33 @@ var D = (function() {
     rm: function(e) { return e.parentNode.removeChild(e); }
   };
 })();
-
-
 // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
-D.tweetize = function(xssText, entities) {
-  if (!xssText) return D.ct("");
-  if (!entities) {
+D.tweetize = function(innerText, entities) {
+  var str, ctx = innerText, fragment = D.cf();
+  if (entities) {
     entities = {
-      urls: [],
-      hashtags: [],
-      user_mentions: [],
-      media: []
+      urls: entities.urls.slice(),
+      hashtags: entities.hashtags.slice(),
+      user_mentions: entities.user_mentions.slice(),
+      media: entities.media ? entities.media.slice() : []
     };
-  } else if (!entities.media) {
-    entities.media = [];
+    D.tweetize.all(ctx, entities, fragment, 0);
+  } else {
+    while ((str = D.tweetize.one(ctx, fragment)).length) {
+      ctx = ctx.substring(str.length);
+    }
+    fragment.normalize();
   }
-  var fragment = D.twContent(xssText, entities);
-  var chs = fragment.childNodes;
-  for (var i = 0; i < chs.length; ++i) {
-    var c = chs[i];
-    if (c.nodeType === 3) c.nodeValue = T.decodeHTML(c.nodeValue);
+  var nodes = fragment.childNodes;
+  for (var i = 0; i < nodes.length; ++i) {
+    var nd = nodes[i];
+    if (nd.nodeType === 3) nd.nodeValue = T.decodeHTML(nd.nodeValue);
   }
   return fragment;
 };
-D.RE = {
-  httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
-  url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
-  mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
-  hashTag: /^#\w*[a-zA-Z_]\w*/,
-  crlf: /^(?:\r\n|\r|\n)/,
-  entity: /^&#/,
-  text: /^[^hjdao@#\r\n&]+/
-};
-D.twContent = function twContent(ctx, entities) {
-  entities = {
-    urls: entities.urls.slice(),
-    hashtags: entities.hashtags.slice(),
-    user_mentions: entities.user_mentions.slice(),
-    media: entities.media.slice()
-  };
-  return D._twContent_E(ctx, entities, D.cf(), 0);
-};
-D._twContent_E = function _twContent_E(ctx, entities, fragment, i) {
+D.tweetize.all = function callee(ctx, entities, fragment, i) {
   if (!ctx) return fragment.normalize(), fragment;
-  var str, s;
+  var str;
   var eUrl = entities.urls[0], eHsh = entities.hashtags[0];
   var eMns = entities.user_mentions[0], eMed = entities.media[0];
   if (eUrl && eUrl.indices[0] === i) {
@@ -128,27 +177,38 @@ D._twContent_E = function _twContent_E(ctx, entities, fragment, i) {
     fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
     entities.media.shift();
 
-  } else if (s = D.RE.text.exec(ctx)) {
-    str = s[0]; fragment.add(D.ct(str));
+  } else str = D.tweetize.one(ctx, fragment);
+  return callee(ctx.substring(str.length), entities, fragment, i + str.length);
+};
+D.tweetize.one = function(ctx, fragment) {
+  var str;
+  if (str = C.TWRE.text.exec(ctx)) {
+    str = str[0]; fragment.add(D.ct(str));
 
-  } else if (s = D.RE.crlf.exec(ctx)) {
-    str = s[0]; fragment.add(D.ce("br"));
+  } else if (str = C.TWRE.crlf.exec(ctx)) {
+    str = str[0]; fragment.add(D.ce("br"));
 
-  } else if (s = D.RE.entity.exec(ctx)) {
-    str = s[0]; fragment.add(D.ct(str));
+  } else if (str = C.TWRE.entity.exec(ctx)) {
+    str = str[0]; fragment.add(D.ct(str));
 
-  } else if (s = D.RE.httpurl.exec(ctx)) {
-    str = s[0]; var url = str; fragment.add(D.twLink(url));
+  } else if (str = C.TWRE.httpurl.exec(ctx)) {
+    str = str[0]; var url = str; fragment.add(D.twLink(url));
 
-  } else if (s = D.RE.url.exec(ctx)) {
-    str = s[0]; var url = str;
+  } else if (str = C.TWRE.hashTag.exec(ctx)) {
+    str = str[0]; var hash = str; fragment.add(D.twHash(hash));
+
+  } else if (str = C.TWRE.mention.exec(ctx)) {
+    str = str[0]; var uname = str.substring(1);
+    fragment.add(D.twMension(uname));
+
+  } else if (str = C.TWRE.url.exec(ctx)) {
+    str = str[0]; var url = str;
     fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
 
   } else {
-    str = ctx[0]; fragment.add(D.ct(str));
+    str = ctx.substring(0, 1); fragment.add(D.ct(str));
   }
-  return _twContent_E(ctx.substring(str.length), entities, fragment,
-    i + str.length);
+  return str;
 };
 D.twLink = function twLink(url, expanded_url) {
   var a = D.ce("a").sa("href", url).add(D.ct(url));
@@ -215,9 +275,8 @@ T.decodeHTML = function(innerText) {
     entityHex: /^&#x([\da-fA-F]+);/,
     text: /^[^&]+/
   };
-  var xssText = "";
-  var ctx = innerText;
-  for (var s, str = ""; ctx = ctx.substring(str.length);) {
+  var s, str, ctx = innerText, xssText = "";
+  while (ctx.length) {
     if (s = re.entity.exec(ctx)) {
       str = s[0];
       xssText += T.dentity(s[1]) || str;
@@ -234,6 +293,7 @@ T.decodeHTML = function(innerText) {
       str = ctx.substring(0, 1);
       xssText += str;
     }
+    ctx = ctx.substring(str.length);
   }
   return xssText;
 };
@@ -242,65 +302,12 @@ T.dentityDec = function dentityDec(dec) {
   return String.fromCharCode(dec);
 };
 T.dentity = function dentity(entity) {
-  var charCode = T.html_entities[entity];
+  var charCode = C.HTML_ENTITIES[entity];
   if (typeof charCode === "number") {
     return String.fromCharCode(charCode);
   } else {
     return null;
   }
-};
-T.html_entities = {
-  nbsp: 160, iexcl: 161, cent: 162, pound: 163, curren: 164,
-  yen: 165, brvbar: 166, sect: 167, uml: 168, copy: 169,
-  ordf: 170, laquo: 171, not: 172, shy: 173, reg: 174,
-  macr: 175, deg: 176, plusmn: 177, sup2: 178, sup3: 179,
-  acute: 180, micro: 181, para: 182, middot: 183, cedil: 184,
-  sup1: 185, ordm: 186, raquo: 187, frac14: 188, frac12: 189,
-  frac34: 190, iquest: 191, Agrave: 192, Aacute: 193, Acirc: 194,
-  Atilde: 195, Auml: 196, Aring: 197, AElig: 198, Ccedil: 199,
-  Egrave: 200, Eacute: 201, Ecirc: 202, Euml: 203, Igrave: 204,
-  Iacute: 205, Icirc: 206, Iuml: 207, ETH: 208, Ntilde: 209,
-  Ograve: 210, Oacute: 211, Ocirc: 212, Otilde: 213, Ouml: 214,
-  times: 215, Oslash: 216, Ugrave: 217, Uacute: 218, Ucirc: 219,
-  Uuml: 220, Yacute: 221, THORN: 222, szlig: 223, agrave: 224,
-  aacute: 225, acirc: 226, atilde: 227, auml: 228, aring: 229,
-  aelig: 230, ccedil: 231, egrave: 232, eacute: 233, ecirc: 234,
-  euml: 235, igrave: 236, iacute: 237, icirc: 238, iuml: 239,
-  eth: 240, ntilde: 241, ograve: 242, oacute: 243, ocirc: 244,
-  otilde: 245, ouml: 246, divide: 247, oslash: 248, ugrave: 249,
-  uacute: 250, ucirc: 251, uuml: 252, yacute: 253, thorn: 254,
-  yuml: 255, fnof: 402, Alpha: 913, Beta: 914, Gamma: 915,
-  Delta: 916, Epsilon: 917, Zeta: 918, Eta: 919, Theta: 920,
-  Iota: 921, Kappa: 922, Lambda: 923, Mu: 924, Nu: 925,
-  Xi: 926, Omicron: 927, Pi: 928, Rho: 929, Sigma: 931,
-  Tau: 932, Upsilon: 933, Phi: 934, Chi: 935, Psi: 936,
-  Omega: 937, alpha: 945, beta: 946, gamma: 947, delta: 948,
-  epsilon: 949, zeta: 950, eta: 951, theta: 952, iota: 953,
-  kappa: 954, lambda: 955, mu: 956, nu: 957, xi: 958,
-  omicron: 959, pi: 960, rho: 961, sigmaf: 962, sigma: 963,
-  tau: 964, upsilon: 965, phi: 966, chi: 967, psi: 968,
-  omega: 969, thetasym: 977, upsih: 978, piv: 982, bull: 8226,
-  hellip: 8230, prime: 8242, Prime: 8243, oline: 8254, frasl: 8260,
-  weierp: 8472, image: 8465, real: 8476, trade: 8482, alefsym: 8501,
-  larr: 8592, uarr: 8593, rarr: 8594, darr: 8595, harr: 8596,
-  crarr: 8629, lArr: 8656, uArr: 8657, rArr: 8658, dArr: 8659,
-  hArr: 8660, forall: 8704, part: 8706, exist: 8707, empty: 8709,
-  nabla: 8711, isin: 8712, notin: 8713, ni: 8715, prod: 8719,
-  sum: 8721, minus: 8722, lowast: 8727, radic: 8730, prop: 8733,
-  infin: 8734, ang: 8736, and: 8743, or: 8744, cap: 8745,
-  cup: 8746, int: 8747, there4: 8756, sim: 8764, cong: 8773,
-  asymp: 8776, ne: 8800, equiv: 8801, le: 8804, ge: 8805,
-  sub: 8834, sup: 8835, nsub: 8836, sube: 8838, supe: 8839,
-  oplus: 8853, otimes: 8855, perp: 8869, sdot: 8901, lceil: 8968,
-  rceil: 8969, lfloor: 8970, rfloor: 8971, lang: 9001, rang: 9002,
-  loz: 9674, spades: 9824, clubs: 9827, hearts: 9829, diams: 9830,
-  quot: 34, amp: 38, apos: 39, lt: 60, gt: 62,
-  OElig: 338, oelig: 339, Scaron: 352, scaron: 353, Yuml: 376,
-  circ: 710, tilde: 732, ensp: 8194, emsp: 8195, thinsp: 8201,
-  zwnj: 8204, zwj: 8205, lrm: 8206, rlm: 8207, ndash: 8211,
-  mdash: 8212, lsquo: 8216, rsquo: 8217, sbquo: 8218, ldquo: 8220,
-  rdquo: 8221, bdquo: 8222, dagger: 8224, Dagger: 8225, permil: 8240,
-  lsaquo: 8249, rsaquo: 8250, euro: 8364
 };
 
 
