@@ -1379,115 +1379,7 @@ content.rendTL = function(timeline, my) {
   tl_element.id = "timeline";
 
   timeline.forEach(function(tweet) {
-    var tweet_org = tweet;
-
-    var isDM = "sender" in tweet && "recipient" in tweet;
-    var isRT = "retweeted_status" in tweet;
-
-    if (isDM) tweet.user = tweet.sender;
-    else if (isRT) tweet = tweet.retweeted_status;
-
-    var ent = {
-      ry: D.ce("li"),
-      name: D.ce("a"),
-      nick: D.ce("span"),
-      icon: D.ce("img"),
-      reid: D.ce("a"),
-      text: D.ce("p"),
-      meta: D.ce("div"),
-      date: D.ce("a"),
-      src: null,
-      geo: null,
-      retweeter: null,
-      retweeter_tweet: null
-    };
-
-    ent.ry.className = "tweet screen_name-" + tweet.user.screen_name;
-    if (tweet.user["protected"]) ent.ry.className += " protected";
-    if (isRT) ent.ry.className += " retweet";
-    if (/[RQ]T:?\s*@\w+/.test(tweet.text)) {
-      ent.ry.className += " quote";
-    }
-
-    ent.name.className = "screen_name";
-    ent.name.href = U.ROOT + tweet.user.screen_name;
-    ent.name.add(D.ct(tweet.user.screen_name));
-
-    ent.nick.className = "name";
-    ent.nick.add(D.ct(T.decodeHTML(tweet.user.name)));
-
-    ent.icon.className = "user-icon";
-    ent.icon.alt = tweet.user.screen_name;
-    ent.icon.src = tweet.user.profile_image_url;
-
-    ent.reid.className = "in_reply_to";
-    if (isDM) {
-      ent.reid.href = U.ROOT + tweet.recipient_screen_name;
-      ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
-    } else if (tweet.in_reply_to_status_id) {
-      ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
-                      tweet.in_reply_to_status_id_str;
-      ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
-    }
-
-    ent.text.className = "text";
-    ent.text.add(D.tweetize(tweet.text, tweet.entities));
-
-    ent.meta.className = "meta";
-
-    ent.date.className = "created_at";
-    var dmhref = U.ROOT + U.getURL().path +
-                 U.Q + "count=1&max_id=" + tweet.id_str;
-    var tweethref = "http://mobile.twitter.com/statuses/" + tweet.id_str;
-    ent.date.href = isDM ? dmhref : tweethref;
-    ent.date.add(D.ct(T.gapTime(new Date(tweet.created_at))));
-
-    if (!isDM) {
-      if (/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.test(tweet.source)) {
-        var aHref = RegExp.$1;
-        var aText = T.decodeHTML(RegExp.$2);
-        ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
-      } else {
-        ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
-      }
-      ent.src.className = "source";
-    }
-
-    ent.meta.add(ent.date);
-    if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
-    if (tweet.place && tweet.place.name && tweet.place.country) {
-      ent.geo = D.ce("a");
-      ent.geo.add(D.ct(tweet.place.name));
-      if (tweet.geo && tweet.geo.coordinates) {
-        ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
-      } else {
-        ent.geo.href = "http://map.google.com/?q=" + tweet.place.full_name;
-      }
-      ent.meta.add(D.ct(" from "), ent.geo);
-    }
-    if (isRT) {
-      ent.retweeter = D.ce("a");
-      ent.retweeter.href = U.ROOT + tweet_org.user.screen_name;
-      ent.retweeter.add(D.ct(tweet_org.user.screen_name));
-
-      ent.meta.add(
-        D.ct(" by "),
-        ent.retweeter
-      );
-    }
-    ent.meta.normalize();
-
-    ent.ry.add(
-      ent.name,
-      ent.icon,
-      ent.nick,
-      ent.reid,
-      ent.text,
-      ent.meta,
-      panel.makeTwAct(tweet_org, my)
-    );
-
-    tl_element.add(ent.ry);
+    tl_element.add(content.rendTL.tweet(tweet, my));
   });
 
   D.id("main").add(tl_element);
@@ -1509,37 +1401,128 @@ content.rendTL = function(timeline, my) {
   } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
 };
 
-content.misc = {
-  // Render parts of cursor (eg. following page's [back][next])
-  showCursor: function(data) {
-    var cur = {
-      sor: D.ce("ol"),
-      next: D.ce("a"),
-      prev: D.ce("a")
-    };
-    var curl = U.getURL();
+content.rendTL.tweet = function(tweet, my) {
+  var tweet_org = tweet;
 
-    if (data.previous_cursor) {
-      cur.prev.href = U.ROOT + curl.path +
-                      U.Q + "cursor=" + data.previous_cursor;
-      cur.prev.add(D.ct("Prev"));
-      cur.sor.add(D.ce("li").add(cur.prev));
-    }
+  var isDM = "sender" in tweet && "recipient" in tweet;
+  var isRT = "retweeted_status" in tweet;
 
-    if (data.next_cursor) {
-      cur.next.href = U.ROOT + curl.path +
-                      U.Q + "cursor=" + data.next_cursor;
-      cur.next.add(D.ct("Next"));
-      cur.sor.add(D.ce("li").add(cur.next));
+  if (isDM) tweet.user = tweet.sender;
+  else if (isRT) tweet = tweet.retweeted_status;
 
-      var link = D.ce("link");
-      link.rel = "next";
-      link.href = cur.next.href;
-      D.q("head").add(link);
-    }
+  var ent = {
+    ry: D.ce("li").
+      sa("class", "tweet screen_name-" + tweet.user.screen_name),
+    name: D.ce("a").
+      sa("class", "screen_name").
+      sa("href", U.ROOT + tweet.user.screen_name).
+      add(D.ct(tweet.user.screen_name)),
+    nick: D.ce("span").
+      sa("class", "name").
+      add(D.ct(T.decodeHTML(tweet.user.name))),
+    icon: D.ce("img").
+      sa("class", "user-icon").
+      sa("alt", tweet.user.screen_name).
+      sa("src", tweet.user.profile_image_url),
+    reid: D.ce("a").
+      sa("class", "in_reply_to"),
+    text: D.ce("p").
+      sa("class", "text").
+      add(D.tweetize(tweet.text, tweet.entities)),
+    meta: D.ce("div").
+      sa("class", "meta"),
+    date: D.ce("a").
+      sa("class", "created_at").
+      add(D.ct(T.gapTime(new Date(tweet.created_at)))),
+    src: null,
+    geo: null,
+    retweeter: null,
+    retweeter_tweet: null
+  };
 
-    D.id("cursor").add(cur.sor);
+  if (tweet.user.protected) ent.ry.classList.add("protected");
+  if (isRT) ent.ry.classList.add("retweet");
+  if (/[RQ]T:?\s*@\w+/.test(tweet.text)) ent.ry.classList.add("quote");
+
+  if (tweet.in_reply_to_status_id) {
+    ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
+                    tweet.in_reply_to_status_id_str;
+    ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
+  } else if (isDM) {
+    ent.reid.href = U.ROOT + tweet.recipient_screen_name;
+    ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
   }
+
+  var dmhref = U.ROOT + U.getURL().path +
+               U.Q + "count=1&max_id=" + tweet.id_str;
+  var tweethref = "http://mobile.twitter.com/statuses/" + tweet.id_str;
+  ent.date.href = isDM ? dmhref : tweethref;
+
+  if (!isDM) {
+    var s;
+    if (s = /<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.exec(tweet.source)) {
+      var aHref = s[1], aText = T.decodeHTML(s[2]);
+      ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
+    } else {
+      ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
+    }
+    ent.src.className = "source";
+  }
+
+  ent.meta.add(ent.date);
+  if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
+  if (tweet.place && tweet.place.name && tweet.place.country) {
+    ent.geo = D.ce("a");
+    ent.geo.add(D.ct(tweet.place.name));
+    if (tweet.geo && tweet.geo.coordinates) {
+      ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
+    } else {
+      ent.geo.href = "http://map.google.com/?q=" + tweet.place.full_name;
+    }
+    ent.meta.add(D.ct(" from "), ent.geo);
+  }
+  if (isRT) {
+    ent.retweeter = D.ce("a");
+    ent.retweeter.href = U.ROOT + tweet_org.user.screen_name;
+    ent.retweeter.add(D.ct(tweet_org.user.screen_name));
+    ent.meta.add(D.ct(" by "), ent.retweeter);
+  }
+  ent.meta.normalize();
+
+  ent.ry.add(
+    ent.name,
+    ent.icon,
+    ent.nick,
+    ent.reid,
+    ent.text,
+    ent.meta,
+    panel.makeTwAct(tweet_org, my)
+  );
+
+  return ent.ry;
+};
+
+content.misc = {};
+// Render parts of cursor (eg. following page's [back][next])
+content.misc.showCursor = function(data) {
+  var cur = {
+    sor: D.ce("ol"),
+    next: D.ce("a"),
+    prev: D.ce("a")
+  };
+  var curl = U.getURL();
+  if (data.previous_cursor) {
+    cur.prev.href = U.ROOT + curl.path + U.Q + "cursor=" + data.previous_cursor;
+    cur.prev.add(D.ct("Prev"));
+    cur.sor.add(D.ce("li").add(cur.prev));
+  }
+  if (data.next_cursor) {
+    cur.next.href = U.ROOT + curl.path + U.Q + "cursor=" + data.next_cursor;
+    cur.next.add(D.ct("Next"));
+    cur.sor.add(D.ce("li").add(cur.next));
+    D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
+  }
+  D.id("cursor").add(cur.sor);
 };
 
 
