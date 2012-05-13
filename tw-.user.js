@@ -598,7 +598,8 @@ API.unlisting = function(myname, slug, uname, callback, onErr) {
 };
 
 API.search = function(q, opt, callback, onErr) {
-  X.get(U.APV + "search.json?rpp=20&q=" + q + "&" + opt, callback);
+  X.get(U.APV + "search.json?q=" + q + "&" + opt +
+        "&rpp=20&include_entities=true", callback);
 };
 
 API.logout = function(callback, onErr) {
