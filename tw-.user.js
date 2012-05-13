@@ -224,7 +224,7 @@ D.tweetize.url = function(url, expanded_url) {
 };
 D.tweetize.hashtag = function(hash) {
   return D.ce("a").sa("href",
-    "http://mobile.twitter.com/searches?q=" + encodeURIComponent(hash)
+    U.ROOT + "search/" + encodeURIComponent(hash)
   ).add(D.ct(hash));
 };
 D.tweetize.mention = function(username) {
@@ -1480,7 +1480,8 @@ content.rendTL.tweet = function(tweet, my) {
 
   var dmhref = U.ROOT + U.getURL().path +
                U.Q + "count=1&max_id=" + tweet.id_str;
-  var tweethref = "http://mobile.twitter.com/statuses/" + tweet.id_str;
+  var tweethref = "http://mobile.twitter.com/" + tweet.user.screen_name +
+                  "/status/" + tweet.id_str;
   ent.date.href = isDM ? dmhref : tweethref;
 
   if (!isDM) {
