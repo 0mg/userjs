@@ -128,7 +128,7 @@ D = (function() {
 })();
 // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
 D.tweetize = function(innerText, entities) {
-  var str, ctx = innerText, fragment = D.cf();
+  var str, ctx = innerText || "", fragment = D.cf();
   if (entities) {
     entities = {
       urls: entities.urls.slice(),
@@ -1232,7 +1232,7 @@ content.showUsersByIds = function(url, my, mode) {
       var users_data = JSON.parse(xhr.responseText);
       users_data.previous_cursor = ids_data.previous_cursor;
       users_data.next_cursor = ids_data.next_cursor;
-      that.rendUsers(users_data, my, mode);
+      content.rendUsers(users_data, my, mode);
     }
     var ids = ids_data.ids.join(",");
     if (ids.length) {
@@ -1317,7 +1317,7 @@ content.showUsers = function(url, my, mode) {
   var that = this;
   function onGetUsers(xhr) {
     var data = JSON.parse(xhr.responseText);
-    that.rendUsers(data, my, mode);
+    content.rendUsers(data, my, mode);
   }
   X.get(url, onGetUsers);
   panel.showUserManager(my);
@@ -1571,7 +1571,7 @@ panel.Button = (function() {
 panel.makeReqDecider = function(user) {
   var Button = this.Button;
   var ad = {
-    node: D.ce("div").sa("user-action"),
+    node: D.ce("div").sa("class", "user-action"),
     accept: new Button("accept-follow", "Accept", "Accept"),
     deny: new Button("deny-follow", "Deny", "Deny")
   };
