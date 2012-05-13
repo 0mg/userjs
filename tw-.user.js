@@ -597,6 +597,10 @@ API.unlisting = function(myname, slug, uname, callback, onErr) {
          callback, onErr);
 };
 
+API.search = function(q, opt, callback, onErr) {
+  X.get(U.APV + "search.json?rpp=20&q=" + q + "&" + opt, callback);
+};
+
 API.logout = function(callback, onErr) {
   X.post("/sessions/destroy/", "", callback, onErr);
 };
@@ -900,9 +904,6 @@ content.showPage.on1 = function(hash, q, my) {
     this.showTL(U.APV + "statuses/retweets_of_me.json?" + q +
                 "&include_entities=true", my);
     break;
-  case "search":
-    location.replace("http://mobile.twitter.com/searches?" + q);
-    break;
   case "lists":
     this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
     panel.showListPanel(my);
@@ -947,7 +948,9 @@ content.showPage.on1 = function(hash, q, my) {
 };
 
 content.showPage.on2 = function(hash, q, my) {
-  switch (hash[1]) {
+  if (hash[0] === "search") {
+    this.showSearchTL(hash[1], q, my);
+  } else switch (hash[1]) {
   case "all":
     if (hash[0] === "lists") {
       this.showLists(U.APV + "lists/all.json?" + q +
@@ -1346,6 +1349,28 @@ content.showLists = function(url, my) {
     D.id("main").add(lists);
     that.misc.showCursor(data);
   });
+};
+
+// Step to Render View of Search Results
+content.showSearchTL = function(q, opt, my) {
+  var onGet = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    var tl = data.results;
+    tl.forEach(function(t) {
+      t.in_reply_to_screen_name = t.to_user;
+      t.in_reply_to_user_id_str = t.to_user_id_str;
+      t.source = T.decodeHTML(t.source);
+      t.user = {
+        screen_name: t.from_user,
+        name: t.from_user_name,
+        id_str: t.from_user_id_str,
+        profile_image_url: t.profile_image_url
+      };
+    });
+    content.rendTL(tl, my);
+    A.expandUrls(D.id("timeline"));
+  };
+  API.search(q, opt, onGet);
 };
 
 // Step to Render View of Timeline
