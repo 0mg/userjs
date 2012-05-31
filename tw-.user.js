@@ -237,19 +237,26 @@ D.tweetize.mention = function(username) {
 // Object Functions
 
 O = {
-  stringify: function(arg) {
+  stringify: function stringify(arg) {
+    if (typeof arg === "string") {
+      return arg.match(
+      "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) " +
+      "(?:Jun|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) " +
+      "(?:0[1-9]|[12][0-9]|3[01])"
+      ) ? new Date(arg).toLocaleString() : arg;
+    }
     if (arg === null || typeof arg !== "object") return arg;
     var proplist = [];
-    for (var i in arg) proplist.push(i + " : " + arg[i]);
-    return proplist.join("\n");
+    for (var i in arg) proplist.push(i + ": " + stringify(arg[i]));
+    return "{\n" + proplist.join("\n").replace(/^/gm, "  ") + "\n}";
   },
-  htmlify: function(arg) {
+  htmlify: function htmlify(arg) {
     if (arg === null || typeof arg !== "object") {
       return D.ce("p").add(D.ct(arg));
     }
     var list = D.ce("dl");
     for (var i in arg) {
-      list.add(D.ce("dt").add(D.ct(i))).add(D.ce("dd").add(D.ct(arg[i])));
+      list.add(D.ce("dt").add(D.ct(i))).add(D.ce("dd").add(htmlify(arg[i])));
     }
     return list.hasChildNodes() ? list : D.ce("p").add(D.ct("Empty Object"));
   }
@@ -2031,7 +2038,6 @@ panel.showGlobalBar = function(my) {
   g.api.addEventListener("click", function() {
     X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      data.reset_time = new Date(data.reset_time).toString();
       alert(O.stringify(data));
     });
   }, false);
