@@ -2345,6 +2345,8 @@ outline.showListOutline = function(hash, my, mode) {
     mode & 2 && that.showListProfile(list);
     mode & 4 && panel.showListFollowPanel(list);
 
+  }, function(xhr) {
+    D.id("side").add(O.htmlify(JSON.parse(xhr.responseText)))
   });
 };
 
@@ -2406,7 +2408,9 @@ outline.showProfileOutline = function(screen_name, my, mode) {
     // bug: /blocks/destroy.json returns suspended user's profile
     mode &= ~4;
     mode &= ~8;
-    API.unblock(screen_name, onGet);
+    API.unblock(screen_name, onGet, function(x) {
+      D.id("side").add(O.htmlify(JSON.parse((x||xhr).responseText)));
+    });
   }
 
   X.get(U.APV + "users/show.json?screen_name=" + screen_name, onGet, onErr);
