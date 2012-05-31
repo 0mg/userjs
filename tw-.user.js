@@ -2409,7 +2409,7 @@ outline.showProfileOutline = function(screen_name, my, mode) {
     mode &= ~4;
     mode &= ~8;
     API.unblock(screen_name, onGet, function(x) {
-      D.id("side").add(O.htmlify(JSON.parse((x||xhr).responseText)));
+      D.id("side").add(O.htmlify(JSON.parse((x| |xhr).responseText)));
     });
   }
 
