@@ -645,6 +645,9 @@ init.CSS = '\
   dl {\
     padding: 2ex;\
   }\
+  dl dl {\
+    padding: 0;\
+  }\
   dt {\
     font-weight: bold;\
   }\
