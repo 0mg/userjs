@@ -240,7 +240,7 @@ O = {
   stringify: function stringify(arg) {
     if (typeof arg === "string") {
       return arg.match(
-      "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) " +
+      "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) " +
       "(?:Jun|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) " +
       "(?:0[1-9]|[12][0-9]|3[01])"
       ) ? new Date(arg).toLocaleString() : arg;
