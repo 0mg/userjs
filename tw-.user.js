@@ -606,7 +606,7 @@ API.unlisting = function(myname, slug, uname, callback, onErr) {
 
 API.search = function(q, opt, callback, onErr) {
   X.get(U.APV + "search.json?q=" + q + "&" + opt +
-        "&rpp=20&include_entities=true", callback);
+        "&rpp=20&include_entities=true", callback, onErr);
 };
 
 API.logout = function(callback, onErr) {
@@ -1381,7 +1381,10 @@ content.showSearchTL = function(q, opt, my) {
     content.rendTL(tl, my);
     A.expandUrls(D.id("timeline"));
   };
-  API.search(q, opt, onGet);
+  var onErr = function(xhr) {
+    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+  };
+  API.search(q, opt, onGet, onErr);
 };
 
 // Step to Render View of Timeline
