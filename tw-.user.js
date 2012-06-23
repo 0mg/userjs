@@ -6,7 +6,15 @@
 // ==/UserScript==
 "use strict";
 
-var props, U, C, D, O, T, A, X, API, init, content, panel, outline;
+// UserJS Debug Functions
+var props = function(arg) {
+  if (arg === null || arg === void 0) return arg;
+  var proplist = [];
+  for (var i in arg) proplist.push(i + " : " + arg[i]);
+  proplist.sort().unshift(arg);
+  return proplist.join("\n");
+};
+var U, C, D, O, T, A, X, API, init, content, panel, outline;
 
 // URL CONST VALUE and Functions
 
@@ -91,17 +99,6 @@ C.HTML_ENTITIES = {
   mdash: 8212, lsquo: 8216, rsquo: 8217, sbquo: 8218, ldquo: 8220,
   rdquo: 8221, bdquo: 8222, dagger: 8224, Dagger: 8225, permil: 8240,
   lsaquo: 8249, rsaquo: 8250, euro: 8364
-};
-
-
-// UserJS Debug Functions
-
-props = function(arg) {
-  if (arg === null || arg === void 0) return arg;
-  var proplist = [];
-  for (var i in arg) proplist.push(i + " : " + arg[i]);
-  proplist.sort().unshift(arg);
-  return proplist.join("\n");
 };
 
 
@@ -2527,7 +2524,7 @@ X.get(U.APV + "account/verify_credentials.json",
       var data = JSON.parse(xhr.responseText);
       data.reset_time = new Date(data.reset_time).toString();
       if (data.remaining_hits > 0) {
-        location.href = "/login?redirect_after_login=" +
+        location.href = "https://twitter.com/login?redirect_after_login=" +
                         encodeURIComponent(location.href);
       } else alert(O.stringify(data));
     });
