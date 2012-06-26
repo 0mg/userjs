@@ -110,7 +110,14 @@ D = (function() {
     return this;
   }
   function sa() { this.setAttribute.apply(this, arguments); return this; }
-  function x(e) { e.add = add; e.sa = sa; return e; }
+  function st(s) {
+    this.value = s;
+    var e = document.createEvent("Event");
+    e.initEvent("input", true, false);
+    this.dispatchEvent(e);
+    return this;
+  }
+  function x(e) { e.add = add; e.sa = sa; e.st = st; return e; }
   return {
     ce: function(s) {
       return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -1123,7 +1130,7 @@ content.customizeDesign = function(my) {
     update: D.ce("button")
   };
 
-  fm.form.addEventListener("keyup", function(event) {
+  fm.form.addEventListener("input", function(event) {
     var input = event.target;
     if (input.value.length !== 6 || isNaN("0x" + input.value)) return;
     switch (input) {
@@ -1679,7 +1686,7 @@ panel.makeTwAct = function(t, my) {
   if (isDM) {
     ab.rep.addEventListener("click", function() {
       var status = D.id("status");
-      status.value = "d " + t.user.screen_name + " " + status.value;
+      status.st("d " + t.user.screen_name + " " + status.value);
       status.focus();
     }, false)
   } else {
@@ -1687,7 +1694,7 @@ panel.makeTwAct = function(t, my) {
       var status = D.id("status");
       var repid = D.id("in_reply_to_status_id");
 
-      status.value = "@" + (rt || t).user.screen_name + " " + status.value;
+      status.st("@" + (rt || t).user.screen_name + " " + status.value);
       repid.value = (rt || t).id_str;
 
       status.focus();
@@ -1887,7 +1894,7 @@ panel.showFollowPanel = function(user) {
     if (ship.followed_by) {
       ab.dm.node.addEventListener("click", function() {
         var status = D.id("status");
-        status.value = "d " + user.screen_name + " " + status.value;
+        status.st("d " + user.screen_name + " " + status.value);
         status.focus();
       }, false);
       ab.node.add(ab.dm.node);
@@ -2083,7 +2090,7 @@ panel.showTweetBox = function() {
   t.update.id = "update";
   //t.media.id = "media_upload";
 
-  t.status.addEventListener("keyup", function() {
+  t.status.addEventListener("input", function() {
     var red = /^(d \w+) /;
     var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
     if (red.test(t.status.value)) {
