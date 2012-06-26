@@ -117,7 +117,7 @@ D = (function() {
     this.dispatchEvent(e);
     return this;
   }
-  function x(e) { e.add = add; e.sa = sa; e.st = st; return e; }
+  function x(e) { if (e) e.add = add, e.sa = sa, e.st = st; return e; }
   return {
     ce: function(s) {
       return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -791,6 +791,8 @@ init.CSS = '\
   .tweet .in_reply_to {\
     font-size: smaller;\
   }\
+  .tweet.reply_target {\
+  }\
   .user .user-icon,\
   .tweet .user-icon {\
     position: absolute;\
@@ -1455,7 +1457,8 @@ content.rendTL.tweet = function(tweet, my) {
 
   var ent = {
     ry: D.ce("li").
-      sa("class", "tweet screen_name-" + tweet.user.screen_name),
+      sa("class", "tweet screen_name-" + tweet.user.screen_name +
+        " id-" + tweet.id_str),
     name: D.ce("a").
       sa("class", "screen_name").
       sa("href", U.ROOT + tweet.user.screen_name).
@@ -1695,7 +1698,7 @@ panel.makeTwAct = function(t, my) {
       var repid = D.id("in_reply_to_status_id");
 
       status.st("@" + (rt || t).user.screen_name + " " + status.value);
-      repid.value = (rt || t).id_str;
+      repid.st((rt || t).id_str);
 
       status.focus();
     }, false);
@@ -2076,6 +2079,23 @@ panel.showGlobalBar = function(my) {
 
 // Global Tweet box
 panel.showTweetBox = function() {
+  function switchReplyTarget() {
+    Array.prototype.forEach.call(D.qs(".tweet"), function(e) {
+      var str = /\bscreen_name-(\w+)/.exec(e.className);
+      var uname = str && str[1];
+      str = /\bid-(\d+)/.exec(e.className);
+      var id = str && str[1];
+      if (t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
+        e.classList.add("reply_target");
+        var btn = e.querySelector(".reply");
+        if (btn) btn.disabled = true;
+      } else {
+        e.classList.remove("reply_target");
+        var btn = e.querySelector(".reply");
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
 
   var t = {
     box: D.ce("div"),
@@ -2089,6 +2109,9 @@ panel.showTweetBox = function() {
   t.id.id = "in_reply_to_status_id";
   t.update.id = "update";
   //t.media.id = "media_upload";
+
+  t.id.addEventListener("input", switchReplyTarget, false);
+  t.status.addEventListener("input", switchReplyTarget, false);
 
   t.status.addEventListener("input", function() {
     var red = /^(d \w+) /;
