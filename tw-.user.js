@@ -2098,6 +2098,7 @@ panel.showTweetBox = function() {
     box: D.ce("div"),
     status: D.ce("textarea"),
     id: D.ce("input"),
+    replink: D.ce("a").add(D.ct("|")),
     update: D.ce("button")//,
     //media: D.ce("input")
   };
@@ -2141,7 +2142,12 @@ panel.showTweetBox = function() {
     fr.readAsDataURL(file);
   }, false);*/
 
-  t.box.add(t.status, t.id, /*t.media,*/ t.update);
+  t.replink.addEventListener("click", function() {
+    var e = D.q(".tweet[class~=\"id-" + t.id.value + "\"]");
+    if (e) e.scrollIntoView();
+  }, false);
+
+  t.box.add(t.status, t.id, t.replink, /*t.media,*/ t.update);
 
   D.id("header").add(t.box);
 };
