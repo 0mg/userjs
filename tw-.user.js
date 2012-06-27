@@ -110,14 +110,7 @@ D = (function() {
     return this;
   }
   function sa() { this.setAttribute.apply(this, arguments); return this; }
-  function st(s) {
-    this.value = s;
-    var e = document.createEvent("Event");
-    e.initEvent("input", true, false);
-    this.dispatchEvent(e);
-    return this;
-  }
-  function x(e) { if (e) e.add = add, e.sa = sa, e.st = st; return e; }
+  function x(e) { if (e) e.add = add, e.sa = sa; return e; }
   return {
     ce: function(s) {
       return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -1689,7 +1682,7 @@ panel.makeTwAct = function(t, my) {
   if (isDM) {
     ab.rep.addEventListener("click", function() {
       var status = D.id("status");
-      status.st("d " + t.user.screen_name + " " + status.value);
+      status.value = "d " + t.user.screen_name + " " + status.value;
       status.focus();
     }, false)
   } else {
@@ -1697,8 +1690,12 @@ panel.makeTwAct = function(t, my) {
       var status = D.id("status");
       var repid = D.id("in_reply_to_status_id");
 
-      status.st("@" + (rt || t).user.screen_name + " " + status.value);
-      repid.st((rt || t).id_str);
+      status.value = "@" + (rt || t).user.screen_name + " " + status.value;
+      repid.value = (rt || t).id_str;
+
+      var e = document.createEvent("Event");
+      e.initEvent("input", true, false);
+      status.dispatchEvent(e);
 
       status.focus();
     }, false);
@@ -1897,7 +1894,7 @@ panel.showFollowPanel = function(user) {
     if (ship.followed_by) {
       ab.dm.node.addEventListener("click", function() {
         var status = D.id("status");
-        status.st("d " + user.screen_name + " " + status.value);
+        status.value = "d " + user.screen_name + " " + status.value;
         status.focus();
       }, false);
       ab.node.add(ab.dm.node);
@@ -2080,18 +2077,18 @@ panel.showGlobalBar = function(my) {
 // Global Tweet box
 panel.showTweetBox = function() {
   function switchReplyTarget() {
-    Array.prototype.forEach.call(D.qs(".tweet"), function(e) {
+    t.id.value && [].forEach.call(D.qs(".tweet"), function(e) {
       var str = /\bscreen_name-(\w+)/.exec(e.className);
       var uname = str && str[1];
       str = /\bid-(\d+)/.exec(e.className);
       var id = str && str[1];
-      if (t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
+      var btn = e.querySelector(".reply");
+      if (id && uname &&
+        t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
         e.classList.add("reply_target");
-        var btn = e.querySelector(".reply");
         if (btn) btn.disabled = true;
       } else {
         e.classList.remove("reply_target");
-        var btn = e.querySelector(".reply");
         if (btn) btn.disabled = false;
       }
     });
