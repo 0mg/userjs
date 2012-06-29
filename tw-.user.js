@@ -390,11 +390,15 @@ X.post = function post(url, q, f, b) {
 };
 
 // Twitter Auth token Getter
-X.getAuthToken = function getAuthToken(f) {
-  X.get("/account/bootstrap_data", function(xhr) {
-    f(JSON.parse(xhr.responseText).postAuthenticityToken);
-  });
-};
+X.getAuthToken = (function() {
+  var token; //cache
+  return function getAuthToken(f) {
+    token ? f(token) : X.get("/account/bootstrap_data", function(xhr) {
+      token = JSON.parse(xhr.responseText).postAuthenticityToken;
+      f(token);
+    });
+  };
+})();
 
 
 // Twitter API Functions
