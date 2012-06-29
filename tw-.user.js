@@ -984,6 +984,9 @@ content.showPage.on2 = function(hash, q, my) {
   case "design":
     if (hash[0] === "settings") this.customizeDesign(my);
     break;
+  case "account":
+    if (hash[0] === "settings") this.settingAccount(my);
+    break;
   case "memberships":
     if (hash[0] === "lists") {
       this.showLists(U.APV + "lists/memberships.json?" + q, my);
@@ -1238,6 +1241,45 @@ content.customizeDesign = function(my) {
   );
 
   D.id("subaction").add(fm.form);
+};
+
+// Render UI of account settings
+content.settingAccount = function(my) {
+  var uname = D.ce("input");
+  var auto = D.ce("input").sa("type", "number").sa("min", "0").sa("value", "4");
+  var autoBtn = D.ce("button").add(D.ct("Search"));
+  var autoResult = D.ce("div");
+  function checkUname(unameValue) {
+    X.get("/users/username_available?username=" + unameValue, function(xhr) {
+      var main = D.id("main");
+      while (main.hasChildNodes()) D.rm(main.lastChild);
+      main.add(O.htmlify(JSON.parse(xhr.responseText)));
+    });
+  }
+  function checkUnameAuto(len) {
+    while (autoResult.hasChildNodes()) D.rm(autoResult.lastChild);
+    for (var i = 0, max = 50; i <= max; ++i) {
+      var src = "1234567890qwertyuiopasdfghjklzxcvbnm_";
+      var s = "";
+      for (var j = len; j-- > 0;) s += src[Math.random() * 37 | 0];
+      (function(s, i, max) {
+        X.get("/users/username_available?username=" + s, function(xhr) {
+          if (i === max) autoBtn.disabled = false;
+          var data = JSON.parse(xhr.responseText);
+          autoResult.add(D.ct(s + ":" + (data.valid && "#true#") + " "));
+        });
+      })(s, i, max);
+    }
+  };
+  uname.addEventListener("keyup", function(e) {
+    if (e.keyCode === 13) checkUname(uname.value);
+  }, false);
+  autoBtn.addEventListener("click", function(e) {
+    autoBtn.disabled = true;
+    checkUnameAuto(+auto.value);
+  }, false);
+  D.id("subaction").add(uname);
+  D.id("side").add(D.ce("h3").add(D.ct("screen_name")), D.ct("length:"), auto, autoBtn, autoResult);
 };
 
 // Step to Render View of list of users by ids (follow requests in/out.,)
