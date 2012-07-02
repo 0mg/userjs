@@ -357,6 +357,7 @@ X.get = function get(url, f, b) {
     else (b || function(x) { alert(x.responseText); })(this);
   };
   xhr.send(null);
+  return xhr;
 };
 
 // HEAD Method for Twitter API
@@ -1246,9 +1247,38 @@ content.customizeDesign = function(my) {
 // Render UI of account settings
 content.settingAccount = function(my) {
   var uname = D.ce("input");
+  var unameBtn = D.ce("button").add(D.ct("Check"));
   var auto = D.ce("input").sa("type", "number").sa("min", "0").sa("value", "4");
   var autoBtn = D.ce("button").add(D.ct("Search"));
   var autoResult = D.ce("div");
+  var xhrpool = [];
+  var autoSearching = false;
+  function autoStart() {
+    autoBtn.textContent = "Cancel";
+    checkUnameAuto(+auto.value);
+  }
+  function autoFinish() {
+    autoBtn.textContent = "Search";
+    xhrpool.forEach(function(xhr) { xhr.abort(); });
+    xhrpool = [];
+  }
+  function checkUnameAuto(len) {
+    while (autoResult.hasChildNodes()) D.rm(autoResult.lastChild);
+    for (var i = 0, max = 50; i <= max; ++i) {
+      var src = "1234567890abcdefghijklmnopqrstuvwxyz_";
+      var s = "";
+      for (var j = len; j-- > 0;) s += src[Math.random() * 37 | 0];
+      (function(s, i, max) {
+        var url = "/users/username_available?username=" + s;
+        var xhrobj = X.get(url, function(xhr) {
+          var data = JSON.parse(xhr.responseText);
+          autoResult.add(D.ct(s + ":" + (data.valid && "#true#") + " "));
+          if (i === max) autoFinish();
+        });
+        xhrpool.push(xhrobj);
+      })(s, i, max);
+    }
+  };
   function checkUname(unameValue) {
     X.get("/users/username_available?username=" + unameValue, function(xhr) {
       var main = D.id("main");
@@ -1256,30 +1286,24 @@ content.settingAccount = function(my) {
       main.add(O.htmlify(JSON.parse(xhr.responseText)));
     });
   }
-  function checkUnameAuto(len) {
-    while (autoResult.hasChildNodes()) D.rm(autoResult.lastChild);
-    for (var i = 0, max = 50; i <= max; ++i) {
-      var src = "1234567890qwertyuiopasdfghjklzxcvbnm_";
-      var s = "";
-      for (var j = len; j-- > 0;) s += src[Math.random() * 37 | 0];
-      (function(s, i, max) {
-        X.get("/users/username_available?username=" + s, function(xhr) {
-          if (i === max) autoBtn.disabled = false;
-          var data = JSON.parse(xhr.responseText);
-          autoResult.add(D.ct(s + ":" + (data.valid && "#true#") + " "));
-        });
-      })(s, i, max);
-    }
-  };
+  unameBtn.addEventListener("click", function(e) {
+    checkUname(uname.value);
+  }, false);
   uname.addEventListener("keyup", function(e) {
-    if (e.keyCode === 13) checkUname(uname.value);
+    if (e.keyCode === 13) {
+      var ev = document.createEvent("Event");
+      ev.initEvent("click", true, false);
+      unameBtn.dispatchEvent(ev);
+    }
   }, false);
   autoBtn.addEventListener("click", function(e) {
-    autoBtn.disabled = true;
-    checkUnameAuto(+auto.value);
+    xhrpool.length ? autoFinish() : autoStart();
   }, false);
-  D.id("subaction").add(uname);
-  D.id("side").add(D.ce("h3").add(D.ct("screen_name")), D.ct("length:"), auto, autoBtn, autoResult);
+  D.id("subaction").add(uname, unameBtn);
+  D.id("side").add(
+    D.ce("h3").add(D.ct("screen_name")),
+    D.ct("length:"), auto, autoBtn, autoResult
+  );
 };
 
 // Step to Render View of list of users by ids (follow requests in/out.,)
