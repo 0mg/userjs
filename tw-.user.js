@@ -373,8 +373,8 @@ X.head = function head(url, f, b) {
 };
 
 // POST Method for Twitter API
-X.post = function post(url, q, f, b) {
-  confirm("sure?\n" + url + "?" + q) ?
+X.post = function post(url, q, f, b, c) {
+  (c || confirm("sure?\n" + url + "?" + q)) ?
   X.getAuthToken(function(authtoken) {
     var xhr = new XMLHttpRequest;
     xhr.open("POST", url, true);
@@ -711,6 +711,10 @@ init.CSS = '\
   }\
   #cursor {\
   }\
+  .debugbox {\
+    width: 100%;\
+    height: 7em;\
+  }\
   a.maybe_shorten_url {\
     background-color: #ddd;\
   }\
@@ -981,6 +985,9 @@ content.showPage.on2 = function(hash, q, my) {
       this.showUsersByIds(U.APV + "friendships/incoming.json?" + q +
                           "&cursor=-1", my, 1);
     }
+    break;
+  case "follow":
+    if (hash[0] === "settings") this.settingFollow(my);
     break;
   case "design":
     if (hash[0] === "settings") this.customizeDesign(my);
@@ -1304,6 +1311,101 @@ content.settingAccount = function(my) {
     D.ce("h3").add(D.ct("screen_name")),
     D.ct("length:"), auto, autoBtn, autoResult
   );
+};
+
+// Render UI of following settings
+content.settingFollow = function(my) {
+  var ids = {
+    following: null,
+    followers: null
+  };
+  var list = {
+    follow: null,
+    unfollow: null
+  };
+  var node = {
+    main: D.id("main"),
+    mirrorDebug: D.ce("textarea").sa("class", "debugbox"),
+    mirrorAna: D.ce("button").add(D.ct("Analize")),
+    mirrorBtn: D.ce("button").add(D.ct("Mirror")),
+    followCnt: D.ce("span").add(D.ct("0")),
+    unfollowCnt: D.ce("span").add(D.ct("0")),
+    followTotal: D.ce("span").add(D.ct("?")),
+    unfollowTotal: D.ce("span").add(D.ct("?"))
+  };
+  node.mirrorAna.addEventListener("click", function() {
+    mirrorAnalize();
+  }, false);
+  node.mirrorBtn.addEventListener("click", function() {
+    var str = "!!DANGER!!\nMirroring following/followers.\n"
+            + "It does auto follow and unfollow operations. Sure?";
+    if (confirm(str)) mirrorAnalize(), mirror();
+  }, false);
+  node.main.add(
+    D.ce("h3").add(D.ct("Mirroring")),
+    node.mirrorAna,
+    node.mirrorBtn,
+    D.ce("li").add(
+      D.ct("follow: "), node.followCnt, D.ct(" / "), node.followTotal
+    ),
+    D.ce("li").add(
+      D.ct("unfollow: "), node.unfollowCnt, D.ct(" / "), node.unfollowTotal
+    ),
+    node.mirrorDebug
+  );
+  function mirrorAnalize() {
+    list.follow = [], list.unfollow = [];
+    if (ids.following && ids.followers) {
+      ids.followers.forEach(function(follower_id) {
+        if (ids.following.indexOf(follower_id) === -1) {
+          list.follow.push(follower_id);
+        }
+      });
+      ids.following.forEach(function(following_id) {
+        if (ids.followers.indexOf(following_id) === -1) {
+          list.unfollow.push(following_id);
+        }
+      });
+      node.followTotal.textContent = list.follow.length;
+      node.unfollowTotal.textContent = list.unfollow.length;
+    } else {
+      alert("It's not readied. Try again.");
+    }
+  }
+  function mirror() {
+    if (!list.follow || !list.unfollow) return;
+    var followCnt = 0, unfollowCnt = 0;
+    function finishFollow(uid) {
+      node.mirrorDebug.value += "follow:" + uid + ", ";
+      node.followCnt.textContent = ++followCnt;
+    }
+    function finishUnfollow(uid) {
+      node.mirrorDebug.value += "unfollow:" + uid + ", ";
+      node.unfollowCnt.textContent = ++unfollowCnt;
+    }
+    list.follow.forEach(function(follower_id, i) {
+      X.post(U.APV + "friendships/create.xml", "user_id=" + follower_id,
+        function() {
+          finishFollow(follower_id);
+        }, null, true
+      );
+    });
+    list.unfollow.forEach(function(following_id, i) {
+      X.post(U.APV + "friendships/destroy.xml", "user_id=" + following_id,
+        function() {
+          finishUnfollow(following_id);
+        }, null, true
+      );
+    });
+  }
+  X.get(U.APV + "/friends/ids.json?user_id=" + my.id_str, function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    ids.following = data.ids;
+  });
+  X.get(U.APV + "/followers/ids.json?user_id=" + my.id_str, function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    ids.followers = data.ids;
+  });
 };
 
 // Step to Render View of list of users by ids (follow requests in/out.,)
