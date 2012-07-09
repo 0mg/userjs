@@ -2249,44 +2249,53 @@ panel.showGlobalBar = function(my) {
 // Global Tweet box
 panel.showTweetBox = function() {
   function switchReplyTarget() {
-    t.id.value && [].forEach.call(D.qs(".tweet"), function(e) {
-      var str = /\bscreen_name-(\w+)/.exec(e.className);
+    if (!t.id.value) return;
+    var replying = [].some.call(D.qs(".tweet"), function(tweet) {
+      var str = /\bscreen_name-(\w+)/.exec(tweet.className);
       var uname = str && str[1];
-      str = /\bid-(\d+)/.exec(e.className);
+      str = /\bid-(\d+)/.exec(tweet.className);
       var id = str && str[1];
-      var btn = e.querySelector(".reply");
+      str = null;
+      var repbtn = tweet.querySelector(".reply");
       if (id && uname &&
         t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
-        e.classList.add("reply_target");
-        if (btn) btn.disabled = true;
+        tweet.classList.add("reply_target");
+        if (repbtn) repbtn.disabled = true;
+        return true;
       } else {
-        e.classList.remove("reply_target");
-        if (btn) btn.disabled = false;
+        tweet.classList.remove("reply_target");
+        if (repbtn) repbtn.disabled = false;
+        return false;
       }
     });
+    if (replying) {
+      t.replink.hidden = false;
+    } else {
+      t.replink.hidden = true;
+    }
+    return replying;
   }
 
   var t = {
     box: D.ce("div"),
-    status: D.ce("textarea"),
-    id: D.ce("input"),
-    replink: D.ce("a").add(D.ct("|")),
-    update: D.ce("button")//,
-    //media: D.ce("input")
+    status: D.ce("textarea").sa("id", "status"),
+    id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
+    replink: D.ce("a").add(D.ct(">")),
+    update: D.ce("button").sa("id", "update").add(D.ct("Tweet"))//,
+    //media: D.ce("input").sa("id", "media_upload")
   };
 
-  t.status.id = "status";
-  t.id.id = "in_reply_to_status_id";
-  t.update.id = "update";
-  //t.media.id = "media_upload";
+  t.replink.hidden = true;
 
   t.id.addEventListener("input", switchReplyTarget, false);
-  t.status.addEventListener("input", switchReplyTarget, false);
 
   t.status.addEventListener("input", function() {
-    var red = /^(d \w+) /;
+    var replying = switchReplyTarget();
+    var red = /^d\s+\w+\s*/;
     var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
-    if (red.test(t.status.value)) {
+    if (replying) {
+      t.update.textContent = "Reply";
+    } else if (red.test(t.status.value)) {
       t.update.textContent = "D";
     } else {
       t.update.textContent = "Tweet";
@@ -2295,7 +2304,6 @@ panel.showTweetBox = function() {
                     replace(reurl, "$1http://t.co/1234567").length > 140;
   }, false);
 
-  t.update.add(D.ct("Tweet"));
   t.update.addEventListener("click", function() {
     API.tweet(t.status.value, t.id.value, "", "", "", "", "",
     function(xhr) { alert(xhr.responseText); });
@@ -2319,7 +2327,7 @@ panel.showTweetBox = function() {
     if (e) e.scrollIntoView();
   }, false);
 
-  t.box.add(t.status, t.id, t.replink, /*t.media,*/ t.update);
+  t.box.add(t.status, t.id, /*t.media,*/ t.update, t.replink);
 
   D.id("header").add(t.box);
 };
