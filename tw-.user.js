@@ -2250,7 +2250,8 @@ panel.showGlobalBar = function(my) {
 panel.showTweetBox = function() {
   function switchReplyTarget() {
     if (!t.id.value) return;
-    var replying = [].some.call(D.qs(".tweet"), function(tweet) {
+    var replying = false;
+    [].forEach.call(D.qs(".tweet"), function(tweet) {
       var str = /\bscreen_name-(\w+)/.exec(tweet.className);
       var uname = str && str[1];
       str = /\bid-(\d+)/.exec(tweet.className);
@@ -2261,11 +2262,11 @@ panel.showTweetBox = function() {
         t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
         tweet.classList.add("reply_target");
         if (repbtn) repbtn.disabled = true;
-        return true;
+        t.replink.textContent = "to @" + uname;
+        replying = true;
       } else {
         tweet.classList.remove("reply_target");
         if (repbtn) repbtn.disabled = false;
-        return false;
       }
     });
     if (replying) {
@@ -2280,7 +2281,7 @@ panel.showTweetBox = function() {
     box: D.ce("div"),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
-    replink: D.ce("a").add(D.ct(">")),
+    replink: D.ce("button").add(D.ct("to")),
     update: D.ce("button").sa("id", "update").add(D.ct("Tweet"))//,
     //media: D.ce("input").sa("id", "media_upload")
   };
