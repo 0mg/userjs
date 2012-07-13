@@ -995,6 +995,9 @@ content.showPage.on2 = function(hash, q, my) {
   case "account":
     if (hash[0] === "settings") this.settingAccount(my);
     break;
+  case "api":
+    if (hash[0] === "settings") this.testAPI(my);
+    break;
   case "memberships":
     if (hash[0] === "lists") {
       this.showLists(U.APV + "lists/memberships.json?" + q, my);
@@ -1311,6 +1314,100 @@ content.settingAccount = function(my) {
     D.ce("h3").add(D.ct("screen_name")),
     D.ct("length:"), auto, autoBtn, autoResult
   );
+};
+
+// Render UI for API testing
+content.testAPI = function(my) {
+  var nd = {
+    main: D.id("main"),
+    side: D.id("side"),
+    head: {
+      url: D.ce("input").sa("size", "60"),
+      send: D.ce("button").add(D.ct("HEAD"))
+    },
+    get: {
+      url: D.ce("input").sa("size", "60"),
+      send: D.ce("button").add(D.ct("GET"))
+    },
+    post: {
+      url: D.ce("input").sa("size", "60"),
+      send: D.ce("button").add(D.ct("POST"))
+    },
+    dst: D.ce("div"),
+    header: D.ce("div")
+  };
+  function printData(xhr) {
+    printHead(xhr);
+    printText(xhr);
+  }
+  function printHead(xhr) {
+    var data = xhr.getAllResponseHeaders();
+    var datanode = D.tweetize(data);
+    while (nd.header.hasChildNodes()) D.rm(nd.header.lastChild);
+    nd.header.add(datanode);
+  }
+  function printText(xhr) {
+    var data = xhr.responseText;
+    var datanode = D.ct(data);
+    try {
+      data = JSON.parse(data);
+      datanode = O.htmlify(data);
+    } catch(e) {
+    }
+    while (nd.dst.hasChildNodes()) D.rm(nd.dst.lastChild);
+    nd.dst.add(datanode);
+  }
+  nd.head.send.addEventListener("click", function() {
+    X.head(nd.head.url.value, printHead, printHead);
+  }, false);
+  nd.get.send.addEventListener("click", function() {
+    X.get(nd.get.url.value, printData, printData);
+  }, false);
+  nd.post.send.addEventListener("click", function() {
+    var str = nd.post.url.value.split("?");
+    var url = str[0];
+    var q = str.slice(1).join("?");
+    X.post(url, q, printData, printData, true);
+  }, false);
+
+  nd.head.url.addEventListener("keyup", function(e) {
+    if (e.keyCode === 13) {
+      var ev = document.createEvent("Event");
+      ev.initEvent("click", true, false);
+      nd.head.send.dispatchEvent(ev);
+    }
+  }, false);
+  nd.get.url.addEventListener("keyup", function(e) {
+    if (e.keyCode === 13) {
+      var ev = document.createEvent("Event");
+      ev.initEvent("click", true, false);
+      nd.get.send.dispatchEvent(ev);
+    }
+  }, false);
+  nd.post.url.addEventListener("keyup", function(e) {
+    if (e.keyCode === 13) {
+      var ev = document.createEvent("Event");
+      ev.initEvent("click", true, false);
+      nd.post.send.dispatchEvent(ev);
+    }
+  }, false);
+
+  nd.main.add(
+    D.ce("h3").add(D.ct(location.host)),
+    D.ce("ul").add(
+      D.ce("li").add(
+        nd.head.url, nd.head.send
+      ),
+      D.ce("li").add(
+        nd.get.url, nd.get.send
+      ),
+      D.ce("li").add(
+        nd.post.url, nd.post.send
+      )
+    ),
+    nd.dst
+  );
+  nd.side.add(nd.header);
 };
 
 // Render UI of following settings
