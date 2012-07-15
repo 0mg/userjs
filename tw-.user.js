@@ -735,6 +735,9 @@ init.CSS = '\
     padding: 1ex 1ex 1ex 60px;\
     border-bottom: 1px solid silver;\
   }\
+  .tweet.focus {\
+    background-color: #fc0;\
+  }\
   .user-profile.protected .name::after,\
   .user.protected .name::after,\
   .tweet.protected .name::after {\
@@ -2422,7 +2425,15 @@ panel.showTweetBox = function() {
 
   t.replink.addEventListener("click", function() {
     var e = D.q(".tweet[class~=\"id-" + t.id.value + "\"]");
-    if (e) e.scrollIntoView();
+    if (e) {
+      t.replink.disabled = true;
+      e.scrollIntoView();
+      e.classList.add("focus");
+      setTimeout(function() {
+        e.classList.remove("focus");
+        t.replink.disabled = false;
+      }, 500);
+    }
   }, false);
 
   t.box.add(t.status, t.id, /*t.media,*/ t.update, t.replink);
