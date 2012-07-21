@@ -910,6 +910,9 @@ content.showPage = function(my) {
 };
 content.showPage.on1 = function(hash, q, my) {
   switch (hash[0]) {
+  case "settings":
+    this.showSettings(my);
+    break;
   case "public_timeline":
     this.showTL(U.APV + "statuses/public_timeline.json?" + q +
                 "&include_entities=true", my);
@@ -1115,6 +1118,23 @@ content.showPage.on3 = function(hash, q, my) {
       outline.showProfileOutline(hash[0], my, 1);
     }
   }
+};
+
+// Render view of list of settings
+content.showSettings = function(my) {
+  var root = U.ROOT + "settings/";
+  var nd = {
+    dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
+    aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
+    api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
+    fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow"))
+  };
+  D.id("main").add(
+    D.ce("li").add(nd.dez),
+    D.ce("li").add(nd.aco),
+    D.ce("li").add(nd.api),
+    D.ce("li").add(nd.fw)
+  );
 };
 
 // Render View of Colors Setting
@@ -2268,6 +2288,7 @@ panel.showGlobalBar = function(my) {
     listsub: D.ce("a"),
     listed: D.ce("a"),
     blocking: D.ce("a"),
+    settings: D.ce("a"),
     api: D.ce("button"),
     logout: D.ce("button")
   };
@@ -2316,6 +2337,9 @@ panel.showGlobalBar = function(my) {
   g.blocking.href = U.ROOT + "blocking";
   g.blocking.add(D.ct("Blocking"));
 
+  g.settings.href = U.ROOT + "settings";
+  g.settings.add(D.ct("Settings"));
+
   g.api.add(D.ct("API rest"));
   g.api.addEventListener("click", function() {
     X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
@@ -2340,6 +2364,7 @@ panel.showGlobalBar = function(my) {
     D.ce("li").add(g.lists, D.ct("/"), g.listsub),
     D.ce("li").add(g.listed),
     D.ce("li").add(g.blocking),
+    D.ce("li").add(g.settings),
     D.ce("li").add(g.api),
     D.ce("li").add(g.logout)
   );
