@@ -2973,6 +2973,10 @@ if (location.host === "upload.twitter.com") {
         ev.source.postMessage(JSON.stringify(minxhr), dst_org);
       };
       xhr.onerror = function() {
+        var minxhr = {
+          status: xhr.status,
+          responseText: xhr.responseText
+        };
         ev.source.postMessage(JSON.stringify(minxhr), dst_org);
       };
       xhr.send(fd);
