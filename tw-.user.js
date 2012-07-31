@@ -762,11 +762,15 @@ init.CSS = '\
     word-wrap: break-word;\
   }\
   #status {\
-    width: 35em;\
+    display: table-cell;\
+    vertical-align: bottom;\
+    width: 30em;\
     height: 7em;\
-    max-width: 100%;\
-    max-height: 100%;\
     font-size: inherit;\
+  }\
+  #tweet_options {\
+    display: table-cell;\
+    vertical-align: bottom;\
   }\
   #timeline {\
   }\
@@ -2463,17 +2467,19 @@ panel.showTweetBox = function() {
     return replying;
   }
 
+  var mediadata = null;
   var t = {
     box: D.ce("div"),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
     replink: D.ce("button").add(D.ct("to")),
     update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
+    btns: D.ce("div").sa("id", "tweet_options"),
     usemedia: D.ce("input").sa("type", "checkbox"),
     media: D.ce("input").sa("id", "media_upload"),
     imgvw: D.ce("div")
   };
-  var mediadata = null;
+  t.box.style.display = "table";
 
   t.replink.hidden = true;
 
@@ -2516,6 +2522,7 @@ panel.showTweetBox = function() {
     fr.onload = function() {
       var img = document.createElement("img");
       img.src = fr.result;
+      img.width = img.height = "48";
       img.alt = file.name;
       while (t.imgvw.hasChildNodes()) D.rm(t.imgvw.lastChild);
       t.imgvw.appendChild(img);
@@ -2545,10 +2552,11 @@ panel.showTweetBox = function() {
     }
   }, false);
 
-  t.box.add(t.status, t.id, t.update, t.replink);
+  t.box.add(t.status, t.btns);
   if (document instanceof HTMLDocument) {
-    t.box.add(t.usemedia, t.media, t.imgvw);
+    t.btns.add(t.imgvw, t.usemedia, t.media, D.ce("br"));
   }
+  t.btns.add(t.id, t.update, t.replink);
 
   D.id("header").add(t.box);
 };
