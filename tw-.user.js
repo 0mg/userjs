@@ -2,6 +2,10 @@
 // @name tw-
 // @include http://api.twitter.com/1/help/test.xml?-=/*
 // @include https://api.twitter.com/1/help/test.xml?-=/*
+// @include http://api.twitter.com/1/help/test?-=/*
+// @include https://api.twitter.com/1/help/test?-=/*
+// @include http://upload.twitter.com/receiver.html?-=/*
+// @include https://upload.twitter.com/receiver.html?-=/*
 // @description A Twitter client
 // ==/UserScript==
 "use strict";
@@ -15,6 +19,7 @@ var props = function(arg) {
   return proplist.join("\n");
 };
 var U, C, D, O, T, A, X, API, init, content, panel, outline;
+document.domain = "twitter.com";
 
 // URL CONST VALUE and Functions
 
@@ -34,7 +39,8 @@ U = {
     };
   }
 };
-
+// dev
+U.ROOT = location.pathname + "?-=/";
 
 // CONST VALUE
 C = {};
@@ -390,6 +396,43 @@ X.post = function post(url, q, f, b, c) {
   : b && b(false);
 };
 
+// POST Media XDomain for Twitter API
+X.postMediaX = function post(url, dispos, f, b, c) {
+  (c || confirm("sure?\n" + url + "?" + O.stringify(dispos))) ?
+  X.getAuthToken(function(authtoken) {
+    dispos.post_authenticity_token = authtoken;
+    var senddata = {
+      url: url,
+      data: dispos
+    };
+    var src_org = location.protocol + "//" + location.host;
+    var dst_org = /^.+?:\/\/[^/]+/.exec(url)[0];
+    var iframe = D.ce("iframe").sa("id", "receiver");
+    iframe.src = dst_org + "/receiver.html?-=/"
+    iframe.hidden = true;
+    iframe.onload = function() {
+      var win = iframe.contentWindow;
+      win.postMessage(JSON.stringify(senddata), dst_org);
+    };
+    iframe.onerror = function() {
+      removeEventListener("message", onMsg, false);
+    };
+    function onMsg(ev) {
+      if (ev.origin === dst_org) {
+        var xhr = JSON.parse(ev.data);
+        if (xhr.status === 200) f(xhr);
+        else (b || function(x) { alert(x.responseText); })(xhr);
+      }
+      removeEventListener("message", onMsg, false);
+    }
+    addEventListener("message", onMsg, false);
+    var receiver = D.id("receiver");
+    if (receiver) D.rm(receiver);
+    D.q("body").add(iframe);
+  })//;
+  : b && b(false);
+};
+
 // Twitter Auth token Getter
 X.getAuthToken = (function() {
   var token; //cache
@@ -473,6 +516,24 @@ API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
          "&place_id=" + (place_id || "") +
          "&display_coordinates=" + (display_coordinates || "") +
          "&source=" + (source || ""), callback, onErr);
+};
+
+API.tweetMedia = function(media, status, id,
+                          lat, lon, place_id, display_coordinates,
+                          callback, onErr) {
+  var url = location.protocol +
+            "//upload.twitter.com/1/statuses/update_with_media.xml";
+  X.postMediaX(url,
+  {
+    "media_data[]": media,
+    "status": status || "",
+    "in_reply_to_status_id": id || "",
+    "lat": lat || "",
+    "lon": lon || "",
+    "place_id": place_id || "",
+    "display_coordinates": display_coordinates || ""
+  },
+  callback, onErr);
 };
 
 API.untweet = function(id, callback, onErr) {
@@ -2407,9 +2468,12 @@ panel.showTweetBox = function() {
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
     replink: D.ce("button").add(D.ct("to")),
-    update: D.ce("button").sa("id", "update").add(D.ct("Tweet"))//,
-    //media: D.ce("input").sa("id", "media_upload")
+    update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
+    usemedia: D.ce("input").sa("type", "checkbox"),
+    media: D.ce("input").sa("id", "media_upload"),
+    imgvw: D.ce("div")
   };
+  var mediadata = null;
 
   t.replink.hidden = true;
 
@@ -2431,22 +2495,40 @@ panel.showTweetBox = function() {
   }, false);
 
   t.update.addEventListener("click", function() {
-    API.tweet(t.status.value, t.id.value, "", "", "", "", "",
-    function(xhr) { alert(xhr.responseText); });
+    if (t.usemedia.checked && mediadata) {
+      API.tweetMedia(mediadata, t.status.value, t.id.value, "", "", "", "",
+      function(xhr) { alert(xhr.responseText); });
+    } else {
+      API.tweet(t.status.value, t.id.value, "", "", "", "", "",
+      function(xhr) { alert(xhr.responseText); });
+    }
   }, false);
 
-  /*t.media.type = "file";
+  t.usemedia.addEventListener("change", function() {
+    t.imgvw.hidden = !t.usemedia.checked;
+  }, false);
+
+  t.media.type = "file";
   t.media.addEventListener("change", function(e) {
+    t.update.disabled = true;
     var file = t.media.files[0];
     var fr = new FileReader;
     fr.onload = function() {
       var img = document.createElement("img");
       img.src = fr.result;
       img.alt = file.name;
-      D.q("body").appendChild(img);
+      while (t.imgvw.hasChildNodes()) D.rm(t.imgvw.lastChild);
+      t.imgvw.appendChild(img);
+      mediadata = fr.result.match(/^data:[^;]+?;base64,([\S\s]+)/)[1];
+      t.update.disabled = false;
+      t.usemedia.checked = true;
+    };
+    fr.onerror = function() {
+      t.update.disabled = false;
+      t.usemedia.checked = false;
     };
     fr.readAsDataURL(file);
-  }, false);*/
+  }, false);
 
   t.replink.addEventListener("click", function() {
     var e = D.q(".tweet[class~=\"id-" + t.id.value + "\"]");
@@ -2461,7 +2543,10 @@ panel.showTweetBox = function() {
     }
   }, false);
 
-  t.box.add(t.status, t.id, /*t.media,*/ t.update, t.replink);
+  t.box.add(t.status, t.id, t.update, t.replink);
+  if (document instanceof HTMLDocument) {
+    t.box.add(t.usemedia, t.media, t.imgvw);
+  }
 
   D.id("header").add(t.box);
 };
@@ -2858,22 +2943,53 @@ outline.rendProfileOutline = function(user) {
 };
 
 
-// Check if my Logged-in
-X.get(U.APV + "account/verify_credentials.json",
-  function(xhr) {
-    var my = JSON.parse(xhr.responseText);
-    init.initNode(my);
-    init.structPage();
-    content.showPage(my);
-  },
-  function(xhr) {
-    X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
-      var data = JSON.parse(xhr.responseText);
-      data.reset_time = new Date(data.reset_time).toString();
-      if (data.remaining_hits > 0) {
-        location.href = "https://twitter.com/login?redirect_after_login=" +
-                        encodeURIComponent(location.href);
-      } else alert(O.stringify(data));
-    });
-  }
-);
+if (location.host === "upload.twitter.com") {
+  addEventListener("message", function(ev) {
+    var src_org = location.protocol + "//" + location.host;
+    var dst_org = location.protocol + "//api.twitter.com";
+    function postData(url, dispos) {
+      var fd = new FormData;
+      for (var name in dispos) {
+        fd.append(name, dispos[name]);
+      }
+      var xhr = new XMLHttpRequest;
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("X-PHX", "true");
+      xhr.onload = function() {
+        var minxhr = {
+          status: xhr.status,
+          responseText: xhr.responseText
+        };
+        ev.source.postMessage(JSON.stringify(minxhr), dst_org);
+      };
+      xhr.onerror = function() {
+        ev.source.postMessage(JSON.stringify(minxhr), dst_org);
+      };
+      xhr.send(fd);
+    };
+    if (ev.origin === dst_org) {
+      var data = JSON.parse(ev.data);
+      postData(data.url, data.data);
+    }
+  }, false);
+} else {
+  // Check if my Logged-in
+  X.get(U.APV + "account/verify_credentials.json",
+    function(xhr) {
+      var my = JSON.parse(xhr.responseText);
+      init.initNode(my);
+      init.structPage();
+      content.showPage(my);
+    },
+    function(xhr) {
+      X.get(U.APV + "account/rate_limit_status.json", function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        data.reset_time = new Date(data.reset_time).toString();
+        if (data.remaining_hits > 0) {
+          location.href = "https://twitter.com/login?redirect_after_login=" +
+                          encodeURIComponent(location.href);
+        } else alert(O.stringify(data));
+      });
+    }
+  );
+}
