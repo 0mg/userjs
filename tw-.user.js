@@ -2522,10 +2522,12 @@ panel.showTweetBox = function() {
       mediadata = fr.result.match(/^data:[^;]+?;base64,([\S\s]+)/)[1];
       t.update.disabled = false;
       t.usemedia.checked = true;
+      t.imgvw.hidden = false;
     };
     fr.onerror = function() {
       t.update.disabled = false;
       t.usemedia.checked = false;
+      t.imgvw.hidden = true;
     };
     fr.readAsDataURL(file);
   }, false);
