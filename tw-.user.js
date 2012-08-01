@@ -2,8 +2,6 @@
 // @name tw-
 // @include http://api.twitter.com/1/help/test.xml?-=/*
 // @include https://api.twitter.com/1/help/test.xml?-=/*
-// @include http://api.twitter.com/1/help/test?-=/*
-// @include https://api.twitter.com/1/help/test?-=/*
 // @include http://upload.twitter.com/receiver.html?-=/*
 // @include https://upload.twitter.com/receiver.html?-=/*
 // @description A Twitter client
@@ -2578,9 +2576,7 @@ panel.showTweetBox = function() {
   }, false);
 
   t.box.add(t.status, t.btns);
-  if (document instanceof HTMLDocument) {
-    t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
-  }
+  t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
   t.btns.add(t.id, t.update, t.replink);
 
   D.id("header").add(t.box);
