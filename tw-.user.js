@@ -2518,7 +2518,7 @@ panel.showTweetBox = function() {
   t.update.addEventListener("click", function() {
     var media_image = D.q(".media_image");
     var mediadata = media_image ?
-      media_image.src.match(/^data:[^;]+?;base64,([\S\s]+)/)[1] : null;
+      media_image.src.match(/^data:[^;]*;base64,([\S\s]+)/)[1] : null;
 
     if (t.usemedia.checked && mediadata) {
       API.tweetMedia(mediadata, t.status.value, t.id.value, "", "", "", "",
