@@ -761,6 +761,9 @@ init.CSS = '\
     border-left: 1px solid transparent;\
     word-wrap: break-word;\
   }\
+  #update_controller {\
+    display: table;\
+  }\
   #status {\
     display: table-cell;\
     vertical-align: bottom;\
@@ -768,9 +771,25 @@ init.CSS = '\
     height: 7em;\
     font-size: inherit;\
   }\
-  #tweet_options {\
+  #update_buttons {\
     display: table-cell;\
     vertical-align: bottom;\
+  }\
+  #media_view .media_image {\
+    width: 48px;\
+    height: 48px;\
+  }\
+  #media_view.use_media {\
+    visibility: visible;\
+  }\
+  #media_view {\
+    visibility: hidden;\
+  }\
+  #reply_target_link.replying {\
+    visibility: visible;\
+  }\
+  #reply_target_link {\
+    visibility: hidden;\
   }\
   #timeline {\
   }\
@@ -2438,9 +2457,23 @@ panel.showGlobalBar = function(my) {
 
 // Global Tweet box
 panel.showTweetBox = function() {
+  var t = {
+    box: D.ce("div").sa("id", "update_controller"),
+    status: D.ce("textarea").sa("id", "status"),
+    id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
+    update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
+    replink: D.ce("button").sa("id", "reply_target_link").add(D.ct("to")),
+    btns: D.ce("div").sa("id", "update_buttons"),
+    mediabox: D.ce("div").sa("id", "media_controller"),
+    imgvw: D.ce("div").sa("id", "media_view"),
+    usemedia: D.ce("input").sa("id", "media_toggle").sa("type", "checkbox"),
+    media: D.ce("input").sa("id", "media_selector")
+  };
+
   function switchReplyTarget() {
     if (!t.id.value) return;
     var replying = false;
+    var replink = D.id("reply_target_link");
     [].forEach.call(D.qs(".tweet"), function(tweet) {
       var str = /\bscreen_name-(\w+)/.exec(tweet.className);
       var uname = str && str[1];
@@ -2452,7 +2485,7 @@ panel.showTweetBox = function() {
         t.id.value === id && t.status.value.match("@" + uname + "\\b")) {
         tweet.classList.add("reply_target");
         if (repbtn) repbtn.disabled = true;
-        t.replink.textContent = "to @" + uname;
+        replink.textContent = "to @" + uname;
         replying = true;
       } else {
         tweet.classList.remove("reply_target");
@@ -2460,28 +2493,12 @@ panel.showTweetBox = function() {
       }
     });
     if (replying) {
-      t.replink.hidden = false;
+      replink.classList.add("replying");
     } else {
-      t.replink.hidden = true;
+      replink.classList.remove("replying");
     }
     return replying;
   }
-
-  var mediadata = null;
-  var t = {
-    box: D.ce("div"),
-    status: D.ce("textarea").sa("id", "status"),
-    id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
-    replink: D.ce("button").add(D.ct("to")),
-    update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
-    btns: D.ce("div").sa("id", "tweet_options"),
-    usemedia: D.ce("input").sa("type", "checkbox"),
-    media: D.ce("input").sa("id", "media_upload"),
-    imgvw: D.ce("div")
-  };
-  t.box.style.display = "table";
-
-  t.replink.hidden = true;
 
   t.id.addEventListener("input", switchReplyTarget, false);
 
@@ -2501,6 +2518,10 @@ panel.showTweetBox = function() {
   }, false);
 
   t.update.addEventListener("click", function() {
+    var media_image = D.q(".media_image");
+    var mediadata = media_image ?
+      media_image.src.match(/^data:[^;]+?;base64,([\S\s]+)/)[1] : null;
+
     if (t.usemedia.checked && mediadata) {
       API.tweetMedia(mediadata, t.status.value, t.id.value, "", "", "", "",
       function(xhr) { alert(xhr.responseText); });
@@ -2510,9 +2531,14 @@ panel.showTweetBox = function() {
     }
   }, false);
 
-  t.usemedia.addEventListener("change", function() {
-    t.imgvw.hidden = !t.usemedia.checked;
-  }, false);
+  function onCheck() {
+    if (t.usemedia.checked) {
+      t.imgvw.classList.add("use_media");
+    } else {
+      t.imgvw.classList.remove("use_media");
+    }
+  }
+  t.usemedia.addEventListener("change", onCheck, false);
 
   t.media.type = "file";
   t.media.addEventListener("change", function(e) {
@@ -2521,20 +2547,19 @@ panel.showTweetBox = function() {
     var fr = new FileReader;
     fr.onload = function() {
       var img = document.createElement("img");
+      img.className = "media_image";
       img.src = fr.result;
-      img.width = img.height = "48";
       img.alt = file.name;
       while (t.imgvw.hasChildNodes()) D.rm(t.imgvw.lastChild);
       t.imgvw.appendChild(img);
-      mediadata = fr.result.match(/^data:[^;]+?;base64,([\S\s]+)/)[1];
       t.update.disabled = false;
       t.usemedia.checked = true;
-      t.imgvw.hidden = false;
+      onCheck();
     };
     fr.onerror = function() {
       t.update.disabled = false;
       t.usemedia.checked = false;
-      t.imgvw.hidden = true;
+      onCheck();
     };
     fr.readAsDataURL(file);
   }, false);
@@ -2554,7 +2579,7 @@ panel.showTweetBox = function() {
 
   t.box.add(t.status, t.btns);
   if (document instanceof HTMLDocument) {
-    t.btns.add(t.imgvw, t.usemedia, t.media, D.ce("br"));
+    t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
   }
   t.btns.add(t.id, t.update, t.replink);
 
