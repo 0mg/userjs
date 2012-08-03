@@ -394,6 +394,27 @@ X.post = function post(url, q, f, b, c) {
   : b && b(false);
 };
 
+// POST Media for Twitter API
+X.postMedia = function post(url, dispos, f, b, c) {
+  (c || confirm("sure?\n" + url + "?" + O.stringify(dispos))) ?
+  X.getAuthToken(function(authtoken) {
+    var xhr = new XMLHttpRequest;
+    var fd = new FormData;
+    fd.append("post_authenticity_token", authtoken);
+    for (var name in dispos) {
+      fd.append(name, dispos[name]);
+    }
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("X-PHX", "true");
+    xhr.onload = function() {
+      if (this.status === 200) f(this);
+      else (b || function(x) { alert(x.responseText); })(this);
+    };
+    xhr.send(fd);
+  })//;
+  : b && b(false);
+};
+
 // POST Media XDomain for Twitter API
 X.postMediaX = function post(url, dispos, f, b, c) {
   (c || confirm("sure?\n" + url + "?" + O.stringify(dispos))) ?
@@ -445,44 +466,14 @@ X.getAuthToken = (function() {
 // Twitter API Functions
 
 API = {};
-API.updateProfileBgImage = function(imageInputElement, useImage, tile,
-                                    callback, onErr) {
-  var fm = {
-    form: D.ce("form"),
-    image: imageInputElement.cloneNode(false),
-    useImage: D.ce("input"),
-    tile: D.ce("input"),
-    authtoken: D.ce("input")
+API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
+  var url = U.APV + "account/update_profile_background_image.xml";
+  var data = {
+    "image": image,
+    "use": use,
+    "tile": tile
   };
-
-  fm.form.action = "/settings/design/update";
-  fm.form.enctype = "multipart/form-data";
-  fm.form.method = "post";
-  fm.form.addEventListener("submit", function(event) {
-    event.stopPropagation();
-  }, false);
-
-  fm.image.name = "user[uploaded_data]";
-
-  fm.useImage.name = "user[profile_use_background_image]";
-  fm.useImage.value = useImage;
-
-  fm.tile.name = "user[profile_background_tile]";
-  fm.tile.value = tile;
-
-  fm.authtoken.name = "authenticity_token";
-
-  fm.form.add(
-    fm.image,
-    fm.useImage,
-    fm.tile,
-    fm.authtoken
-  );
-
-  X.getAuthToken(function(authtoken) {
-    fm.authtoken.value = authtoken;
-    fm.form.submit();
-  });
+  X.postMedia(url, data, callback, onErr);
 };
 
 API.updateProfileColors = function(background_color, text_color, link_color,
@@ -1232,6 +1223,8 @@ content.customizeDesign = function(my) {
   var fm = {
     form: D.ce("dl"),
     bg: {
+      sel0: D.ce("input").sa("type", "radio").sa("name", "bgimgsel"),
+      sel1: D.ce("input").sa("type", "radio").sa("name", "bgimgsel"),
       image: D.ce("input"),
       useImage: D.ce("input"),
       tile: D.ce("input"),
@@ -1273,34 +1266,69 @@ content.customizeDesign = function(my) {
     }
   }, true);
 
-  fm.bg.image.type = "file";
+  fm.bg.sel0.checked = true;
 
+  var selbg = "";
+  var selbg_raw = "";
+  var crrbg;
+  function chgCrrBg() {
+    crrbg = fm.bg.sel0.checked ? my.profile_background_image_url : selbg;
+  }
+  chgCrrBg();
+
+  fm.bg.sel0.addEventListener("change", function() {
+    chgCrrBg();
+    onChkUseImg();
+  }, false);
+  fm.bg.sel1.addEventListener("change", function() {
+    chgCrrBg();
+    onChkUseImg();
+  }, false);
+
+  fm.bg.image.type = "file";
+  fm.bg.image.addEventListener("change", function() {
+    var file = fm.bg.image.files[0];
+    var fr = new FileReader;
+    fr.onload = function() {
+      selbg_raw = btoa(fr.result);
+      selbg = "data:" + file.type + ";base64," + btoa(fr.result);
+      fm.bg.sel1.checked = true;
+      chgCrrBg();
+      onChkUseImg();
+      onChkTile();
+    };
+    fr.readAsBinaryString(file);
+  }, false);
+
+  function onChkUseImg() {
+    var use = fm.bg.useImage.checked;
+    background.style.backgroundImage =
+      use ? "url(" + (crrbg || "data:") + ")" : "none";
+  }
+  function onChkTile() {
+    background.style.backgroundRepeat =
+      fm.bg.tile.checked ? "repeat" : "no-repeat";
+  }
   fm.bg.useImage.type = "checkbox";
   fm.bg.useImage.checked = my.profile_use_background_image;
-  fm.bg.useImage.addEventListener("change", function(event) {
-    var use = event.target.checked;
-    background.style.backgroundImage =
-      use ? "url(" + my.profile_background_image_url + ")" : "none";
-  }, false);
+  fm.bg.useImage.addEventListener("change", onChkUseImg, false);
 
   fm.bg.tile.type = "checkbox";
   fm.bg.tile.checked = my.profile_background_tile;
-  fm.bg.tile.addEventListener("change", function(v) {
-    background.style.backgroundRepeat =
-      v.target.checked ? "repeat" : "no-repeat";
-  }, false);
+  fm.bg.tile.addEventListener("change", onChkTile, false);
+  onChkTile();
 
   fm.bg.color.value = my.profile_background_color;
 
-  fm.bg.update.add(D.ct("Update"));
+  fm.bg.update.add(D.ct("Update (fail)"));
   fm.bg.update.addEventListener("click", function() {
     function onAPI(xhr) {
       alert(xhr.responseText);
     }
-    confirm("sure?") && API.updateProfileBgImage(
-      fm.bg.image,
-      fm.bg.useImage.checked,
-      fm.bg.tile.checked,
+    API.updateProfileBgImage(
+      fm.bg.sel1.checked && selbg_raw || "",
+      +fm.bg.useImage.checked,
+      +fm.bg.tile.checked,
       onAPI
     );
   }, false);
@@ -1330,7 +1358,8 @@ content.customizeDesign = function(my) {
 
   fm.form.add(
     D.ce("dt").add(D.ct("background image")),
-    D.ce("dd").add(fm.bg.image),
+    D.ce("dd").add(D.ce("label").add(fm.bg.sel0, D.ct("current"))),
+    D.ce("dd").add(D.ce("label").add(fm.bg.sel1, D.ct("upload"), fm.bg.image)),
     D.ce("dd").add(
       D.ce("label").add(
         fm.bg.useImage, D.ct("use image")
