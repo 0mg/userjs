@@ -405,7 +405,7 @@ X.postMediaX = function post(url, dispos, f, b, c) {
     };
     var src_org = location.protocol + "//" + location.host;
     var dst_org = /^.+?:\/\/[^/]+/.exec(url)[0];
-    var iframe = D.ce("iframe").sa("id", "receiver");
+    var iframe = D.ce("iframe");
     iframe.src = dst_org + "/receiver.html?-=/"
     iframe.hidden = true;
     iframe.onload = function() {
@@ -422,10 +422,9 @@ X.postMediaX = function post(url, dispos, f, b, c) {
         else (b || function(x) { alert(x.responseText); })(xhr);
       }
       removeEventListener("message", onMsg, false);
+      D.rm(iframe);
     }
     addEventListener("message", onMsg, false);
-    var receiver = D.id("receiver");
-    if (receiver) D.rm(receiver);
     D.q("body").add(iframe);
   })//;
   : b && b(false);
