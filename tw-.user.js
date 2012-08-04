@@ -467,6 +467,17 @@ X.getAuthToken = (function() {
 
 API = {};
 API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
+  if (1) {
+    var url = "/settings/design/update";
+    var data = {
+      "media_data[]": image,
+      "media_file_name": image,
+      "user[profile_use_background_image]": use,
+      "user[profile_background_tile]": tile
+    };
+    X.postMedia(url, data, callback, onErr);
+    return;
+  }
   var url = U.APV + "account/update_profile_background_image.xml";
   var data = {
     "image": image,
@@ -1320,15 +1331,15 @@ content.customizeDesign = function(my) {
 
   fm.bg.color.value = my.profile_background_color;
 
-  fm.bg.update.add(D.ct("Update (fail)"));
+  fm.bg.update.add(D.ct("Update"));
   fm.bg.update.addEventListener("click", function() {
     function onAPI(xhr) {
       alert(xhr.responseText);
     }
     API.updateProfileBgImage(
       fm.bg.sel1.checked && selbg_raw || "",
-      +fm.bg.useImage.checked,
-      +fm.bg.tile.checked,
+      fm.bg.useImage.checked,
+      fm.bg.tile.checked,
       onAPI
     );
   }, false);
