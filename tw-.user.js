@@ -1312,9 +1312,8 @@ content.customizeDesign = function(my) {
   }, false);
 
   function onChkUseImg() {
-    var use = fm.bg.useImage.checked;
     background.style.backgroundImage =
-      use ? "url(" + (crrbg || "data:") + ")" : "none";
+      fm.bg.useImage.checked && crrbg ? "url(" + crrbg + ")" : "none";
   }
   function onChkTile() {
     background.style.backgroundRepeat =
@@ -2494,6 +2493,7 @@ panel.showGlobalBar = function(my) {
 
 // Global Tweet box
 panel.showTweetBox = function() {
+  var media_raw = "";
   var t = {
     box: D.ce("div").sa("id", "update_controller"),
     status: D.ce("textarea").sa("id", "status"),
@@ -2555,12 +2555,8 @@ panel.showTweetBox = function() {
   }, false);
 
   t.update.addEventListener("click", function() {
-    var media_image = D.q(".media_image");
-    var mediadata = media_image ?
-      media_image.src.match(/^data:[^;]*;base64,([\S\s]+)/)[1] : null;
-
-    if (t.usemedia.checked && mediadata) {
-      API.tweetMedia(mediadata, t.status.value, t.id.value, "", "", "", "",
+    if (t.usemedia.checked && media_raw) {
+      API.tweetMedia(media_raw, t.status.value, t.id.value, "", "", "", "",
       function(xhr) { alert(xhr.responseText); });
     } else {
       API.tweet(t.status.value, t.id.value, "", "", "", "", "",
@@ -2583,9 +2579,10 @@ panel.showTweetBox = function() {
     var file = t.media.files[0];
     var fr = new FileReader;
     fr.onload = function() {
+      media_raw = btoa(fr.result);
       var img = document.createElement("img");
       img.className = "media_image";
-      img.src = fr.result;
+      img.src = "data:" + file.type + ";base64," + btoa(fr.result);
       img.alt = file.name;
       while (t.imgvw.hasChildNodes()) D.rm(t.imgvw.lastChild);
       t.imgvw.appendChild(img);
@@ -2598,7 +2595,7 @@ panel.showTweetBox = function() {
       t.usemedia.checked = false;
       onCheck();
     };
-    fr.readAsDataURL(file);
+    fr.readAsBinaryString(file);
   }, false);
 
   t.replink.addEventListener("click", function() {
