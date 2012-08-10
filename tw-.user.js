@@ -218,7 +218,7 @@ D.tweetize.url = function(url, expanded_url) {
     a.textContent = expanded_url;
     a.classList.add("expanded_tco_url");
   }
-  if (a.href.indexOf("#") === -1 || a.href.indexOf("?") === -1) {
+  if (a.href.indexOf("#") === -1 && a.href.indexOf("?") === -1) {
     a.classList.add("maybe_shorten_url");
   }
   return a;
