@@ -3,7 +3,7 @@
 // @include http://golf.shinh.org/p.rb?*
 // ==/UserScript==
 
-addEventListener("keyup", function(event) {
+addEventListener("input", function(event) {
   if (event.target.name !== "code") return;
 
   function get_statistics(s) {
@@ -20,7 +20,8 @@ addEventListener("keyup", function(event) {
 
   var code = event.target;
   var stat = get_statistics(code.value);
-  stat = " " + stat[0] + "B / " + stat[2] + "B / " + stat[3] + "B";
+  stat = " " + stat.reduce(function(x, y) { return x + y; }) + "B" +
+         " (" + stat[0] + "B / " + stat[2] + "B / " + stat[3] + "B)";
 
   var reveal = document.getElementsByName("reveal")[0];
   reveal.parentNode.
