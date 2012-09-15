@@ -2,8 +2,8 @@
 // @name tw-
 // @include http://api.twitter.com/1/help/test.xml?-=/*
 // @include https://api.twitter.com/1/help/test.xml?-=/*
-// @include http://upload.twitter.com/receiver.html?-=/*
-// @include https://upload.twitter.com/receiver.html?-=/*
+// @exclude http://upload.twitter.com/receiver.html?-=/*
+// @exclude https://upload.twitter.com/receiver.html?-=/*
 // @description A Twitter client
 // ==/UserScript==
 "use strict";
@@ -26,6 +26,7 @@ U = {
   Q: "&",
   // ROOT OF API
   APV: "/1/",
+  APV11: "/1.1/",
   getURL: function() {
     var pathall = (location.pathname + location.search).
                    substring(this.ROOT.length).split(this.Q);
@@ -507,7 +508,7 @@ API.resolveURL = function(links, callback, onErr) {
 
 API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
                 source, callback, onErr) {
-  X.post(U.APV + "statuses/update.xml",
+  X.post(U.APV11 + "statuses/update.json",
          "status=" + (encodeURIComponent(status) || "") +
          "&in_reply_to_status_id=" + (id || "") +
          "&lat=" + (lat || "") +
@@ -520,9 +521,8 @@ API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
 API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
                           callback, onErr) {
-  var url = location.protocol +
-            "//upload.twitter.com/1/statuses/update_with_media.xml";
-  X.postMediaX(url,
+  var url = U.APV11 + "statuses/update_with_media.json";
+  X.postMedia(url,
   {
     "media_data[]": media,
     "status": status || "",
@@ -536,7 +536,7 @@ API.tweetMedia = function(media, status, id,
 };
 
 API.untweet = function(id, callback, onErr) {
-  X.post(U.APV + "statuses/destroy/" + id + ".json", "", callback, onErr);
+  X.post(U.APV11 + "statuses/destroy/" + id + ".json", "", callback, onErr);
 };
 
 API.retweet = function(id, callback, onErr) {
@@ -549,11 +549,11 @@ API.deleteMessage = function(id, callback, onErr) {
 };
 
 API.fav = function(id, callback, onErr) {
-  X.post(U.APV + "favorites/create/" + id + ".xml", "", callback, onErr);
+  X.post(U.APV11 + "favorites/create.json", "id=" + id, callback, onErr);
 };
 
 API.unfav = function(id, callback, onErr) {
-  X.post(U.APV + "favorites/destroy/" + id + ".xml", "", callback, onErr);
+  X.post(U.APV11 + "favorites/destroy.json", "id=" + id, callback, onErr);
 };
 
 API.follow = function(uname, callback, onErr) {
@@ -1017,15 +1017,15 @@ content.showPage.on1 = function(hash, q, my) {
     panel.showListPanel(my);
     break;
   case "inbox":
-    this.showTL(U.APV + "direct_messages.json?" + q +
+    this.showTL(U.APV11 + "direct_messages.json?" + q +
                 "&include_entities=true", my);
     break;
   case "sent":
-    this.showTL(U.APV + "direct_messages/sent.json?" + q +
+    this.showTL(U.APV11 + "direct_messages/sent.json?" + q +
                 "&include_entities=true", my);
     break;
   case "favorites":
-    this.showTL(U.APV + "favorites.json?" + q +
+    this.showTL(U.APV11 + "favorites/list.json?" + q +
                 "&include_entities=true", my);
     break;
   case "following":
@@ -1037,18 +1037,18 @@ content.showPage.on1 = function(hash, q, my) {
                    "&count=20&cursor=-1", my);
     break;
   case "mentions":
-    this.showTL(U.APV + "statuses/mentions.json?" + q +
+    this.showTL(U.APV11 + "statuses/mentions.json?" + q +
                 "&include_entities=true", my);
     break;
   case "blocking":
-    this.showUsers(U.APV + "blocks/blocking.json?" + q, my);
+    this.showUsers(U.APV11 + "blocks/list.json?" + q, my);
     break;
   case "":
-    this.showTL(U.APV + "statuses/home_timeline.json?" + q +
+    this.showTL(U.APV11 + "statuses/home_timeline.json?" + q +
                 "&include_entities=true", my);
     break;
   default:
-    this.showTL(U.APV + "statuses/user_timeline.json?" + q +
+    this.showTL(U.APV11 + "statuses/user_timeline.json?" + q +
                 "&include_entities=true&include_rts=true" +
                 "&screen_name=" + hash[0], my);
     outline.showProfileOutline(hash[0], my);
@@ -1068,10 +1068,10 @@ content.showPage.on2 = function(hash, q, my) {
     break;
   case "requests":
     if (hash[0] === "following") {
-      this.showUsersByIds(U.APV + "friendships/outgoing.json?" + q +
+      this.showUsersByIds(U.APV11 + "friendships/outgoing.json?" + q +
                           "&cursor=-1", my);
     } else if (hash[0] === "followers") {
-      this.showUsersByIds(U.APV + "friendships/incoming.json?" + q +
+      this.showUsersByIds(U.APV11 + "friendships/incoming.json?" + q +
                           "&cursor=-1", my, 1);
     }
     break;
@@ -1089,23 +1089,23 @@ content.showPage.on2 = function(hash, q, my) {
     break;
   case "memberships":
     if (hash[0] === "lists") {
-      this.showLists(U.APV + "lists/memberships.json?" + q, my);
+      this.showLists(U.APV11 + "lists/memberships.json?" + q, my);
     }
     break;
   case "subscriptions":
     if (hash[0] === "lists") {
-      this.showLists(U.APV + "lists/subscriptions.json?" + q, my);
+      this.showLists(U.APV11 + "lists/subscriptions.json?" + q, my);
       panel.showUserManager(my);
     }
     break;
   case "status":
   case "statuses":
-    this.showTL(U.APV + "statuses/user_timeline.json?" + q +
+    this.showTL(U.APV11 + "statuses/user_timeline.json?" + q +
                 "&include_entities=true&include_rts=true" +
                 "&screen_name=" + hash[0], my);
     break;
   case "favorites":
-    this.showTL(U.APV + "favorites.json?" + q +
+    this.showTL(U.APV11 + "favorites/list.json?" + q +
                 "&include_entities=true" +
                 "&screen_name=" + hash[0], my);
     outline.showProfileOutline(hash[0], my, 3);
@@ -1129,14 +1129,14 @@ content.showPage.on2 = function(hash, q, my) {
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
-      this.showTL(U.APV + "statuses/show.json?" + q +
+      this.showTL(U.APV11 + "statuses/show.json?" + q +
                           "&id=" + hash[1] +
                           "&include_entities=true", my);
     } else {
-      var url = U.APV + "lists/statuses.json?" + q +
+      var url = U.APV11 + "lists/statuses.json?" + q +
                 "&owner_screen_name=" + hash[0] +
                 "&slug=" + hash[1] +
-                "&include_entities=true";
+                "&include_entities=true&include_rts=false";
       this.showTL(url, my);
       outline.showListOutline(hash, my);
     }
@@ -1156,7 +1156,7 @@ content.showPage.on3 = function(hash, q, my) {
       var url = U.APV + "lists/statuses.json?" + q +
                 "&owner_screen_name=" + hash[0] +
                 "&slug=" + hash[1] +
-                "&include_entities=true";
+                "&include_entities=true&include_rts=false";
       this.showTL(url, my);
     }
     break;
@@ -1168,34 +1168,34 @@ content.showPage.on3 = function(hash, q, my) {
     }
     break;
   case "members":
-    this.showUsers(U.APV + "lists/members.json?" + q +
+    this.showUsers(U.APV11 + "lists/members.json?" + q +
                    "&owner_screen_name=" + hash[0] +
                    "&slug=" + hash[1], my);
     outline.showListOutline(hash, my, 3);
     break;
   case "subscribers":
-    this.showUsers(U.APV + "lists/subscribers.json?" + q +
+    this.showUsers(U.APV11 + "lists/subscribers.json?" + q +
                    "&owner_screen_name=" + hash[0] +
                    "&slug=" + hash[1], my);
     outline.showListOutline(hash, my, 3);
     break;
   case "memberships":
     if (hash[1] === "lists") {
-      this.showLists(U.APV + "lists/memberships.json?" + q +
+      this.showLists(U.APV11 + "lists/memberships.json?" + q +
                      "&screen_name=" + hash[0], my);
       outline.showProfileOutline(hash[0], my, 3);
     }
     break;
   case "subscriptions":
     if (hash[1] === "lists") {
-      this.showLists(U.APV + "lists/subscriptions.json?" + q +
+      this.showLists(U.APV11 + "lists/subscriptions.json?" + q +
                      "&screen_name=" + hash[0], my);
       outline.showProfileOutline(hash[0], my, 3);
     }
     break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
-      this.showTL(U.APV + "statuses/show.json?" + q +
+      this.showTL(U.APV11 + "statuses/show.json?" + q +
                           "&id=" + hash[2] +
                           "&include_entities=true", my);
       outline.showProfileOutline(hash[0], my, 1);
@@ -2834,7 +2834,7 @@ outline.changeDesign = function(user) {
 // Step to Render list outline and color
 outline.showListOutline = function(hash, my, mode) {
   var that = this;
-  var url = U.APV + "lists/show.json?" +
+  var url = U.APV11 + "lists/show.json?" +
             "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
 
   X.get(url, function(xhr) {
@@ -2915,7 +2915,7 @@ outline.showProfileOutline = function(screen_name, my, mode) {
     });
   }
 
-  X.get(U.APV + "users/show.json?screen_name=" + screen_name, onGet, onErr);
+  X.get(U.APV11 + "users/show.json?screen_name=" + screen_name, onGet, onErr);
 };
 
 // Render outline of User Profile
@@ -3010,7 +3010,7 @@ outline.rendProfileOutline = function(user) {
 };
 
 
-if (location.host === "upload.twitter.com") {
+if (false && location.host === "upload.twitter.com") {
   addEventListener("message", function(ev) {
     var src_org = location.protocol + "//" + location.host;
     var dst_org = location.protocol + "//api.twitter.com";
@@ -3045,7 +3045,7 @@ if (location.host === "upload.twitter.com") {
   }, false);
 } else {
   // Check if my Logged-in
-  X.get(U.APV + "account/verify_credentials.json",
+  X.get(U.APV11 + "account/verify_credentials.json",
     function(xhr) {
       var my = JSON.parse(xhr.responseText);
       init.initNode(my);
