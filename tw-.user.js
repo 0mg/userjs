@@ -1836,13 +1836,23 @@ content.rendTL = function(timeline, my) {
 
   if (timeline.length) {
     var curl = U.getURL();
+    var last_id = timeline[timeline.length - 1].id_str;
+    var max_id = (function decrement(s) {
+      s = s.split("");
+      return (function f(s, i) {
+        var n = s[i] - 1;
+        if (n >= 0) { s[i] = n; } else {
+          if (i > 0) { s[i] = 9; f(s, i - 1); } else { s[i] = 0; }
+        }
+        return s.join("");
+      })(s, s.length - 1);
+    })(last_id);
     var href = U.ROOT + curl.path +
-               U.Q + "page=2&max_id=" + timeline[0].id_str;
+               U.Q + "max_id=" + max_id;
 
     var past = D.ce("a").
                sa("href", href).
                add(D.ct("past"));
-
     D.id("cursor").add(past);
 
     D.q("head").add(
