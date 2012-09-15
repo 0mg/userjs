@@ -133,9 +133,11 @@ D.tweetize = function(innerText, entities) {
   var str, ctx = innerText || "", fragment = D.cf();
   if (entities) {
     entities = {
-      urls: entities.urls.slice(),
-      hashtags: entities.hashtags.slice(),
-      user_mentions: entities.user_mentions.slice(),
+      // clone or []
+      urls: entities.urls ? entities.urls.slice() : [],
+      hashtags: entities.hashtags ? entities.hashtags.slice() : [],
+      user_mentions:
+        entities.user_mentions ? entities.user_mentions.slice() : [],
       media: entities.media ? entities.media.slice() : []
     };
     D.tweetize.all(ctx, entities, fragment, 0);
