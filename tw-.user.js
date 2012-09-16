@@ -569,12 +569,12 @@ API.unfollow = function(uname, callback, onErr) {
 };
 
 API.wantRT = function(uname, callback, onErr) {
-  X.post(U.APV + "friendships/update.xml",
+  X.post(U.APV11 + "friendships/update.json",
          "screen_name=" + uname + "&retweets=true", callback, onErr);
 };
 
 API.unwantRT = function(uname, callback, onErr) {
-  X.post(U.APV + "friendships/update.xml",
+  X.post(U.APV11 + "friendships/update.json",
          "screen_name=" + uname + "&retweets=false", callback, onErr);
 };
 
@@ -1015,7 +1015,7 @@ content.showPage.on1 = function(hash, q, my) {
                 "&include_entities=true", my);
     break;
   case "lists":
-    this.showLists(U.APV + "lists.json?" + q + "&cursor=-1", my);
+    this.showLists(U.APV11 + "lists/list.json?" + q + "&cursor=-1", my);
     panel.showListPanel(my);
     break;
   case "inbox":
@@ -1063,7 +1063,7 @@ content.showPage.on2 = function(hash, q, my) {
   } else switch (hash[1]) {
   case "all":
     if (hash[0] === "lists") {
-      this.showLists(U.APV + "lists/all.json?" + q +
+      this.showLists(U.APV11 + "lists/list.json?" + q +
                       "&user_id=" + my.id_str + "&cursor=-1", my);
       panel.showListPanel(my);
     }
@@ -1122,10 +1122,13 @@ content.showPage.on2 = function(hash, q, my) {
     this.showUsers(U.APV + "statuses/followers.json?" + q +
                    "&screen_name=" + hash[0] +
                    "&count=20&cursor=-1", my);
+    1 || this.showUsersByIds2(U.APV11 + "followers/ids.json?" + q +
+                "&screen_name=" + hash[0] +
+                "&count=20&cursor=-1", my, 2);
     outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
-    this.showLists(U.APV + "lists.json?" + q +
+    this.showLists(U.APV11 + "lists/list.json?" + q +
                    "&screen_name=" + hash[0], my);
     outline.showProfileOutline(hash[0], my, 3);
     break;
@@ -1164,7 +1167,7 @@ content.showPage.on3 = function(hash, q, my) {
     break;
   case "all":
     if (hash[1] === "lists") {
-      this.showLists(U.APV + "lists/all.json?" + q +
+      this.showLists(U.APV11 + "lists/list.json?" + q +
                       "&screen_name=" + hash[0], my);
       panel.showListPanel(my);
     }
@@ -1671,6 +1674,47 @@ content.showUsersByIds = function(url, my, mode) {
   X.get(url, onGetIds);
   panel.showUserManager(my);
 };
+content.showUsersByIds2 = function(url, my, mode) {
+  var that = this;
+  var re = {
+    cursor: url.match(/[?&]cursor=([-\d]+)/),
+    start: url.match(/[?&]start=(\d+)/),
+    count: url.match(/[?&]count=(\d+)/)
+  };
+  var cursor = re.cursor ? re.cursor[1] : "-1";
+  var start = re.start ? +re.start[1] : 0;
+  var count = re.count ? +re.count[1] : 20;
+  function onGetIds(xhr) {
+    var ids_data = JSON.parse(xhr.responseText);
+    function onGetUsers(xhr) {
+      var users_data = JSON.parse(xhr.responseText);
+      if (start + count < ids_data.ids.length) {
+        users_data.next_cursor = cursor;
+        users_data.next_start = start + count;
+      } else {
+        users_data.next_cursor = ids_data.next_cursor_str;
+        users_data.next_start = 0;
+      }
+      if (start - count >= 0) {
+        users_data.previous_cursor = cursor;
+        users_data.prev_start = start - count;
+      } else {
+        users_data.previous_cursor = ids_data.previous_cursor_str;
+        users_data.prev_start = ids_data.ids.length - count;
+      }
+      users_data.count = count;
+      content.rendUsers(users_data, my, mode);
+    }
+    var ids = ids_data.ids.slice(start, start + count);
+    if (ids.length) {
+      X.get(U.APV + "users/lookup.json?user_id=" + ids.join(","), onGetUsers);
+    } else {
+      D.id("main").add(O.htmlify({"Empty": "No users found"}));
+    }
+  }
+  X.get(url, onGetIds);
+  panel.showUserManager(my);
+};
 
 // Render View of list of users
 content.rendUsers = function(data, my, mode) {
@@ -1735,7 +1779,7 @@ content.rendUsers = function(data, my, mode) {
   D.id("main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
-  that.misc.showCursor(data);
+  mode & 2 ? that.misc.showCursorIds(data) : that.misc.showCursor(data);
 };
 
 
@@ -1753,16 +1797,21 @@ content.showUsers = function(url, my, mode) {
 // Render View of list of lists
 content.showLists = function(url, my) {
   var that = this;
+  var re = url.match(/[?&]screen_name=(\w+)/);
+  var oname = re ? re[1] : my.screen_name;
   X.get(url, function(xhr) {
     var data = JSON.parse(xhr.responseText);
     if (!data.lists) data.lists = data; // lists/all.json
 
     var lists = D.ce("dl");
+    var subs = D.ce("dl");
+    subs.className = "listslist";
     lists.className = "listslist";
 
     data.lists.forEach(function(l) {
       var listPath = U.ROOT + l.full_name.substring(1);
-      lists.add(
+      var target = l.user.screen_name === oname ? lists : subs;
+      target.add(
         D.ce("dt").sa("class", l.mode).add(
           D.ce("a").sa("href", listPath).add(D.ct(l.full_name))
         ),
@@ -1770,7 +1819,13 @@ content.showLists = function(url, my) {
       );
     });
 
-    D.id("main").add(lists);
+    var lists_c = lists.hasChildNodes();
+    var subs_c = subs.hasChildNodes();
+    D.id("main").add(
+      lists_c ? lists : D.cf(),
+      (lists_c && subs_c) ? D.ce("hr") : D.cf(),
+      subs_c ? subs : D.cf()
+    );
     that.misc.showCursor(data);
   });
 };
@@ -1982,6 +2037,32 @@ content.misc.showCursor = function(data) {
   }
   if (data.next_cursor) {
     cur.next.href = U.ROOT + curl.path + U.Q + "cursor=" + data.next_cursor;
+    cur.next.add(D.ct("Next"));
+    cur.sor.add(D.ce("li").add(cur.next));
+    D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
+  }
+  D.id("cursor").add(cur.sor);
+};
+content.misc.showCursorIds = function(data) {
+  var cur = {
+    sor: D.ce("ol"),
+    next: D.ce("a"),
+    prev: D.ce("a")
+  };
+  var curl = U.getURL();
+  if (+data.previous_cursor !== 0) {
+    cur.prev.href = U.ROOT + curl.path + U.Q +
+                    "cursor=" + data.previous_cursor +
+                    "&start=" + data.prev_start +
+                    "&count=" + data.count;
+    cur.prev.add(D.ct("Prev"));
+    cur.sor.add(D.ce("li").add(cur.prev));
+  }
+  if (+data.next_cursor !== 0) {
+    cur.next.href = U.ROOT + curl.path + U.Q +
+                    "cursor=" + data.next_cursor +
+                    "&start=" + data.next_start +
+                    "&count=" + data.count;
     cur.next.add(D.ct("Next"));
     cur.sor.add(D.ce("li").add(cur.next));
     D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
@@ -2328,7 +2409,7 @@ panel.showFollowPanel = function(user) {
 };
 
 // Action buttons panel for add user to list
-panel.showAddListPanel = function(user) {
+panel.showAddListPanel = function(user, my) {
   var Button = this.Button;
   var al = { // action: list
     node: D.ce("div")
@@ -2336,13 +2417,14 @@ panel.showAddListPanel = function(user) {
 
   D.id("subaction").add(al.node);
 
-  X.get(U.APV + "lists.json", lifeListButtons);
+  X.get(U.APV11 + "lists/list.json", lifeListButtons);
 
   function lifeListButtons(xhr) {
     var data = JSON.parse(xhr.responseText);
-    var lists = data.lists;
+    var lists = data;
     var list_btns = {};
 
+    lists = lists.filter(function(l) { return l.user.id === my.id; });
     lists.forEach(function(l) {
 
       var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
@@ -2915,7 +2997,7 @@ outline.showProfileOutline = function(screen_name, my, mode) {
     mode & 1 && that.changeDesign(user);
     mode & 2 && that.rendProfileOutline(user);
     mode & 4 && panel.showFollowPanel(user);
-    mode & 8 && panel.showAddListPanel(user);
+    mode & 8 && panel.showAddListPanel(user, my);
   }
 
   function onErr(xhr) { // hacking(using API bug) function
