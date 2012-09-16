@@ -1031,19 +1031,20 @@ content.showPage.on1 = function(hash, q, my) {
                 "&include_entities=true", my);
     break;
   case "following":
-    this.showUsers(U.APV + "statuses/friends.json?" + q +
-                   "&count=20&cursor=-1", my);
+    this.showUsersByIds(U.APV11 + "friends/ids.json?" + q +
+                   "&cursor=-1&stringify_ids=true", my);
     break;
   case "followers":
-    this.showUsers(U.APV + "statuses/followers.json?" + q +
-                   "&count=20&cursor=-1", my);
+    this.showUsersByIds(U.APV11 + "followers/ids.json?" + q +
+                   "&cursor=-1&stringify_ids=true", my);
     break;
   case "mentions":
     this.showTL(U.APV11 + "statuses/mentions.json?" + q +
                 "&include_entities=true", my);
     break;
   case "blocking":
-    this.showUsers(U.APV11 + "blocks/list.json?" + q, my);
+    this.showUsersByIds(U.APV11 + "blocks/ids.json?" + q +
+                        "&cursor=-1&stringify_ids=true", my);
     break;
   case "":
     this.showTL(U.APV11 + "statuses/home_timeline.json?" + q +
@@ -1071,10 +1072,10 @@ content.showPage.on2 = function(hash, q, my) {
   case "requests":
     if (hash[0] === "following") {
       this.showUsersByIds(U.APV11 + "friendships/outgoing.json?" + q +
-                          "&cursor=-1", my);
+                          "&cursor=-1&stringify_ids=true", my);
     } else if (hash[0] === "followers") {
       this.showUsersByIds(U.APV11 + "friendships/incoming.json?" + q +
-                          "&cursor=-1", my, 1);
+                          "&cursor=-1&stringify_ids=true", my, 1);
     }
     break;
   case "follow":
@@ -1113,18 +1114,15 @@ content.showPage.on2 = function(hash, q, my) {
     outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
-    this.showUsers(U.APV + "statuses/friends.json?" + q +
+    this.showUsersByIds(U.APV11 + "friends/ids.json?" + q +
                    "&screen_name=" + hash[0] +
-                   "&count=20&cursor=-1", my);
+                   "&cursor=-1&stringify_ids=true", my);
     outline.showProfileOutline(hash[0], my, 3);
     break;
   case "followers":
-    this.showUsers(U.APV + "statuses/followers.json?" + q +
-                   "&screen_name=" + hash[0] +
-                   "&count=20&cursor=-1", my);
-    1 || this.showUsersByIds2(U.APV11 + "followers/ids.json?" + q +
+    this.showUsersByIds(U.APV11 + "followers/ids.json?" + q +
                 "&screen_name=" + hash[0] +
-                "&count=20&cursor=-1", my, 2);
+                "&cursor=-1&stringify_ids=true", my);
     outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
@@ -1656,26 +1654,6 @@ content.settingFollow = function(my) {
 // Step to Render View of list of users by ids (follow requests in/out.,)
 content.showUsersByIds = function(url, my, mode) {
   var that = this;
-  function onGetIds(xhr) {
-    var ids_data = JSON.parse(xhr.responseText);
-    function onGetUsers(xhr) {
-      var users_data = JSON.parse(xhr.responseText);
-      users_data.previous_cursor = ids_data.previous_cursor;
-      users_data.next_cursor = ids_data.next_cursor;
-      content.rendUsers(users_data, my, mode);
-    }
-    var ids = ids_data.ids.join(",");
-    if (ids.length) {
-      X.get(U.APV + "users/lookup.json?user_id=" + ids, onGetUsers);
-    } else {
-      D.id("main").add(O.htmlify({"Empty": "No users found"}));
-    }
-  }
-  X.get(url, onGetIds);
-  panel.showUserManager(my);
-};
-content.showUsersByIds2 = function(url, my, mode) {
-  var that = this;
   var re = {
     cursor: url.match(/[?&]cursor=([-\d]+)/),
     start: url.match(/[?&]start=(\d+)/),
@@ -1688,6 +1666,7 @@ content.showUsersByIds2 = function(url, my, mode) {
     var ids_data = JSON.parse(xhr.responseText);
     function onGetUsers(xhr) {
       var users_data = JSON.parse(xhr.responseText);
+      users_data = {users: users_data};
       if (start + count < ids_data.ids.length) {
         users_data.next_cursor = cursor;
         users_data.next_start = start + count;
@@ -1703,7 +1682,10 @@ content.showUsersByIds2 = function(url, my, mode) {
         users_data.prev_start = ids_data.ids.length - count;
       }
       users_data.count = count;
-      content.rendUsers(users_data, my, mode);
+      users_data.users = users_data.users.sort(function(a, b) {
+        return ids.indexOf(a.id_str) - ids.indexOf(b.id_str);
+      });
+      content.rendUsers(users_data, my, mode | 2);
     }
     var ids = ids_data.ids.slice(start, start + count);
     if (ids.length) {
