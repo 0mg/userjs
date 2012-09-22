@@ -320,7 +320,14 @@ T.dentity = function dentity(entity) {
     return null;
   }
 };
-
+T.decrement = function decrement(s) {
+  s = s.split("");
+  for (var i = s.length - 1; i >= 0; --i) {
+    var n = s[i] - 1;
+    if (n < 0 && i > 0) { s[i] = 9; } else { s[i] = n; break; }
+  }
+  return s.join("");
+};
 
 // Scripts after render page
 A = {};
@@ -811,25 +818,35 @@ init.CSS = '\
   .tweet.focus {\
     background-color: #fc0;\
   }\
-  .user-profile.protected .name::after,\
-  .user.protected .name::after,\
-  .tweet.protected .name::after {\
-    content: "protected";\
-  }\
-  .list-profile.private .name::after,\
-  .listslist .private::after {\
-    content: "private";\
+  .user-profile.verified .name::before,\
+  .user.verified .name::before,\
+  .tweet.verified .name::before {\
+    content: "verified";\
+    font-weight: normal;\
+    vertical-align: middle;\
+    font-size: xx-small;\
+    padding: 0.5ex;\
+    background-color: #3cf;\
+    color: white;\
+    margin-right: 1ex;\
   }\
   .listslist .private::after,\
   .list-profile.private .name::after,\
   .user-profile.protected .name::after,\
   .user.protected .name::after,\
   .tweet.protected .name::after {\
+    content: "protected";\
+    font-weight: normal;\
+    vertical-align: middle;\
     font-size: xx-small;\
     padding: 0.5ex;\
     background-color: gray;\
     color: white;\
     margin-left: 1ex;\
+  }\
+  .list-profile.private .name::after,\
+  .listslist .private::after {\
+    content: "private";\
   }\
   .user .name,\
   .tweet .name,\
@@ -888,7 +905,7 @@ init.CSS = '\
   }\
   .tweet-action button.true::before,\
   .user-action button.true::before {\
-    content: "\u2714";\
+    content: "\\2714";\
   }\
 '.replace(/\s+/g, " ");
 
@@ -1713,7 +1730,8 @@ content.rendUsers = function(data, my, mode) {
     };
 
     lu.root.className = "user";
-    if (user["protected"]) lu.root.className += " protected";
+    if (user.protected) lu.root.classList.add("protected");
+    if (user.verified) lu.root.classList.add("verified");
 
     lu.screen_name.className = "screen_name";
     lu.screen_name.add(D.ct(user.screen_name));
@@ -1853,24 +1871,10 @@ content.rendTL = function(timeline, my) {
   if (timeline.length) {
     var curl = U.getURL();
     var last_id = timeline[timeline.length - 1].id_str;
-    var max_id = (function decrement(s) {
-      s = s.split("");
-      return (function f(s, i) {
-        var n = s[i] - 1;
-        if (n >= 0) { s[i] = n; } else {
-          if (i > 0) { s[i] = 9; f(s, i - 1); } else { s[i] = 0; }
-        }
-        return s.join("");
-      })(s, s.length - 1);
-    })(last_id);
-    var href = U.ROOT + curl.path +
-               U.Q + "max_id=" + max_id;
-
-    var past = D.ce("a").
-               sa("href", href).
-               add(D.ct("past"));
+    var max_id = T.decrement(last_id);
+    var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
+    var past = D.ce("a").sa("href", href).add(D.ct("past"));
     D.id("cursor").add(past);
-
     D.q("head").add(
       D.ce("link").sa("rel", "next").sa("href", past.href)
     );
@@ -1918,6 +1922,7 @@ content.rendTL.tweet = function(tweet, my) {
   };
 
   if (tweet.user.protected) ent.ry.classList.add("protected");
+  if (tweet.user.verified) ent.ry.classList.add("verified");
   if (isRT) ent.ry.classList.add("retweet");
   if (/[RQ]T:?\s*@\w+/.test(tweet.text)) ent.ry.classList.add("quote");
 
@@ -2262,7 +2267,7 @@ panel.showFollowPanel = function(user) {
     var ship = data.relationship.source;
 
     function changeFollowBtn() {
-      var isUserHidden = user["protected"];
+      var isUserHidden = user.protected;
       if (isUserHidden && ab.follow.node.parentNode === ab.node) {
         ab.node.replaceChild(ab.req_follow.node, ab.follow.node);
       }
@@ -2356,7 +2361,7 @@ panel.showFollowPanel = function(user) {
               API.requestFollow(user.screen_name, onReqFollow);
     }, false);
 
-    if (user["protected"] && !ship.following) {
+    if (user.protected && !ship.following) {
       ab.node.add(
         ab.req_follow.node,
         ab.block.node,
@@ -2930,7 +2935,7 @@ outline.showListProfile = function(list) {
   };
 
   li.st.className = "list-profile";
-  if (list.mode === "private") li.st.className += " private";
+  if (list.mode === "private") li.st.classList.add("private");
 
   li.members.href = U.ROOT + list.uri.substring(1) + "/members";
   li.members.add(D.ct("Members"));
@@ -3004,7 +3009,8 @@ outline.rendProfileOutline = function(user) {
   };
 
   p.box.className = "user-profile";
-  if (user["protected"]) p.box.className += " protected";
+  if (user.protected) p.box.classList.add("protected");
+  if (user.verified) p.box.classList.add("verified");
 
   p.icon.className = "user-icon";
   p.icon.alt = user.screen_name;
