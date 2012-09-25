@@ -818,7 +818,7 @@ init.CSS = '\
   .tweet.focus {\
     background-color: #fc0;\
   }\
-  .user-profile.verified .name::before,\
+  .user-profile.verified > dd:first-of-type::before,\
   .user.verified .name::before,\
   .tweet.verified .name::before {\
     content: "verified";\
@@ -830,11 +830,11 @@ init.CSS = '\
     color: white;\
     margin-right: 1ex;\
   }\
-  .listslist .private::after,\
-  .list-profile.private .name::after,\
-  .user-profile.protected .name::after,\
+  .user-profile.protected > dd:first-of-type::after,\
   .user.protected .name::after,\
-  .tweet.protected .name::after {\
+  .tweet.protected .name::after,\
+  .list-profile.private dd:first-of-type::after,\
+  .listslist .private::after {\
     content: "protected";\
     font-weight: normal;\
     vertical-align: middle;\
@@ -844,9 +844,12 @@ init.CSS = '\
     color: white;\
     margin-left: 1ex;\
   }\
-  .list-profile.private .name::after,\
+  .list-profile.private > dd:first-of-type::after,\
   .listslist .private::after {\
     content: "private";\
+  }\
+  .listslist + .listslist {\
+    border-top: 1px dashed;\
   }\
   .user .name,\
   .tweet .name,\
@@ -1806,8 +1809,8 @@ content.showLists = function(url, my) {
 
     var lists = D.ce("dl");
     var subs = D.ce("dl");
+    lists.className = "listslist own";
     subs.className = "listslist";
-    lists.className = "listslist";
 
     data.lists.forEach(function(l) {
       var listPath = U.ROOT + l.full_name.substring(1);
@@ -1824,7 +1827,6 @@ content.showLists = function(url, my) {
     var subs_c = subs.hasChildNodes();
     D.id("main").add(
       lists_c ? lists : D.cf(),
-      (lists_c && subs_c) ? D.ce("hr") : D.cf(),
       subs_c ? subs : D.cf()
     );
     that.misc.showCursor(data);
@@ -3046,7 +3048,7 @@ outline.rendProfileOutline = function(user) {
 
   p.box.add(
     D.ce("dt").add(D.ct("Screen Name")),
-    D.ce("dd").sa("class", "name").add(D.ct(user.screen_name)),
+    D.ce("dd").add(D.ct(user.screen_name)),
     D.ce("dt").add(D.ct("Icon")),
     D.ce("dd").add(p.icorg),
     D.ce("dt").add(D.ct("Name")),
@@ -3072,7 +3074,7 @@ outline.rendProfileOutline = function(user) {
     D.ce("dt").add(D.ct("ID")),
     D.ce("dd").add(D.ct(user.id_str)),
     D.ce("dt").add(D.ct("Protected")),
-    D.ce("dd").add(D.ct(user["protected"])),
+    D.ce("dd").add(D.ct(user.protected)),
     D.ce("dt").add(D.ct("Time Zone")),
     D.ce("dd").add(D.ct(user.time_zone)),
     D.ce("dt").add(D.ct("Language")),
