@@ -2599,6 +2599,11 @@ panel.showAddListPanel = function(user, my) {
     var list_btns = {};
 
     lists = lists.filter(function(l) { return l.user.id === my.id; });
+    lists = lists.filter(function(a, i) {
+      return lists.every(function(b, j) {
+        return j >= i || a.slug !== b.slug;
+      });
+    });
     lists.forEach(function(l) {
 
       var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
