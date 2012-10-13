@@ -373,6 +373,19 @@ X.get = function get(url, f, b) {
   return xhr;
 };
 
+// GET Method XDomain for Twitter API
+X.getX = function get(url, f, b) {
+  var script = D.ce("script");
+  for (var fn; fn = Math.random(), window[fn];);
+  script.src = url + "&callback=window[" + fn + "]";
+  window[fn] = function(str) {
+    f({responseText:JSON.stringify(str)});
+    delete window[fn];
+    D.rm(script);
+  };
+  D.q("body").add(script);
+};
+
 // HEAD Method for Twitter API
 X.head = function head(url, f, b) {
   var xhr = new XMLHttpRequest;
@@ -562,7 +575,9 @@ API = function(ver) {
       },
       search: {
         tweets: API.mkurl(ver, {
-          1: function() { return "/1/search"; }
+          1: function() {
+            return location.protocol + "//search.twitter.com/search";
+          }
         }),
         users: API.mkurl(ver, {
           1: function() { return "/1/users/search"; }
@@ -866,7 +881,7 @@ API.unlisting = function(myname, slug, uname, callback, onErr) {
 };
 
 API.search = function(q, opt, callback, onErr) {
-  X.get(API().urls.search.tweets() + "?q=" + q + "&" + opt +
+  X.getX(API().urls.search.tweets() + "?q=" + q + "&" + opt +
         "&rpp=20&include_entities=true", callback, onErr);
 };
 
