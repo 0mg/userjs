@@ -493,6 +493,7 @@ API = function(ver) {
     urls: {
       urls: {
         resolve: API.mkurl(ver, {
+          0: function() { return "/i/resolve"; },
           1: function() { return "/1/urls/resolve"; }
         })
       },
@@ -722,7 +723,7 @@ API.updateProfileColors = function(background_color, text_color, link_color,
 };
 
 API.resolveURL = function(links, callback, onErr) {
-  X.get(API().urls.urls.resolve() + "?" + [""].concat(links.map(function(url) {
+  X.get(API(0).urls.urls.resolve() + "?" + [""].concat(links.map(function(url) {
           return encodeURIComponent(url);
         })).join("&urls[]=").substring(1), callback, onErr);
 };
@@ -2680,6 +2681,7 @@ panel.showListFollowPanel = function(list) {
 
 // Global bar: links to home, profile, mentions, lists.,
 panel.showGlobalBar = function(my) {
+
   var g = {
     bar: D.ce("ul"),
     home: D.ce("a"),
@@ -2944,6 +2946,7 @@ panel.showUserManager = function(my) {
         API[isAdd ? "block" : "unblock"](target, onAPI);
         break;
       }
+
       break;
     case 1:
       switch (dir) {
