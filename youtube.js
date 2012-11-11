@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name add YouTube URLs to playlist
-// @include http://www.youtube.com/playlist?action_edit=1&list=*
+// @include http://www.youtube.com/playlist?*action_edit=1*
 // @exclude 
 // ==/UserScript==
 
