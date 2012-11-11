@@ -376,8 +376,8 @@ X.get = function get(url, f, b) {
 // GET Method XDomain for Twitter API
 X.getX = function get(url, f, b) {
   var script = D.ce("script");
-  for (var fn; fn = Math.random(), window[fn];);
-  script.src = url + "&callback=window[" + fn + "]";
+  for (var fn; fn = "f" + String(Math.random()).slice(2), window[fn];);
+  script.src = url + "&callback=" + fn;
   window[fn] = function(str) {
     f({responseText:JSON.stringify(str)});
     delete window[fn];
