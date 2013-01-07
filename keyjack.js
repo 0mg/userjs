@@ -2,25 +2,28 @@
 // @name Keyboard Hijack Hijack
 // ==/UserScript==
 
-addEventListener("DOMContentLoaded", function() {
-	var doublePress = false;
-	function keyJack(v) {
-		if (v.target instanceof HTMLInputElement ||
-		v.target instanceof HTMLTextAreaElement) return;
-		v.stopPropagation();
-		if (v.type === "keyup" && v.keyCode === 75) { // 75, 107: K
-			if (doublePress) {
-				removeEventListener("keypress", arguments.callee, true);
-				removeEventListener("keydown", arguments.callee, true);
-				removeEventListener("keyup", arguments.callee, true);
-				alert("Enabled page's keyboard shortcuts");
-			} else {
-				doublePress = true;
-				setTimeout(function() { doublePress = false; }, 180);
-			}
-		}
-	}
-	addEventListener("keypress", keyJack, true);
-	addEventListener("keydown", keyJack, true);
-	addEventListener("keyup", keyJack, true);
-}, false);
+(function() {
+  var keyJack = (function() {
+    var pressCount = 0;
+    return function callee(v) {
+      if (v.target instanceof HTMLInputElement ||
+          v.target instanceof HTMLTextAreaElement) return;
+      v.stopImmediatePropagation();
+      if (v.type === "keyup" && v.key === "k") {
+        if (pressCount >= 1) {
+          removeEventListener("keypress", callee, true);
+          removeEventListener("keydown", callee, true);
+          removeEventListener("keyup", callee, true);
+          alert("Enabled page's keyboard shortcuts");
+        } else {
+          ++pressCount;
+          setTimeout(function() { pressCount = 0; }, 180);
+        }
+      }
+      return false;
+    };
+  })();
+  addEventListener("keypress", keyJack, true);
+  addEventListener("keydown", keyJack, true);
+  addEventListener("keyup", keyJack, true);
+})();
