@@ -909,7 +909,7 @@ init.CSS = '\
     margin: 0 auto;\
     padding: 1ex;\
     line-height: 1.6;\
-    font-family: "Lucida Console", monospace;\
+    font-family: monospace;\
     font-size: 14px;\
   }\
   textarea {\
