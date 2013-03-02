@@ -2147,7 +2147,7 @@ content.rendTL.tweet = function(tweet, my) {
 
   var dmhref = U.ROOT + U.getURL().path +
                U.Q + "count=1&max_id=" + tweet.id_str;
-  var tweethref = "http://mobile.twitter.com/" + tweet.user.screen_name +
+  var tweethref = "http://twitter.com/" + tweet.user.screen_name +
                   "/status/" + tweet.id_str;
   ent.date.href = isDM ? dmhref : tweethref;
 
