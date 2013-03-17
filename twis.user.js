@@ -2343,18 +2343,21 @@ content.showLists = function(url, my) {
 content.showSearchTL = function(q, opt, my) {
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    var tl = data.results;
-    tl.forEach(function(t) {
-      t.in_reply_to_screen_name = t.to_user;
-      t.in_reply_to_user_id_str = t.to_user_id_str;
-      t.source = T.decodeHTML(t.source);
-      t.user = {
-        screen_name: t.from_user,
-        name: t.from_user_name,
-        id_str: t.from_user_id_str,
-        profile_image_url: t.profile_image_url
-      };
-    });
+    var tl = data.statuses;
+    if (!tl) {
+      tl = data.results;
+      tl.forEach(function(t) {
+        t.in_reply_to_screen_name = t.to_user;
+        t.in_reply_to_user_id_str = t.to_user_id_str;
+        t.source = T.decodeHTML(t.source);
+        t.user = {
+          screen_name: t.from_user,
+          name: t.from_user_name,
+          id_str: t.from_user_id_str,
+          profile_image_url: t.profile_image_url
+        };
+      });
+    }
     content.rendTL(tl, my);
     A.expandUrls(D.id("timeline"));
   };
