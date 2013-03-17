@@ -27,7 +27,7 @@ oauth.enc = function enc(s) {
       "'": "%27",
       "(": "%28",
       ")": "%29",
-      "*": "%42"
+      "*": "%2A"
     };
     return e[c] || encodeURIComponent(c);
   });
@@ -282,7 +282,7 @@ D.tweetize.url = function(url, expanded_url) {
 };
 D.tweetize.hashtag = function(hash) {
   return D.ce("a").sa("href",
-    U.ROOT + "search/" + encodeURIComponent(hash)
+    U.ROOT + "search/" + oauth.enc(hash)
   ).add(D.ct(hash));
 };
 D.tweetize.mention = function(username) {
@@ -446,7 +446,7 @@ X.getOAuthHeader = function(method, url, q) {
     pts.forEach(function(s) {
       var pts = s.split("=");
       var name = pts[0];
-      var value = pts[1];
+      var value = decodeURIComponent(pts[1]);
       _q[name] = value;
     });
     q = _q;
@@ -520,6 +520,13 @@ X.post = function post(url, q, f, b, c) {
       if (this.status === 200) f(this);
       else (b || function(x) { alert(x.responseText); })(this);
     };
+    if (typeof q === "object") {
+      var query = [];
+      for (var i in q) {
+        query.push(i + "=" + oauth.enc(q[i]));
+      }
+      q = query.join("&");
+    }
     xhr.send(q);
   })()//;
   : b && b(false);
@@ -549,7 +556,7 @@ X.sendAuth = function sendAuth(method, url, hd, q, f, b) {
   });
   var query = [];
   for (var i in q) {
-    query.push(i + "=" + encodeURIComponent(q[i]));
+    query.push(i + "=" + oauth.enc(q[i]));
   }
   xhr.send(query.join("&"));
 };
@@ -915,14 +922,14 @@ API.updateProfileColors = function(background_color, text_color, link_color,
 
 API.resolveURL = function(links, callback, onErr) {
   X.get(API(0).urls.urls.resolve() + "?" + [""].concat(links.map(function(url) {
-          return encodeURIComponent(url);
+          return oauth.enc(url);
         })).join("&urls[]=").substring(1), callback, onErr);
 };
 
 API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
                 source, callback, onErr) {
-  X.post(API(1.1).urls.tweet.post(),
-         "status=" + (encodeURIComponent(status) || "") +
+  X.post(API().urls.tweet.post(),
+         "status=" + (oauth.enc(status) || "") +
          "&in_reply_to_status_id=" + (id || "") +
          "&lat=" + (lat || "") +
          "&long=" + (lon || "") +
@@ -1871,7 +1878,7 @@ content.testAPI = function(my) {
     },
     post: {
       url: D.ce("input").sa("size", "60").
-        sa("value", "/1.1/blocks/create.json"),
+        sa("value", "/1.1/blocks/destroy.json?screen_name=("),
       send: D.ce("button").add(D.ct("POST"))
     },
     postauth: {
@@ -3671,7 +3678,7 @@ if (location.host === "upload.twitter.com") {
         data.reset_time = new Date(data.reset_time).toString();
         if (data.remaining_hits > 0) {
           location.href = "https://twitter.com/login?redirect_after_login=" +
-                          encodeURIComponent(location.href);
+                          oauth.enc(location.href);
         } else alert(O.stringify(data));
       });
     }
