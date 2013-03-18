@@ -886,7 +886,7 @@ API = function(ver) {
         }),
         ids: API.mkurl(ver, {
           1: function() { return "/1/blocks/blocking_ids"; },
-          1.1: function() { return "/1.1/blocks/blocking_ids"; }
+          1.1: function() { return "/1.1/blocks/ids"; }
         }),
         add: API.mkurl(ver, {
           1: function() { return "/1/blocks/create"; },
