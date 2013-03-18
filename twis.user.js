@@ -6,14 +6,55 @@
 
 // UserJS Debug Functions
 var props = function(arg) {
-  if (arg === null || arg === void 0) return arg;
+  if (arg === null || arg === undefined) return arg;
   var proplist = [];
   for (var i in arg) proplist.push(i + " : " + arg[i]);
   proplist.sort().unshift(arg);
   return proplist.join("\n");
 };
-var U, C, D, O, T, P, A, X, API, init, content, panel, outline;
+var U, C, D, O, T, P, A, X, API, LS, init, content, panel, outline;
 document.domain = "twitter.com";
+
+// Local Storage
+LS = {};
+LS.save = function(name, value) {
+  var text = localStorage.twis;
+  var data;
+  try {
+    data = JSON.parse(text);
+  } catch(e) {
+    throw Error("localStorage.twis is broken");
+    return false;
+  }
+  data[name] = value;
+  return localStorage.twis = JSON.stringify(data);
+};
+LS.clear = function(name) {
+  var text = localStorage.twis;
+  var data;
+  try {
+    data = JSON.parse(text);
+  } catch(e) {
+    throw Error("localStorage.twis is broken");
+    return false;
+  }
+  delete data[name];
+  return localStorage.twis = JSON.stringify(data);
+};
+LS.load = function() {
+  var text = localStorage.twis;
+  var data;
+  try {
+    data = JSON.parse(text);
+    return data;
+  } catch(e) {
+    throw Error("localStorage.twis is broken");
+    return false;
+  }
+};
+LS.reset = function() {
+  delete localStorage.twis;
+};
 
 // Cipher objects
 P = {};
@@ -110,7 +151,7 @@ P.sha1.enc = function sha1enc(key) {
       s >>> BYTE * 0 & 0xff
     );
   }).join(""));
-  output.hexstr = hh.map(function(s) {
+  output.text = hh.map(function(s) {
     return ("00000000" + (s >>> 0).toString(16)).slice(-8);
   }).join("");
   return output;
@@ -263,6 +304,8 @@ U = {
 
 // CONST VALUE
 C = {};
+C.CONSUMER_KEY = "e5uRPFBMQJcwfbEcPnwiw";
+C.CONSUMER_SECRET = LS.load()["consumer_secret"];
 C.TWRE = {
   httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
   url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
@@ -582,29 +625,37 @@ A.expandUrls = function expandUrls(parent) {
 X = {};
 
 // make OAuth access token
-X.getOAuthHeader = function(method, url, q) {
-  var appdata, consumer_secret, access_token, access_token_secret;
-  try {
-    appdata = JSON.parse(localStorage.twis);
-    consumer_secret = appdata.consumer_secret;
-    access_token = appdata.access_token;
-    access_token_secret = appdata.access_token_secret;
-  } catch(e) {
-    consumer_secret = "";
-    access_token = "";
-    access_token_secret = "";
-  }
+X.getOAuthHeader = function(method, url, q, authPhase) {
+  var appdata = LS.load();
+  var consumer_secret = C.CONSUMER_SECRET;
+  var oauth_token;
+  var oauth_token_secret;
   var reqdata = {
-    "oauth_consumer_key": "e5uRPFBMQJcwfbEcPnwiw",
+    "oauth_consumer_key": C.CONSUMER_KEY,
     "oauth_nonce": (function(s) {
       while (s.length < 32) s += (Math.random()*36|0).toString(36);
       return s;
     }("")),
     "oauth_signature_method": "HMAC-SHA1",
     "oauth_timestamp": (new Date/1000).toFixed(0),
-    "oauth_version": "1.0",
-    "oauth_token": access_token
+    "oauth_version": "1.0"
   };
+  switch (authPhase) {
+  case "get_request_token":
+    oauth_token_secret = "";
+    reqdata["oauth_callback"] = U.ROOT + "login";
+    break;
+  case "get_access_token":
+    oauth_token = appdata.request_token;
+    oauth_token_secret = appdata.request_token_secret;
+    reqdata["oauth_token"] = oauth_token;
+    break;
+  default:
+    oauth_token = appdata.access_token;
+    oauth_token_secret = appdata.access_token_secret;
+    reqdata["oauth_token"] = oauth_token;
+    break;
+  }
   if (!q) q = {};
   else if (typeof q === "string") {
     var _q = {};
@@ -620,7 +671,7 @@ X.getOAuthHeader = function(method, url, q) {
   url = D.ce("a").sa("href", url).href;
   reqdata["oauth_signature"] =
     P.oauth.genSig(
-      method, url, reqdata, q, consumer_secret, access_token_secret);
+      method, url, reqdata, q, consumer_secret, oauth_token_secret);
   var heads = [];
   for (var i in reqdata) {
     heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(reqdata[i]) + "\"");
@@ -799,9 +850,20 @@ X.getAuthToken = (function() {
 // Twitter API Functions
 
 API = function(ver) {
-  if (ver === void 0) ver = API.V;
+  if (ver === undefined) ver = API.V;
   return {
     urls: {
+      oauth: {
+        request: API.mkurl(ver, {
+          1.1: function() { return "/oauth/request_token"; }
+        }, ""),
+        authorize: API.mkurl(ver, {
+          1.1: function() { return "/oauth/authorize"; }
+        }, ""),
+        access: API.mkurl(ver, {
+          1.1: function() { return "/oauth/access_token"; }
+        }, "")
+      },
       urls: {
         resolve: API.mkurl(ver, {
           0: function() { return "/i/resolve"; },
@@ -1039,14 +1101,13 @@ API = function(ver) {
     }
   };
 };
-API.mkurl = function(ver, urlgetters) {
+API.mkurl = function(ver, urlgetters, ext) {
   return function() {
     var getURL = urlgetters[ver];
-    var args = [].slice.call(arguments)
-    var ext;
+    var args = [].slice.call(arguments);
     if (arguments.length > getURL.length) {
       ext = args[getURL.length];
-    } else {
+    } else if (ext === undefined) {
       ext = ".json";
     }
     return getURL.apply(null, args) + ext;
@@ -1589,6 +1650,9 @@ content.showPage = function(my) {
 };
 content.showPage.on1 = function(hash, q, my) {
   switch (hash[0]) {
+  case "login":
+    this.showLoginUI(q);
+    break;
   case "settings":
     this.showSettings(my);
     break;
@@ -1786,6 +1850,106 @@ content.showSettings = function(my) {
     D.ce("li").add(nd.aco),
     D.ce("li").add(nd.api),
     D.ce("li").add(nd.fw)
+  );
+};
+
+// Login UI
+content.showLoginUI = function(qs) {
+  var fun1btn = function() {
+    var q = "";
+    var method = "POST";
+    var url = API().urls.oauth.request();
+    var xhr = new XMLHttpRequest;
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    var auth = X.getOAuthHeader(method, url, q, "get_request_token");
+    xhr.setRequestHeader("Authorization", auth);
+    xhr.onload = fun1;
+    xhr.send(q);
+  };
+  var fun1 = function() {
+    if (this.status === 200) {
+      var tokens = this.responseText.split("&");
+      var queries = {};
+      tokens.forEach(function(str) {
+        var pts = str.split("=");
+        queries[pts[0]] = decodeURIComponent(pts[1]);
+      });
+      LS.save("request_token", queries["oauth_token"]);
+      LS.save("request_token_secret", queries["oauth_token_secret"]);
+      var url = API().urls.oauth.authorize();
+      var access_token = queries["oauth_token"];
+      location.href = url + "?oauth_token=" + access_token;
+    } else {
+      alert(this.responseText);
+    }
+  };
+  var fun2btn = function() {
+    var tokens = qs.split("&");
+    var queries = {};
+    tokens.forEach(function(str) {
+      var pts = str.split("=");
+      queries[pts[0]] = decodeURIComponent(pts[1]);
+    });
+    var verifier = queries["oauth_verifier"];
+    var q = "oauth_verifier=" + verifier;
+    var method = "POST";
+    var url = API().urls.oauth.access();
+    var xhr = new XMLHttpRequest;
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    var auth = X.getOAuthHeader(method, url, q, "get_access_token");
+    xhr.setRequestHeader("Authorization", auth);
+    xhr.onload = fun2;
+    xhr.send(q);
+  };
+  var fun2 = function() {
+    if (this.status === 200) {
+      var tokens = this.responseText.split("&");
+      var queries = {};
+      tokens.forEach(function(str) {
+        var pts = str.split("=");
+        queries[pts[0]] = decodeURIComponent(pts[1]);
+      });
+      LS.save("access_token", queries["oauth_token"]);
+      LS.save("access_token_secret", queries["oauth_token_secret"]);
+      LS.save("user_id", queries["user_id"]);
+      LS.save("screen_name", queries["screen_name"]);
+      LS.clear("request_token");
+      LS.clear("request_token_secret");
+      D.id("main").add(O.htmlify(queries));
+    } else {
+      alert(this.responseText);
+    }
+  };
+  if (qs) {
+    fun2btn();
+    return;
+  }
+  var nd = {
+    login: D.ce("button").add(D.ct("Login")),
+    csbox: D.ce("input"),
+    cssubmit: D.ce("button").add(D.ct("Save")),
+    csstat: D.ce("code").add(D.ct(LS.load()["consumer_secret"]))
+  };
+  var saveCS = function() {
+    var csinput = nd.csbox.value;
+    LS.save("consumer_secret", csinput);
+    nd.csstat.textContent = csinput;
+  };
+  nd.login.addEventListener("click", fun1btn);
+  nd.cssubmit.addEventListener("click", saveCS);
+  D.id("main").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("Authorize")),
+      D.ce("dd").add(nd.login),
+      D.ce("dt").add(D.ct("Consumer secret key")),
+      D.ce("dd").add(nd.csstat),
+      D.ce("dd").add(
+        nd.csbox,
+        nd.cssubmit
+      )
+    )
   );
 };
 
@@ -2071,9 +2235,8 @@ content.testAPI = function(my) {
     var reqmethod = "POST";
     var requrl = "https://api.twitter.com/oauth/request_token";
     var reqdata = {
-      "oauth_callback":
-        "https://api.twitter.com/1/help/test.xml?-=/settings/api",
-      "oauth_consumer_key": "e5uRPFBMQJcwfbEcPnwiw",
+      "oauth_callback": location.href,
+      "oauth_consumer_key": C.CONSUMER_KEY,
       "oauth_nonce": (function(s) {
         while (s.length < 32) s += (Math.random()*16|0).toString(16);
         return s;
@@ -2094,7 +2257,7 @@ content.testAPI = function(my) {
     var reqmethod = "POST";
     var requrl = "https://api.twitter.com/oauth/access_token";
     var reqdata = {
-      "oauth_consumer_key": "e5uRPFBMQJcwfbEcPnwiw",
+      "oauth_consumer_key": C.CONSUMER_KEY,
       "oauth_nonce": (function(s) {
         while (s.length < 32) s += (Math.random()*16|0).toString(16);
         return s;
@@ -2119,7 +2282,7 @@ content.testAPI = function(my) {
     var requrl =
       "https://api.twitter.com/1.1/statuses/user_timeline.json?&x=1";
     var reqdata = {
-      "oauth_consumer_key": "e5uRPFBMQJcwfbEcPnwiw",
+      "oauth_consumer_key": C.CONSUMER_KEY,
       "oauth_nonce": (function(s) {
         while (s.length < 32) s += (Math.random()*16|0).toString(16);
         return s;
@@ -3626,7 +3789,7 @@ outline.showListOutline = function(hash, my, mode) {
   X.get(url, function(xhr) {
     var list = JSON.parse(xhr.responseText);
 
-    if (mode === void 0) mode = 7;
+    if (mode === undefined) mode = 7;
     if (list.mode === "private") mode &= ~4;
 
     mode & 1 && that.changeDesign(list.user);
@@ -3679,7 +3842,7 @@ outline.showListProfile = function(list) {
 outline.showProfileOutline = function(screen_name, my, mode) {
   var that = this;
 
-  if (mode === void 0) mode = 15;
+  if (mode === undefined) mode = 15;
 
   function onGet(xhr) {
     var user = JSON.parse(xhr.responseText);
