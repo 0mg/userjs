@@ -12,14 +12,16 @@ var props = function(arg) {
   proplist.sort().unshift(arg);
   return proplist.join("\n");
 };
-var U, C, D, O, T, A, X, API, init, content, panel, outline, oauth;
-var hmac, sha1;
+var U, C, D, O, T, P, A, X, API, init, content, panel, outline;
 document.domain = "twitter.com";
 
+// Cipher objects
+P = {};
+
 // HMAC SHA-1
-hmac = {};
-sha1 = {};
-sha1.bits = function bits(str) {
+P.hmac = {};
+P.sha1 = {};
+P.bits = function bits(str) {
   // convert key to bit array
   var BYTE = 8;
   var data = [];
@@ -30,7 +32,7 @@ sha1.bits = function bits(str) {
   });
   return data;
 };
-hmac.enc = function(hf) {
+P.hmac.enc = function(hf) {
   var BLOCK_SIZE = 512;
   var IPAD = 0x36;
   var OPAD = 0x5C;
@@ -44,9 +46,9 @@ hmac.enc = function(hf) {
   }
   return function(key, text) {
     var BLOCK_SIZE = 512;
-    var keybits = sha1.bits(key);
+    var keybits = P.bits(key);
     if (keybits.length > BLOCK_SIZE) {
-      keybits = sha1.bits(hf(key));
+      keybits = P.bits(hf(key));
     }
     if (keybits.length < BLOCK_SIZE) {
       var padSize = BLOCK_SIZE - keybits.length;
@@ -54,23 +56,23 @@ hmac.enc = function(hf) {
         keybits.push(0);
       }
     }
-    var textbits = sha1.bits(text);
+    var textbits = P.bits(text);
     var ikpad = pad(IPAD)(keybits);
     var okpad = pad(OPAD)(keybits);
     var a = ikpad.concat(textbits);
-    var b = sha1.bits(hf(a));
+    var b = P.bits(hf(a));
     var c = okpad.concat(b);
     var d = hf(c);
     return d;
   };
 };
-sha1.enc = function sha1enc(key) {
+P.sha1.enc = function sha1enc(key) {
   var BYTE = 8;
   var ONE_PAD = [1, 0, 0, 0];
   var BLOCK_SIZE = 512;
   var LENGTH_PAD_SIZE = 64;
   // convert key to bit string
-  var data = Array.isArray(key) ? key.slice(): sha1.bits(key);
+  var data = Array.isArray(key) ? key.slice(): P.bits(key);
   var keyLen = data.length;
   // add "1" (4 bits)
   [].push.apply(data, ONE_PAD);
@@ -98,7 +100,7 @@ sha1.enc = function sha1enc(key) {
   for (var i = 0; i < blockLen; ++i) {
     var blockIndex = i * BLOCK_SIZE;
     var block = data.slice(blockIndex, blockIndex + BLOCK_SIZE);
-    sha1.calc(block, hh);
+    P.sha1.enc.calc(block, hh);
   }
   var output = new String(hh.map(function(s) {
     return String.fromCharCode(
@@ -113,7 +115,7 @@ sha1.enc = function sha1enc(key) {
   }).join("");
   return output;
 };
-sha1.calc = function sha1calc(block, hh) {
+P.sha1.enc.calc = function sha1calc(block, hh) {
   function getF(t) {
     return (0 <= t && t <= 19) ?
       function f00_19(b, c, d) {
@@ -179,12 +181,12 @@ sha1.calc = function sha1calc(block, hh) {
 };
 
 // OAuth
-oauth = {};
-oauth.sha = function(sha_text, sha_key) {
+P.oauth = {};
+P.oauth.sha = function(sha_text, sha_key) {
   //return new jsSHA(sha_text,"TEXT").getHMAC(sha_key,"TEXT","SHA-1","B64");
-  return btoa(hmac.enc(sha1.enc)(sha_key, sha_text));
+  return btoa(P.hmac.enc(P.sha1.enc)(sha_key, sha_text));
 };
-oauth.enc = function enc(s) {
+P.oauth.enc = function enc(s) {
   return String(s).replace(/[\S\s]/g, function(c) {
     var e = {
       "!": "%21",
@@ -196,8 +198,8 @@ oauth.enc = function enc(s) {
     return e[c] || encodeURIComponent(c);
   });
 };
-oauth.genSig = (function() {
-  var enc = oauth.enc;
+P.oauth.genSig = (function() {
+  var enc = P.oauth.enc;
   function genShaKey(secret1, secret2) {
     return enc(secret1) + "&" + enc(secret2);
   }
@@ -231,10 +233,10 @@ oauth.genSig = (function() {
       }).join("&"));
     return text;
   }
-  function genSig(reqmethod, requrl, reqdata, q, secret1, secret2) {
+  function genSig(method, url, data, q, secret1, secret2) {
     var sha_key = genShaKey(secret1, secret2);
-    var sha_text = genShaText(reqmethod, requrl, reqdata, q);
-    var sig = oauth.sha(sha_text, sha_key);
+    var sha_text = genShaText(method, url, data, q);
+    var sig = P.oauth.sha(sha_text, sha_key);
     return sig;
   }
   return genSig;
@@ -446,7 +448,7 @@ D.tweetize.url = function(url, expanded_url) {
 };
 D.tweetize.hashtag = function(hash) {
   return D.ce("a").sa("href",
-    U.ROOT + "search/" + oauth.enc(hash)
+    U.ROOT + "search/" + P.oauth.enc(hash)
   ).add(D.ct(hash));
 };
 D.tweetize.mention = function(username) {
@@ -617,11 +619,11 @@ X.getOAuthHeader = function(method, url, q) {
   }
   url = D.ce("a").sa("href", url).href;
   reqdata["oauth_signature"] =
-    window.oauth.genSig(
+    P.oauth.genSig(
       method, url, reqdata, q, consumer_secret, access_token_secret);
   var heads = [];
   for (var i in reqdata) {
-    heads.push(oauth.enc(i) + "=\"" + oauth.enc(reqdata[i]) + "\"");
+    heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(reqdata[i]) + "\"");
   }
   var header = "OAuth " + heads.join(",");
   return header;
@@ -687,7 +689,7 @@ X.post = function post(url, q, f, b, c) {
     if (typeof q === "object") {
       var query = [];
       for (var i in q) {
-        query.push(i + "=" + oauth.enc(q[i]));
+        query.push(i + "=" + P.oauth.enc(q[i]));
       }
       q = query.join("&");
     }
@@ -704,7 +706,7 @@ X.sendAuth = function sendAuth(method, url, hd, q, f, b) {
                        "application/x-www-form-urlencoded");
   var heads = [];
   for (var i in hd) {
-    heads.push(oauth.enc(i) + "=\"" + oauth.enc(hd[i]) + "\"");
+    heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(hd[i]) + "\"");
   }
   var auth = "OAuth " + heads.join(",");
   xhr.setRequestHeader("Authorization", auth);
@@ -720,7 +722,7 @@ X.sendAuth = function sendAuth(method, url, hd, q, f, b) {
   });
   var query = [];
   for (var i in q) {
-    query.push(i + "=" + oauth.enc(q[i]));
+    query.push(i + "=" + P.oauth.enc(q[i]));
   }
   xhr.send(query.join("&"));
 };
@@ -1086,14 +1088,14 @@ API.updateProfileColors = function(background_color, text_color, link_color,
 
 API.resolveURL = function(links, callback, onErr) {
   X.get(API(0).urls.urls.resolve() + "?" + [""].concat(links.map(function(url) {
-          return oauth.enc(url);
+          return P.oauth.enc(url);
         })).join("&urls[]=").substring(1), callback, onErr);
 };
 
 API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
                 source, callback, onErr) {
   X.post(API().urls.tweet.post(),
-         "status=" + (oauth.enc(status) || "") +
+         "status=" + (P.oauth.enc(status) || "") +
          "&in_reply_to_status_id=" + (id || "") +
          "&lat=" + (lat || "") +
          "&long=" + (lon || "") +
@@ -2063,7 +2065,8 @@ content.testAPI = function(my) {
     };
   }
   senddata[0] = (function() {
-    var consecret = "";
+    var savedata = JSON.parse(localStorage.twis);
+    var consecret = savedata.consumer_secret;
     var oauth_token_secret = "";
     var reqmethod = "POST";
     var requrl = "https://api.twitter.com/oauth/request_token";
@@ -2081,7 +2084,7 @@ content.testAPI = function(my) {
     };
     var q = {};
     reqdata["oauth_signature"] =
-      window.oauth.genSig(
+      P.oauth.genSig(
         reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
     return newSendData(reqmethod, requrl, reqdata, q);
   })();
@@ -2105,7 +2108,7 @@ content.testAPI = function(my) {
       "oauth_verifier": ""
     };
     reqdata["oauth_signature"] =
-      window.oauth.genSig(
+      P.oauth.genSig(
         reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
     return newSendData(reqmethod, requrl, reqdata, q);
   })();
@@ -2129,11 +2132,11 @@ content.testAPI = function(my) {
     var q = {
     };
     reqdata["oauth_signature"] =
-      window.oauth.genSig(
+      P.oauth.genSig(
         reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
     return newSendData(reqmethod, requrl, reqdata, q);
   })();
-  var currentData = senddata[2];
+  var currentData = senddata[0];
   nd.postauth.url.value = currentData.url;
   nd.req_header.value = function(reqdata) {
     var s = [];
@@ -3845,7 +3848,7 @@ if (location.host === "upload.twitter.com") {
         data.reset_time = new Date(data.reset_time).toString();
         if (data.remaining_hits > 0) {
           location.href = "https://twitter.com/login?redirect_after_login=" +
-                          oauth.enc(location.href);
+                          P.oauth.enc(location.href);
         } else alert(O.stringify(data));
       });
     }
