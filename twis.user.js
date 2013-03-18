@@ -53,7 +53,18 @@ LS.load = function() {
   }
 };
 LS.reset = function() {
-  delete localStorage.twis;
+  localStorage.twis = "{}";
+};
+LS.check = function() {
+  if ("twis" in localStorage) {
+    try {
+      JSON.parse(localStorage.twis);
+    } catch(e) {
+      LS.reset();
+    }
+  } else {
+    LS.reset();
+  }
 };
 
 // Cipher objects
@@ -305,7 +316,6 @@ U = {
 // CONST VALUE
 C = {};
 C.CONSUMER_KEY = "e5uRPFBMQJcwfbEcPnwiw";
-C.CONSUMER_SECRET = LS.load()["consumer_secret"];
 C.TWRE = {
   httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
   url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
@@ -627,7 +637,7 @@ X = {};
 // make OAuth access token
 X.getOAuthHeader = function(method, url, q, authPhase) {
   var appdata = LS.load();
-  var consumer_secret = C.CONSUMER_SECRET;
+  var consumer_secret = appdata["consumer_secret"];
   var oauth_token;
   var oauth_token_secret;
   var reqdata = {
@@ -3994,9 +4004,12 @@ if (location.host === "upload.twitter.com") {
     }
   }, false);
 } else {
+  LS.check();
   init.initNode();
   init.structPage();
-  content.showPage({});
+  content.showPage({
+    "screen_name": LS.load()["screen_name"]
+  });
   // Check if my Logged-in
   1||X.get("/1/account/verify_credentials.json",
     function(xhr) {
