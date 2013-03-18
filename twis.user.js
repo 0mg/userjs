@@ -13,12 +13,176 @@ var props = function(arg) {
   return proplist.join("\n");
 };
 var U, C, D, O, T, A, X, API, init, content, panel, outline, oauth;
+var hmac, sha1;
 document.domain = "twitter.com";
+
+// HMAC SHA-1
+hmac = {};
+sha1 = {};
+sha1.bits = function bits(str) {
+  // convert key to bit array
+  var BYTE = 8;
+  var data = [];
+  str.split("").forEach(function(c) {
+    var code = c.charCodeAt(0);
+    var bits = (Array(BYTE).join("0") + code.toString(2)).slice(-BYTE);
+    [].push.apply(data, bits.split(""));
+  });
+  return data;
+};
+hmac.enc = function(hf) {
+  var BLOCK_SIZE = 512;
+  var IPAD = 0x36;
+  var OPAD = 0x5C;
+  function pad(p) {
+    var base = ("00000000" + p.toString(2)).slice(-8);
+    return function(data) {
+      return data.map(function(c, i) {
+        return c ^ base[i % 8];
+      });
+    };
+  }
+  return function(key, text) {
+    var BLOCK_SIZE = 512;
+    var keybits = sha1.bits(key);
+    if (keybits.length > BLOCK_SIZE) {
+      keybits = sha1.bits(hf(key));
+    }
+    if (keybits.length < BLOCK_SIZE) {
+      var padSize = BLOCK_SIZE - keybits.length;
+      for (var i = 0; i < padSize; ++i) {
+        keybits.push(0);
+      }
+    }
+    var textbits = sha1.bits(text);
+    var ikpad = pad(IPAD)(keybits);
+    var okpad = pad(OPAD)(keybits);
+    var a = ikpad.concat(textbits);
+    var b = sha1.bits(hf(a));
+    var c = okpad.concat(b);
+    var d = hf(c);
+    return d;
+  };
+};
+sha1.enc = function sha1enc(key) {
+  var BYTE = 8;
+  var ONE_PAD = [1, 0, 0, 0];
+  var BLOCK_SIZE = 512;
+  var LENGTH_PAD_SIZE = 64;
+  // convert key to bit string
+  var data = Array.isArray(key) ? key.slice(): sha1.bits(key);
+  var keyLen = data.length;
+  // add "1" (4 bits)
+  [].push.apply(data, ONE_PAD);
+  // add padding "0" (? bits)
+  var overflowSize = (data.length + LENGTH_PAD_SIZE) % BLOCK_SIZE;
+  var padSize = BLOCK_SIZE - overflowSize;
+  for (var i = 0; i < padSize; ++i) {
+    data.push(0);
+  }
+  // add padding "length" (64 bits)
+  var zeroes = Array(LENGTH_PAD_SIZE).join("0");
+  var lengthPad = (zeroes + keyLen.toString(2)).slice(-LENGTH_PAD_SIZE);
+  for (var i = 0; i < LENGTH_PAD_SIZE; ++i) {
+    data.push(lengthPad[i] | 0);
+  }
+  // calc SHA1
+  var hh = [
+    0x67452301,
+    0xEFCDAB89,
+    0x98BADCFE,
+    0x10325476,
+    0xC3D2E1F0
+  ];
+  var blockLen = data.length / BLOCK_SIZE;
+  for (var i = 0; i < blockLen; ++i) {
+    var blockIndex = i * BLOCK_SIZE;
+    var block = data.slice(blockIndex, blockIndex + BLOCK_SIZE);
+    sha1.calc(block, hh);
+  }
+  var output = new String(hh.map(function(s) {
+    return String.fromCharCode(
+      s >>> BYTE * 3 & 0xff,
+      s >>> BYTE * 2 & 0xff,
+      s >>> BYTE * 1 & 0xff,
+      s >>> BYTE * 0 & 0xff
+    );
+  }).join(""));
+  output.hexstr = hh.map(function(s) {
+    return ("00000000" + (s >>> 0).toString(16)).slice(-8);
+  }).join("");
+  return output;
+};
+sha1.calc = function sha1calc(block, hh) {
+  function getF(t) {
+    return (0 <= t && t <= 19) ?
+      function f00_19(b, c, d) {
+        return (b & c) | ((~b) & d);
+      }:
+    (20 <= t && t <= 39) ?
+      function f20_39(b, c, d) {
+        return b ^ c ^ d;
+      }:
+    (40 <= t && t <= 59) ?
+      function f40_59(b, c, d) {
+        return (b & c) | (b & d) | (c & d);
+      }:
+    (60 <= t && t <= 79) ?
+      function f60_79(b, c, d) {
+        return b ^ c ^ d;
+      }:
+    undefined;
+  }
+  function getK(t) {
+    return ( 0 <= t && t <= 19) ? 0x5A827999:
+           (20 <= t && t <= 39) ? 0x6ED9EBA1:
+           (40 <= t && t <= 59) ? 0x8F1BBCDC:
+           (60 <= t && t <= 79) ? 0xCA62C1D6:
+                                  undefined;
+  }
+  function shift(n) {
+    return function(X) {
+      return (X << n) | (X >>> 32-n);
+    };
+  }
+  var SECTOR_SIZE = 32;
+  var W = Array(80);
+  for (var t = 0; t < 16; ++t) {
+    var start = t * SECTOR_SIZE;
+    var end = start + SECTOR_SIZE;
+    var sector = block.slice(start, end);
+    var sectorData = parseInt(sector.join(""), 2);
+    W[t] = sectorData;
+  }
+  for (var t = 16; t < W.length; ++t) {
+    W[t] = shift(1)(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
+  }
+  var a = hh[0];
+  var b = hh[1];
+  var c = hh[2];
+  var d = hh[3];
+  var e = hh[4];
+  var temp;
+  for (var t = 0; t < 80; ++t) {
+    temp = shift(5)(a) + getF(t)(b, c, d) + e + W[t] + getK(t);
+    e = d;
+    d = c;
+    c = shift(30)(b);
+    b = a;
+    a = temp;
+  }
+  hh[0] += a;
+  hh[1] += b;
+  hh[2] += c;
+  hh[3] += d;
+  hh[4] += e;
+};
 
 // OAuth
 oauth = {};
 oauth.sha = function(sha_text, sha_key) {
-  return new jsSHA(sha_text,"TEXT").getHMAC(sha_key,"TEXT","SHA-1","B64");
+  //return new jsSHA(sha_text,"TEXT").getHMAC(sha_key,"TEXT","SHA-1","B64");
+  return btoa(hmac.enc(sha1.enc)(sha_key, sha_text));
 };
 oauth.enc = function enc(s) {
   return String(s).replace(/[\S\s]/g, function(c) {
