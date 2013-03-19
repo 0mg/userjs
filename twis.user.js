@@ -540,6 +540,19 @@ O = {
 
 // Text Functions
 T = {};
+// a=1&b=%40 -> {a:"1",b:"@"}
+T.parseQuery = function(qtext) {
+  if (!qtext) return {};
+  var qobj = {};
+  var pts = qtext.split("&");
+  pts.forEach(function(q) {
+    var pts = q.split("=");
+    var name = pts[0];
+    var value = pts[1] || "";
+    qobj[name] = decodeURIComponent(value);
+  });
+  return qobj;
+};
 // eg. '2011/5/27 11:11' to '3 minutes ago'
 T.gapTime = function gapTime(p) {
   var g = Date.now() - p, gap = new Date(0, 0, 0, 0, 0, 0, g);
@@ -633,7 +646,7 @@ A.expandUrls = function expandUrls(parent) {
 X = {};
 
 // make OAuth access token
-X.getOAuthHeader = function(method, url, q, authPhase) {
+X.getOAuthHeader = function(method, url, q, oauthPhase) {
   var appdata = LS.load();
   var consumer_secret = appdata["consumer_secret"];
   var oauth_token;
@@ -648,7 +661,7 @@ X.getOAuthHeader = function(method, url, q, authPhase) {
     "oauth_timestamp": (new Date/1000).toFixed(0),
     "oauth_version": "1.0"
   };
-  switch (authPhase) {
+  switch (oauthPhase) {
   case "get_request_token":
     oauth_token_secret = "";
     reqdata["oauth_callback"] = U.ROOT + "login";
@@ -664,17 +677,8 @@ X.getOAuthHeader = function(method, url, q, authPhase) {
     reqdata["oauth_token"] = oauth_token;
     break;
   }
-  if (!q) q = {};
-  else if (typeof q === "string") {
-    var _q = {};
-    var pts = q.split("&");
-    pts.forEach(function(s) {
-      var pts = s.split("=");
-      var name = pts[0];
-      var value = decodeURIComponent(pts[1]);
-      _q[name] = value;
-    });
-    q = _q;
+  if (typeof q === "string") {
+    q = T.parseQuery(q);
   }
   url = D.ce("a").sa("href", url).href;
   reqdata["oauth_signature"] =
@@ -739,7 +743,7 @@ X.post = function post(url, q, f, b, c) {
     xhr.setRequestHeader("Content-Type",
                          "application/x-www-form-urlencoded");
     //xhr.setRequestHeader("X-PHX", "true");
-    var auth = X.getOAuthHeader(method, url, q);
+    var auth = X.getOAuthHeader(method, url, q, url.oauthPhase);
     xhr.setRequestHeader("Authorization", auth);
     xhr.onload = function() {
       if (this.status === 200) f(this);
@@ -863,13 +867,21 @@ API = function(ver) {
     urls: {
       oauth: {
         request: API.mkurl(ver, {
-          1.1: function() { return "/oauth/request_token"; }
+          1.1: function() {
+            var url = new String("/oauth/request_token");
+            url.oauthPhase = "get_request_token";
+            return url;
+          }
         }, ""),
         authorize: API.mkurl(ver, {
           1.1: function() { return "/oauth/authorize"; }
         }, ""),
         access: API.mkurl(ver, {
-          1.1: function() { return "/oauth/access_token"; }
+          1.1: function() {
+            var url = new String("/oauth/access_token");
+            url.oauthPhase = "get_access_token";
+            return url;
+          }
         }, "")
       },
       urls: {
@@ -1118,7 +1130,16 @@ API.mkurl = function(ver, urlgetters, ext) {
     } else if (ext === undefined) {
       ext = ".json";
     }
-    return getURL.apply(null, args) + ext;
+    var ret = getURL.apply(null, args);
+    var url = String(ret);
+    if (typeof ret === "object" && ret instanceof String) {
+      ret.toString = function() {
+        return url + ext;
+      };
+    } else {
+      ret = url + ext;
+    }
+    return ret;
   };
 };
 API.V = 1.1;
@@ -1863,93 +1884,64 @@ content.showSettings = function(my) {
 
 // Login UI
 content.showLoginUI = function(qs) {
-  var fun1btn = function() {
-    var q = "";
-    var method = "POST";
+  var getReqToken = function() {
     var url = API().urls.oauth.request();
-    var xhr = new XMLHttpRequest;
-    xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    var auth = X.getOAuthHeader(method, url, q, "get_request_token");
-    xhr.setRequestHeader("Authorization", auth);
-    xhr.onload = fun1;
-    xhr.send(q);
+    X.post(url, "", ongetReqToken);
   };
-  var fun1 = function() {
-    if (this.status === 200) {
-      var tokens = this.responseText.split("&");
-      var queries = {};
-      tokens.forEach(function(str) {
-        var pts = str.split("=");
-        queries[pts[0]] = decodeURIComponent(pts[1]);
-      });
-      LS.save("request_token", queries["oauth_token"]);
-      LS.save("request_token_secret", queries["oauth_token_secret"]);
-      var url = API().urls.oauth.authorize();
-      var access_token = queries["oauth_token"];
-      location.href = url + "?oauth_token=" + access_token;
-    } else {
-      alert(this.responseText);
-    }
+  var ongetReqToken = function(xhr) {
+    var tokens = T.parseQuery(xhr.responseText);
+    LS.save("request_token", tokens["oauth_token"]);
+    LS.save("request_token_secret", tokens["oauth_token_secret"]);
+    var url = API().urls.oauth.authorize();
+    var access_token = tokens["oauth_token"];
+    location.href = url + "?oauth_token=" + access_token;
   };
-  var fun2btn = function() {
-    var tokens = qs.split("&");
-    var queries = {};
-    tokens.forEach(function(str) {
-      var pts = str.split("=");
-      queries[pts[0]] = decodeURIComponent(pts[1]);
-    });
-    var verifier = queries["oauth_verifier"];
+  var getAcsToken = function() {
+    var tokens = T.parseQuery(qs);
+    var verifier = tokens["oauth_verifier"];
     var q = "oauth_verifier=" + verifier;
-    var method = "POST";
     var url = API().urls.oauth.access();
-    var xhr = new XMLHttpRequest;
-    xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    var auth = X.getOAuthHeader(method, url, q, "get_access_token");
-    xhr.setRequestHeader("Authorization", auth);
-    xhr.onload = fun2;
-    xhr.send(q);
+    X.post(url, q, ongetAcsToken);
   };
-  var fun2 = function() {
-    if (this.status === 200) {
-      var tokens = this.responseText.split("&");
-      var queries = {};
-      tokens.forEach(function(str) {
-        var pts = str.split("=");
-        queries[pts[0]] = decodeURIComponent(pts[1]);
-      });
-      LS.save("access_token", queries["oauth_token"]);
-      LS.save("access_token_secret", queries["oauth_token_secret"]);
-      LS.save("user_id", queries["user_id"]);
-      LS.save("screen_name", queries["screen_name"]);
-      LS.clear("request_token");
-      LS.clear("request_token_secret");
-      D.id("main").add(O.htmlify(queries));
-    } else {
-      alert(this.responseText);
-    }
+  var ongetAcsToken = function(xhr) {
+    var tokens = T.parseQuery(xhr.responseText);
+    LS.save("access_token", tokens["oauth_token"]);
+    LS.save("access_token_secret", tokens["oauth_token_secret"]);
+    LS.save("user_id", tokens["user_id"]);
+    LS.save("screen_name", tokens["screen_name"]);
+    LS.clear("request_token");
+    LS.clear("request_token_secret");
+    D.id("main").add(O.htmlify(tokens));
   };
-  if (qs) {
-    fun2btn();
-    return;
-  }
   var nd = {
-    login: D.ce("button").add(D.ct("Login")),
+    login: D.ce("button").add(D.ct("Get Request token")),
+    verify: D.ce("button").add(D.ct("Get Access token")),
     csbox: D.ce("input"),
     cssubmit: D.ce("button").add(D.ct("Save")),
     csstat: D.ce("code").add(D.ct(LS.load()["consumer_secret"]))
   };
   var saveCS = function() {
     var csinput = nd.csbox.value;
-    LS.save("consumer_secret", csinput);
-    nd.csstat.textContent = csinput;
+    if (confirm("sure?\nnew key = \"" + csinput + "\"")) {
+      LS.save("consumer_secret", csinput);
+      nd.csstat.textContent = csinput;
+    }
   };
-  nd.login.addEventListener("click", fun1btn);
+  nd.login.addEventListener("click", getReqToken);
+  nd.verify.addEventListener("click", getAcsToken);
   nd.cssubmit.addEventListener("click", saveCS);
-  D.id("main").add(
+  nd.csbox.addEventListener("keypress", function(e) {
+    if (e.keyCode === 13) saveCS();
+  });
+  if (qs) D.id("main").add(
     D.ce("dl").add(
-      D.ce("dt").add(D.ct("Authorize")),
+      D.ce("dt").add(D.ct("Login (STEP 2 of 2)")),
+      D.ce("dd").add(nd.verify)
+    )
+  );
+  else D.id("main").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("Login (STEP 1 of 2)")),
       D.ce("dd").add(nd.login),
       D.ce("dt").add(D.ct("Consumer secret key")),
       D.ce("dd").add(nd.csstat),
@@ -2183,7 +2175,7 @@ content.settingAccount = function(my) {
   unameBtn.addEventListener("click", function(e) {
     checkUname(uname.value);
   }, false);
-  uname.addEventListener("keyup", function(e) {
+  uname.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
@@ -2363,28 +2355,28 @@ content.testAPI = function(my) {
     X.sendAuth(method, url, hds, q, printData, printData);
   }, false);
 
-  nd.head.url.addEventListener("keyup", function(e) {
+  nd.head.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.head.send.dispatchEvent(ev);
     }
   }, false);
-  nd.get.url.addEventListener("keyup", function(e) {
+  nd.get.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.get.send.dispatchEvent(ev);
     }
   }, false);
-  nd.post.url.addEventListener("keyup", function(e) {
+  nd.post.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.post.send.dispatchEvent(ev);
     }
   }, false);
-  nd.postauth.url.addEventListener("keyup", function(e) {
+  nd.postauth.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
