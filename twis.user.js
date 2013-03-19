@@ -1893,7 +1893,8 @@ content.showSettings = function(my) {
 content.showLoginUI = function(qs) {
   var getReqToken = function() {
     var url = API().urls.oauth.request();
-    X.post(url, "", ongetReqToken);
+    X.post(url, "", ongetReqToken, onErr);
+    nd.errvw.textContent = "";
   };
   var ongetReqToken = function(xhr) {
     var tokens = T.parseQuery(xhr.responseText);
@@ -1908,7 +1909,8 @@ content.showLoginUI = function(qs) {
     var verifier = tokens["oauth_verifier"];
     var q = "oauth_verifier=" + verifier;
     var url = API().urls.oauth.access();
-    X.post(url, q, ongetAcsToken);
+    X.post(url, q, ongetAcsToken, onErr);
+    nd.errvw.textContent = "";
   };
   var ongetAcsToken = function(xhr) {
     var tokens = T.parseQuery(xhr.responseText);
@@ -1920,7 +1922,11 @@ content.showLoginUI = function(qs) {
     LS.clear("request_token_secret");
     D.id("main").add(O.htmlify(tokens));
   };
+  var onErr = function(xhr) {
+    nd.errvw.textContent = xhr.responseText;
+  };
   var nd = {
+    errvw: D.ce("dd"),
     login: D.ce("button").add(D.ct("Get Request token")),
     verify: D.ce("button").add(D.ct("Get Access token")),
     csbox: D.ce("input"),
@@ -1950,6 +1956,7 @@ content.showLoginUI = function(qs) {
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 1 of 2)")),
       D.ce("dd").add(nd.login),
+      nd.errvw,
       D.ce("dt").add(D.ct("Consumer secret key")),
       D.ce("dd").add(nd.csstat),
       D.ce("dd").add(
@@ -2557,6 +2564,11 @@ content.showUsersByIds = function(url, my, mode) {
     }
   }
   var onErr = function(xhr) {
+    if (xhr.status === 401) {
+      D.id("main").add(
+        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
+      );
+    }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGetIds, onErr);
@@ -2641,6 +2653,11 @@ content.showUsers = function(url, my, mode) {
     content.rendUsers(data, my, mode);
   }
   var onErr = function(xhr) {
+    if (xhr.status === 401) {
+      D.id("main").add(
+        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
+      );
+    }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGetUsers, onErr);
@@ -2681,6 +2698,11 @@ content.showLists = function(url, my) {
     that.misc.showCursor(data);
   };
   var onErr = function(xhr) {
+    if (xhr.status === 401) {
+      D.id("main").add(
+        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
+      );
+    }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGet, onErr);
@@ -2709,6 +2731,11 @@ content.showSearchTL = function(q, opt, my) {
     A.expandUrls(D.id("timeline"));
   };
   var onErr = function(xhr) {
+    if (xhr.status === 401) {
+      D.id("main").add(
+        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
+      );
+    }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   API.search(q, opt, onGet, onErr);
@@ -2731,6 +2758,11 @@ content.showTL = function(url, my, mode) {
       data = {"Empty": "No tweets found"};
     } else {
       data = JSON.parse(xhr.responseText);
+    }
+    if (xhr.status === 401) {
+      D.id("main").add(
+        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
+      );
     }
     D.id("main").add(O.htmlify(data));
   }
