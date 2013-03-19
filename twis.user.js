@@ -71,8 +71,6 @@ LS.check = function() {
 P = {};
 
 // HMAC SHA-1
-P.hmac = {};
-P.sha1 = {};
 P.bits = function bits(str) {
   // convert key to bit array
   var BYTE = 8;
@@ -84,8 +82,8 @@ P.bits = function bits(str) {
   });
   return data;
 };
-P.hmac.enc = function(hf) {
-  var BLOCK_SIZE = 512;
+P.hmac = function(hf) {
+  var BLOCK_SIZE = hf.BLOCK_SIZE;
   var IPAD = 0x36;
   var OPAD = 0x5C;
   function pad(p) {
@@ -97,7 +95,6 @@ P.hmac.enc = function(hf) {
     };
   }
   return function(key, text) {
-    var BLOCK_SIZE = 512;
     var keybits = P.bits(key);
     if (keybits.length > BLOCK_SIZE) {
       keybits = P.bits(hf(key));
@@ -118,10 +115,10 @@ P.hmac.enc = function(hf) {
     return d;
   };
 };
-P.sha1.enc = function sha1enc(key) {
+P.sha1 = function sha1enc(key) {
   var BYTE = 8;
   var ONE_PAD = [1, 0, 0, 0];
-  var BLOCK_SIZE = 512;
+  var BLOCK_SIZE = sha1enc.BLOCK_SIZE;
   var LENGTH_PAD_SIZE = 64;
   // convert key to bit string
   var data = Array.isArray(key) ? key.slice(): P.bits(key);
@@ -152,7 +149,7 @@ P.sha1.enc = function sha1enc(key) {
   for (var i = 0; i < blockLen; ++i) {
     var blockIndex = i * BLOCK_SIZE;
     var block = data.slice(blockIndex, blockIndex + BLOCK_SIZE);
-    P.sha1.enc.calc(block, hh);
+    sha1enc.calc(block, hh);
   }
   var output = new String(hh.map(function(s) {
     return String.fromCharCode(
@@ -167,7 +164,8 @@ P.sha1.enc = function sha1enc(key) {
   }).join("");
   return output;
 };
-P.sha1.enc.calc = function sha1calc(block, hh) {
+Object.defineProperty(P.sha1, "BLOCK_SIZE", { value: 512 });
+P.sha1.calc = function sha1calc(block, hh) {
   function getF(t) {
     return (0 <= t && t <= 19) ?
       function f00_19(b, c, d) {
@@ -236,7 +234,7 @@ P.sha1.enc.calc = function sha1calc(block, hh) {
 P.oauth = {};
 P.oauth.sha = function(sha_text, sha_key) {
   //return new jsSHA(sha_text,"TEXT").getHMAC(sha_key,"TEXT","SHA-1","B64");
-  return btoa(P.hmac.enc(P.sha1.enc)(sha_key, sha_text));
+  return btoa(P.hmac(P.sha1)(sha_key, sha_text));
 };
 P.oauth.enc = function enc(s) {
   return String(s).replace(/[\S\s]/g, function(c) {
