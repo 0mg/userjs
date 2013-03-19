@@ -1737,7 +1737,23 @@ content.showPage.on1 = function(hash, q, my) {
 };
 
 content.showPage.on2 = function(hash, q, my) {
-  if (hash[0] === "search") {
+  if (hash[0] === "settings") switch (hash[1]) {
+  case "options":
+    this.settingOptions();
+    break;
+  case "follow":
+    this.settingFollow(my);
+    break;
+  case "design":
+    this.customizeDesign(my);
+    break;
+  case "account":
+    this.settingAccount(my);
+    break;
+  case "api":
+    this.testAPI(my);
+    break;
+  } else if (hash[0] === "search") {
     this.showSearchTL(hash[1], q, my);
   } else switch (hash[1]) {
   case "requests":
@@ -1748,18 +1764,6 @@ content.showPage.on2 = function(hash, q, my) {
       this.showUsersByIds(API().urls.users.incoming() + "?" + q +
                           "&cursor=-1", my, 1);
     }
-    break;
-  case "follow":
-    if (hash[0] === "settings") this.settingFollow(my);
-    break;
-  case "design":
-    if (hash[0] === "settings") this.customizeDesign(my);
-    break;
-  case "account":
-    if (hash[0] === "settings") this.settingAccount(my);
-    break;
-  case "api":
-    if (hash[0] === "settings") this.testAPI(my);
     break;
   case "memberships":
     if (hash[0] === "lists") {
@@ -1876,16 +1880,18 @@ content.showPage.on3 = function(hash, q, my) {
 content.showSettings = function(my) {
   var root = U.ROOT + "settings/";
   var nd = {
-    dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
-    aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
     api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
-    fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow"))
+    aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
+    dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
+    fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow")),
+    opt: D.ce("a").sa("href", root + "options").add(D.ct("options"))
   };
   D.id("main").add(
-    D.ce("li").add(nd.dez),
-    D.ce("li").add(nd.aco),
     D.ce("li").add(nd.api),
-    D.ce("li").add(nd.fw)
+    D.ce("li").add(nd.aco),
+    D.ce("li").add(nd.dez),
+    D.ce("li").add(nd.fw),
+    D.ce("li").add(nd.opt)
   );
 };
 
@@ -2420,6 +2426,30 @@ content.testAPI = function(my) {
     nd.dst
   );
   nd.side.add(nd.header);
+};
+
+// Settings of this application
+content.settingOptions = function() {
+  var nd = {
+    rmLS: {
+      root: D.ce("dd"),
+      start: D.ce("button")
+    }
+  };
+  nd.rmLS.start.add(D.ct("DELETE"));
+  nd.rmLS.start.addEventListener("click", function() {
+    if (confirm("DELETE ALL USER DATA SURE?")) {
+      delete localStorage[LS.NS];
+      D.rm(nd.rmLS.start);
+      nd.rmLS.root.add(D.ct("DONE"));
+    }
+  });
+  D.id("main").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("delete localStorage['" + LS.NS + "']")),
+      nd.rmLS.root.add(nd.rmLS.start)
+    )
+  );
 };
 
 // Render UI of following settings
@@ -3321,7 +3351,7 @@ panel.showAddListPanel = function(user, my) {
     var lists = data.lists || data;
     var list_btns = {};
 
-    lists = lists.filter(function(l) { return l.user.id === my.id; });
+    lists = lists.filter(function(l) { return l.user.id_str === my.id_str; });
     lists = lists.filter(function(a, i) {
       return lists.every(function(b, j) {
         return j >= i || a.slug !== b.slug;
@@ -3908,9 +3938,14 @@ outline.showProfileOutline = function(screen_name, my, mode) {
     // bug: /blocks/destroy.json returns suspended user's profile
     mode &= ~4;
     mode &= ~8;
-    API.unblock(screen_name, onGet, function(x) {
-      D.id("side").add(O.htmlify(JSON.parse((x||xhr).responseText)));
+    var hack = D.ce("button").add(D.ct("unblock"));
+    hack.addEventListener("click", function() {
+      API.unblock(screen_name, onGet, function(x) {
+        D.id("side").add(O.htmlify(JSON.parse(x.responseText)));
+        D.rm(hack);
+      });
     });
+    D.id("side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
   }
 
   X.get(API().urls.users.show() + "?screen_name=" + screen_name, onGet, onErr);
