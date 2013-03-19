@@ -17,53 +17,60 @@ document.domain = "twitter.com";
 
 // Local Storage
 LS = {};
+LS.NS = "twis";
 LS.save = function(name, value) {
-  var text = localStorage.twis;
+  var text = localStorage[LS.NS];
   var data;
   try {
     data = JSON.parse(text);
   } catch(e) {
-    throw Error("localStorage.twis is broken");
-    return false;
+    data = LS.check();
+    if (!data) return data;
   }
   data[name] = value;
-  return localStorage.twis = JSON.stringify(data);
+  localStorage[LS.NS] = JSON.stringify(data);
+  return data;
 };
 LS.clear = function(name) {
-  var text = localStorage.twis;
+  var text = localStorage[LS.NS];
   var data;
   try {
     data = JSON.parse(text);
   } catch(e) {
-    throw Error("localStorage.twis is broken");
-    return false;
+    return LS.check();
   }
   delete data[name];
-  return localStorage.twis = JSON.stringify(data);
+  localStorage[LS.NS] = JSON.stringify(data);
+  return data;
 };
 LS.load = function() {
-  var text = localStorage.twis;
+  var text = localStorage[LS.NS];
   var data;
   try {
     data = JSON.parse(text);
-    return data;
   } catch(e) {
-    throw Error("localStorage.twis is broken");
-    return false;
+    data = LS.check();
   }
+  return data;
 };
 LS.reset = function() {
-  localStorage.twis = "{}";
+  localStorage[LS.NS] = "{}";
+  return {};
 };
 LS.check = function() {
-  if ("twis" in localStorage) {
+  if (LS.NS in localStorage) {
     try {
-      JSON.parse(localStorage.twis);
+      return JSON.parse(localStorage[LS.NS]);
     } catch(e) {
-      LS.reset();
+      var msg = "localStorage." + LS.NS + " is broken.\nreset?";
+      if (prompt(msg, localStorage[LS.NS])) {
+        return LS.reset();
+      } else {
+        return false;
+      }
     }
   } else {
-    LS.reset();
+    return LS.reset();
   }
 };
 
@@ -2229,7 +2236,7 @@ content.testAPI = function(my) {
     };
   }
   senddata[0] = (function() {
-    var savedata = JSON.parse(localStorage.twis);
+    var savedata = LS.load();
     var consecret = savedata.consumer_secret;
     var oauth_token_secret = "";
     var reqmethod = "POST";
@@ -2549,7 +2556,10 @@ content.showUsersByIds = function(url, my, mode) {
       D.id("main").add(O.htmlify({"Empty": "No users found"}));
     }
   }
-  X.get(url, onGetIds);
+  var onErr = function(xhr) {
+    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+  };
+  X.get(url, onGetIds, onErr);
   panel.showUserManager(my);
 };
 
@@ -2630,7 +2640,10 @@ content.showUsers = function(url, my, mode) {
     var data = JSON.parse(xhr.responseText);
     content.rendUsers(data, my, mode);
   }
-  X.get(url, onGetUsers);
+  var onErr = function(xhr) {
+    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+  };
+  X.get(url, onGetUsers, onErr);
   panel.showUserManager(my);
 };
 
@@ -2639,7 +2652,7 @@ content.showLists = function(url, my) {
   var that = this;
   var re = url.match(/[?&]screen_name=(\w+)/);
   var oname = re ? re[1] : my.screen_name;
-  X.get(url, function(xhr) {
+  var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     if (!data.lists) data.lists = data; // lists/all.json
 
@@ -2666,7 +2679,11 @@ content.showLists = function(url, my) {
       subs_c ? subs : D.cf()
     );
     that.misc.showCursor(data);
-  });
+  };
+  var onErr = function(xhr) {
+    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+  };
+  X.get(url, onGet, onErr);
 };
 
 // Step to Render View of Search Results
@@ -3998,7 +4015,8 @@ if (location.host === "upload.twitter.com") {
   init.initNode();
   init.structPage();
   content.showPage({
-    "screen_name": LS.load()["screen_name"]
+    "screen_name": LS.load()["screen_name"],
+    "id_str": LS.load()["user_id"]
   });
   // Check if my Logged-in
   1||X.get("/1/account/verify_credentials.json",
