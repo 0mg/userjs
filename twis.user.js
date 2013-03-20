@@ -267,7 +267,7 @@ P.oauth.genSig = (function() {
     for (var i in q) {
       s.push([enc(i), enc(q[i])]);
     }
-    var urlParts = requrl.match(/([^?#]+)[?]?([^#]+)?/);
+    var urlParts = requrl.match(/([^?#]*)[?]?([^#]*)/);
     var baseURL = urlParts[1];
     var search = urlParts[2];
     if (search) {
@@ -542,6 +542,33 @@ O = {
 
 // Text Functions
 T = {};
+// normalize URL
+T.normalizeURL = function(url) {
+  var urlParts = url.match(/([^?#]*)[?]?([^#]*)#?([\S\s]*)/);
+  var baseURL = { raw: urlParts[1] };
+  var search = { raw: urlParts[2] };
+  var hash = { raw: urlParts[3] };
+  baseURL.encoded = baseURL.raw;
+  if (search.raw) {
+    search.decobj = T.parseQuery(search.raw);
+    search.encarr = [];
+    for (var i in search.decobj) {
+      var name = P.oauth.enc(i);
+      var value = P.oauth.enc(search.decobj[i]);
+      search.encarr.push(name + "=" + value);
+    }
+    search.encoded = "?" + search.encarr.join("&");
+  } else {
+    search.encoded = "";
+  }
+  if (hash.raw) {
+    hash.encoded = "#" + hash.raw;
+  } else {
+    hash.encoded = "";
+  }
+  var encurl = baseURL.encoded + search.encoded + hash.encoded;
+  return encurl;
+};
 // a=1&b=%40 -> {a:"1",b:"@"}
 T.parseQuery = function(qtext) {
   if (!qtext) return {};
@@ -701,6 +728,7 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
 X.get = function get(url, f, b) {
   var xhr = new XMLHttpRequest;
   var method = "GET";
+  url = T.normalizeURL(url);
   xhr.open(method, url, true);
   xhr.setRequestHeader("X-PHX", "true");
   var auth = X.getOAuthHeader(method, url, {});
@@ -757,7 +785,7 @@ X.post = function post(url, q, f, b, c) {
     if (typeof q === "object") {
       var query = [];
       for (var i in q) {
-        query.push(i + "=" + P.oauth.enc(q[i]));
+        query.push(P.oauth.enc(i) + "=" + P.oauth.enc(q[i]));
       }
       q = query.join("&");
     }
