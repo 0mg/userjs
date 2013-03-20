@@ -529,13 +529,13 @@ O = {
   },
   htmlify: function htmlify(arg) {
     if (arg === null || typeof arg !== "object") {
-      return D.ce("p").add(D.ct(arg));
+      return D.ct(arg);
     }
     var list = D.ce("dl");
     for (var i in arg) {
-      list.add(D.ce("dt").add(D.ct(i))).add(D.ce("dd").add(htmlify(arg[i])));
+      list.add(D.ce("dt").add(D.ct(i)), D.ce("dd").add(htmlify(arg[i])));
     }
-    return list.hasChildNodes() ? list : D.ce("p").add(D.ct("Empty Object"));
+    return list.hasChildNodes() ? list : D.ce("em").add(D.ct("{}"));
   }
 };
 
@@ -2190,12 +2190,12 @@ content.testAPI = function(my) {
     },
     get: {
       url: D.ce("input").sa("size", "60").
-        sa("value", "/1.1/statuses/user_timeline.json"),
+        sa("value", "/1.1/statuses/user_timeline.json?x=@&&=&%23=&=3&%26&x=0"),
       send: D.ce("button").add(D.ct("GET"))
     },
     post: {
       url: D.ce("input").sa("size", "60").
-        sa("value", "/1.1/blocks/destroy.json?screen_name=("),
+        sa("value", "/1.1/blocks/destroy.json?screen_name=%40"),
       send: D.ce("button").add(D.ct("POST"))
     },
     postauth: {
@@ -2297,6 +2297,10 @@ content.testAPI = function(my) {
   }(currentData.reqdata);
   nd.req_header.cols = 64;
   nd.req_header.rows = 10;
+  function printErase() {
+    while (nd.header.hasChildNodes()) D.rm(nd.header.lastChild);
+    while (nd.dst.hasChildNodes()) D.rm(nd.dst.lastChild);
+  }
   function printData(xhr) {
     printHead(xhr);
     printText(xhr);
@@ -2304,30 +2308,31 @@ content.testAPI = function(my) {
   function printHead(xhr) {
     var data = xhr.getAllResponseHeaders();
     var datanode = D.tweetize(data);
-    while (nd.header.hasChildNodes()) D.rm(nd.header.lastChild);
     nd.header.add(datanode);
   }
   function printText(xhr) {
     var data = xhr.responseText;
     var datanode = D.ct(data);
     try {
-      data = JSON.parse(data);
-      datanode = O.htmlify(data);
+      datanode = O.htmlify(JSON.parse(data));
     } catch(e) {
+      datanode = O.htmlify(xhr.responseText);
     }
-    while (nd.dst.hasChildNodes()) D.rm(nd.dst.lastChild);
     nd.dst.add(datanode);
   }
   nd.head.send.addEventListener("click", function() {
-    X.head(nd.head.url.value, printHead, printHead);
+    printErase();
+    X.head(nd.head.url.value, printData, printData);
   }, false);
   nd.get.send.addEventListener("click", function() {
+    printErase();
     X.get(nd.get.url.value, printData, printData);
   }, false);
   nd.post.send.addEventListener("click", function() {
     var str = nd.post.url.value.split("?");
     var url = str[0];
     var q = str.slice(1).join("?");
+    printErase();
     X.post(url, q, printData, printData, true);
   }, false);
   nd.postauth.send.addEventListener("click", function() {
@@ -2335,6 +2340,7 @@ content.testAPI = function(my) {
     var url = currentData.url;
     var q = currentData.reqQ;
     var hds = {};
+    printErase();
     nd.req_header.value.trim().split("\n").forEach(function(s) {
       var ctx = s.match(/^([^:]+):([\S\s]+)$/);
       hds[ctx[1]] = ctx[2];
