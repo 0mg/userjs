@@ -299,8 +299,6 @@ P.oauth.genSig = (function() {
 U = {
   ROOT: "/robots.txt?-=/",
   Q: "&",
-  // ROOT OF API
-  APV: "/1/",
   getURL: function() {
     var pathall = (location.pathname + location.search).
                    substring(this.ROOT.length).split(this.Q);
@@ -1620,6 +1618,7 @@ init.structPage = function() {
   );
 };
 
+
 // Functions of Render main content
 
 content = {};
@@ -2403,15 +2402,34 @@ content.testAPI = function(my) {
 
 // Settings of this application
 content.settingOptions = function() {
+  var lsn = "localStorage['" + LS.NS + "']";
+  var lsdata = LS.load();
+  var lstext = JSON.stringify(lsdata);
   var nd = {
+    vwLS: {
+      tree: D.ce("dd").add(O.htmlify(lsdata)),
+      raw: D.ce("textarea").sa("cols", 60).sa("rows", 10),
+      save: D.ce("button").add(D.ct("SAVE"))
+    },
     rmLS: {
       root: D.ce("dd"),
-      start: D.ce("button")
+      start: D.ce("button").add(D.ct("DELETE"))
     }
   };
-  nd.rmLS.start.add(D.ct("DELETE"));
+  nd.vwLS.raw.value = lstext;
+  nd.vwLS.save.addEventListener("click", function() {
+    if (confirm("SAVE or BREAK?")) try {
+      var lstextInput = nd.vwLS.raw.value;
+      var lsdataInput = JSON.parse(lstextInput);
+      localStorage[LS.NS] = lstextInput;
+      while (nd.vwLS.tree.hasChildNodes()) D.rm(nd.vwLS.tree.lastChild);
+      nd.vwLS.tree.add(O.htmlify(lsdataInput));
+    } catch(e) {
+      alert(e);
+    }
+  });
   nd.rmLS.start.addEventListener("click", function() {
-    if (confirm("DELETE this application's all settings data sure?")) {
+    if (confirm("DELETE ALL this application's settings data sure?")) {
       delete localStorage[LS.NS];
       D.rm(nd.rmLS.start);
       nd.rmLS.root.add(D.ct("DONE"));
@@ -2419,8 +2437,11 @@ content.settingOptions = function() {
   });
   D.id("main").add(
     D.ce("dl").add(
-      D.ce("dt").add(D.ct("delete localStorage['" + LS.NS + "']")),
-      nd.rmLS.root.add(nd.rmLS.start)
+      D.ce("dt").add(D.ct(lsn)),
+      nd.rmLS.root.add(nd.rmLS.start),
+      nd.vwLS.tree,
+      D.ce("dd").add(nd.vwLS.raw),
+      D.ce("dd").add(nd.vwLS.save)
     )
   );
 };
@@ -3066,7 +3087,16 @@ panel.makeTwAct = function(t, my) {
     rt: new Button("retweet", "RT", "UnRT")
   };
 
-//ab.node.add(D.ct((isRT ? "This is a RT by " + t.user.screen_name : "This is a Tweet")+". "));ab.node.add(D.ct(""+(isMyRT ? "So, by you." : isRTtoMe ? "It's RT to YOU" : isTweetRTedByMe ? "You RTed it." : isRTRTedByMeToo ? "You RTed it too." :  "")));
+  /*ab.node.add(
+    D.ct(isRT ? "This is a RT by " + t.user.screen_name + ". " :
+                "This is a Tweet. "),
+    D.ct(
+      isMyRT ? "So, by you." :
+      isRTtoMe ? "It's RT to YOU" :
+      isTweetRTedByMe ? "You RTed it." :
+      isRTRTedByMeToo ? "You RTed it too." :""
+    )
+  );/**/
 
   (rt || t).favorited && onFav();
 
@@ -4019,11 +4049,17 @@ outline.rendProfileOutline = function(user) {
 
 // main
 (function() {
-  LS.check();
-  var my = LS.load()["verify_credentials"];
-  my = {
-    "screen_name": LS.load()["screen_name"],
-    "id_str": LS.load()["user_id"]
+  var ls = LS.load();
+  var time = ls["verify_credentials_modified"] || 0;
+  if (Date.now() - time > 1000 * 60 * 15) {
+    X.get(API().urls.account.verify_credentials(), function(xhr) {
+      LS.save("verify_credentials_modified", Date.now());
+      LS.save("verify_credentials", JSON.parse(xhr.responseText));
+    });
+  }
+  var my = ls["verify_credentials"] || {
+    "screen_name": ls["screen_name"],
+    "id_str": ls["user_id"]
   };
   init.initNode();
   init.structPage();
