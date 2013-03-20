@@ -13,7 +13,6 @@ var props = function(arg) {
   return proplist.join("\n");
 };
 var U, C, D, O, T, P, A, X, API, LS, init, content, panel, outline;
-document.domain = "twitter.com";
 
 // Local Storage
 LS = {};
@@ -272,14 +271,10 @@ P.oauth.genSig = (function() {
     var baseURL = urlParts[1];
     var search = urlParts[2];
     if (search) {
-      search.split("&").forEach(function(nv) {
-        var parts = nv.split("=");
-        var name = parts[0];
-        var value = parts[1] || "";
-        if (name) {
-          s.push([enc(name), enc(value)]);
-        }
-      });
+      var qrys = T.parseQuery(search);
+      for (var i in qrys) {
+        s.push([enc(i), enc(qrys[i])]);
+      }
     }
     s.sort();
     var text =
@@ -552,11 +547,14 @@ T.parseQuery = function(qtext) {
   if (!qtext) return {};
   var qobj = {};
   var pts = qtext.split("&");
+  pts.reverse();
   pts.forEach(function(q) {
     var pts = q.split("=");
     var name = pts[0];
     var value = pts[1] || "";
-    qobj[name] = decodeURIComponent(value);
+    if (name) {
+      qobj[decodeURIComponent(name)] = decodeURIComponent(value);
+    }
   });
   return qobj;
 };
@@ -925,7 +923,7 @@ API = function(ver) {
         }),
         verify_credentials: API.mkurl(ver, {
           1: function() { return "/1/account/verify_credentials"; },
-          1.1: function() { return "/1/account/verify_credentials"; }
+          1.1: function() { return "/1.1/account/verify_credentials"; }
         }),
         update_profile_colors: API.mkurl(ver, {
           1: function() { return "/1/account/update_profile_colors"; }
@@ -4044,64 +4042,15 @@ outline.rendProfileOutline = function(user) {
 };
 
 
-if (location.host === "upload.twitter.com") {
-  addEventListener("message", function(ev) {
-    var src_org = location.protocol + "//" + location.host;
-    var dst_org = location.protocol + "//api.twitter.com";
-    function postData(url, dispos) {
-      var fd = new FormData;
-      for (var name in dispos) {
-        fd.append(name, dispos[name]);
-      }
-      var xhr = new XMLHttpRequest;
-      xhr.open("POST", url, true);
-      xhr.setRequestHeader("X-PHX", "true");
-      xhr.onload = function() {
-        var minxhr = {
-          status: xhr.status,
-          responseText: xhr.responseText
-        };
-        ev.source.postMessage(JSON.stringify(minxhr), dst_org);
-      };
-      xhr.onerror = function() {
-        var minxhr = {
-          status: xhr.status,
-          responseText: xhr.responseText
-        };
-        ev.source.postMessage(JSON.stringify(minxhr), dst_org);
-      };
-      xhr.send(fd);
-    };
-    if (ev.origin === dst_org) {
-      var data = JSON.parse(ev.data);
-      postData(data.url, data.data);
-    }
-  }, false);
-} else {
+// main
+(function() {
   LS.check();
-  init.initNode();
-  init.structPage();
-  content.showPage({
+  var my = LS.load()["verify_credentials"];
+  my = {
     "screen_name": LS.load()["screen_name"],
     "id_str": LS.load()["user_id"]
-  });
-  // Check if my Logged-in
-  1||X.get("/1/account/verify_credentials.json",
-    function(xhr) {
-      var my = JSON.parse(xhr.responseText);
-      init.initNode();
-      init.structPage();
-      content.showPage(my);
-    },
-    function(xhr) {
-      X.get("/1/account/rate_limit_status.json", function(xhr) {
-        var data = JSON.parse(xhr.responseText);
-        data.reset_time = new Date(data.reset_time).toString();
-        if (data.remaining_hits > 0) {
-          location.href = "https://twitter.com/login?redirect_after_login=" +
-                          P.oauth.enc(location.href);
-        } else alert(O.stringify(data));
-      });
-    }
-  );
-}
+  };
+  init.initNode();
+  init.structPage();
+  content.showPage(my);
+})();
