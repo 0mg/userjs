@@ -1117,11 +1117,11 @@ API = function(ver) {
         }),
         add: API.mkurl(ver, {
           1: function(id) { return "/1/favorites/create/" + id; },
-          1.1: function() { return "/1.1/favorites/create"; }
+          1.1: function(id) { return "/1.1/favorites/create"; }
         }),
         remove: API.mkurl(ver, {
           1: function(id) { return "/1/favorites/destroy/" + id; },
-          1.1: function() { return "/1.1/favorites/destroy"; }
+          1.1: function(id) { return "/1.1/favorites/destroy"; }
         })
       },
       tweet: {
@@ -1258,11 +1258,11 @@ API.deleteMessage = function(id, callback, onErr) {
 };
 
 API.fav = function(id, callback, onErr) {
-  X.post(API().urls.favorites.add(id), "", callback, onErr);
+  X.post(API().urls.favorites.add(id), "id=" + id, callback, onErr);
 };
 
 API.unfav = function(id, callback, onErr) {
-  X.post(API().urls.favorites.remove(id), "", callback, onErr);
+  X.post(API().urls.favorites.remove(id), "id=" + id, callback, onErr);
 };
 
 API.follow = function(uname, callback, onErr) {
