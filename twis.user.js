@@ -733,7 +733,9 @@ X.get = function get(url, f, b) {
   xhr.setRequestHeader("Authorization", auth);
   xhr.onload = function() {
     if (this.status === 200) f(this);
-    else (b || function(x) { alert(x.responseText); })(this);
+    else (b || function(x) {
+      alert([x.status, url, x.responseText].join("\n"));
+    })(this);
   };
   xhr.send(null);
   return xhr;
@@ -764,32 +766,39 @@ X.head = function head(url, f, b) {
   xhr.send(null);
 };
 
+// multipart/form-data
+X.Multipart = function(qrys) {
+  for (var i in qrys) {
+    this[i] = qrys[i];
+  }
+};
+
 // POST Method for Twitter API
 X.post = function post(url, q, f, b, c) {
-  (c || confirm("sure?\n" + url + "?" + O.stringify(q))) ?
-  (function() {
-    var xhr = new XMLHttpRequest;
-    var method = "POST";
-    xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type",
-                         "application/x-www-form-urlencoded");
-    //xhr.setRequestHeader("X-PHX", "true");
-    var auth = X.getOAuthHeader(method, url, q, url.oauthPhase);
-    xhr.setRequestHeader("Authorization", auth);
-    xhr.onload = function() {
-      if (this.status === 200) f(this);
-      else (b || function(x) { alert(x.responseText); })(this);
-    };
-    if (typeof q === "object") {
-      var query = [];
-      for (var i in q) {
-        query.push(P.oauth.enc(i) + "=" + P.oauth.enc(q[i]));
-      }
-      q = query.join("&");
-    }
-    xhr.send(q);
-  })()//;
-  : b && b(false);
+  if (!(c || confirm("sure?\n" + url + "?" + O.stringify(q)))) {
+    return b && b(false);
+  }
+  var data = q, oaq = q, ctype = "application/x-www-form-urlencoded";
+  var xhr = new XMLHttpRequest;
+  var method = "POST";
+  xhr.open(method, url, true);
+  if (q instanceof X.Multipart) {
+    data = new FormData, oaq = {}, ctype = null;
+    for (var i in q) data.append(i, q[i]);
+  } else if (typeof q === "object") {
+    data = [];
+    for (var i in q) data.push(P.oauth.enc(i) + "=" + P.oauth.enc(q[i]));
+    data = data.join("&");
+  }
+  var auth = X.getOAuthHeader(method, url, oaq, url.oauthPhase);
+  xhr.setRequestHeader("Authorization", auth);
+  //xhr.setRequestHeader("X-PHX", "true");
+  if (ctype) xhr.setRequestHeader("Content-Type", ctype);
+  xhr.addEventListener("load", function() {
+    if (xhr.status === 200) f(xhr);
+    else (b || function(xhr) { alert(xhr.responseText); })(xhr);
+  });
+  xhr.send(data);
 };
 
 // Method (with Custom Header) for Twitter OAuth
@@ -1161,8 +1170,7 @@ API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
                           callback, onErr) {
   var url = API().urls.tweet.upload();
-  X.post(url,
-  {
+  X.post(url, new X.Multipart({
     "media_data[]": media,
     "status": status || "",
     "in_reply_to_status_id": id || "",
@@ -1170,7 +1178,7 @@ API.tweetMedia = function(media, status, id,
     "lon": lon || "",
     "place_id": place_id || "",
     "display_coordinates": display_coordinates || ""
-  },
+  }),
   callback, onErr);
 };
 
@@ -4055,7 +4063,7 @@ outline.rendProfileOutline = function(user) {
     X.get(API().urls.account.verify_credentials(), function(xhr) {
       LS.save("verify_credentials_modified", Date.now());
       LS.save("verify_credentials", JSON.parse(xhr.responseText));
-    });
+    }, function() {});
   }
   var my = ls["verify_credentials"] || {
     "screen_name": ls["screen_name"],
