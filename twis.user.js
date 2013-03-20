@@ -768,7 +768,7 @@ X.head = function head(url, f, b) {
 
 // POST Method for Twitter API
 X.post = function post(url, q, f, b, c) {
-  (c || confirm("sure?\n" + url + "?" + q)) ?
+  (c || confirm("sure?\n" + url + "?" + O.stringify(q))) ?
   (function() {
     var xhr = new XMLHttpRequest;
     var method = "POST";
@@ -822,74 +822,6 @@ X.sendAuth = function sendAuth(method, url, hd, q, f, b) {
   }
   xhr.send(query.join("&"));
 };
-
-// POST Media for Twitter API
-X.postMedia = function post(url, dispos, f, b, c) {
-  (c || confirm("sure?\n" + url + "?" + O.stringify(dispos))) ?
-  X.getAuthToken(function(authtoken) {
-    var xhr = new XMLHttpRequest;
-    var fd = new FormData;
-    fd.append("post_authenticity_token", authtoken);
-    for (var name in dispos) {
-      fd.append(name, dispos[name]);
-    }
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader("X-PHX", "true");
-    xhr.onload = function() {
-      if (this.status === 200) f(this);
-      else (b || function(x) { alert(x.responseText); })(this);
-    };
-    xhr.send(fd);
-  })//;
-  : b && b(false);
-};
-
-// POST Media XDomain for Twitter API
-X.postMediaX = function post(url, dispos, f, b, c) {
-  (c || confirm("sure?\n" + url + "?" + O.stringify(dispos))) ?
-  X.getAuthToken(function(authtoken) {
-    dispos.post_authenticity_token = authtoken;
-    var senddata = {
-      url: url,
-      data: dispos
-    };
-    var src_org = location.protocol + "//" + location.host;
-    var dst_org = /^.+?:\/\/[^/]+/.exec(url)[0];
-    var iframe = D.ce("iframe");
-    iframe.src = dst_org + "/receiver.html?-=/"
-    iframe.hidden = true;
-    iframe.onload = function() {
-      var win = iframe.contentWindow;
-      win.postMessage(JSON.stringify(senddata), dst_org);
-    };
-    iframe.onerror = function() {
-      removeEventListener("message", onMsg, false);
-    };
-    function onMsg(ev) {
-      if (ev.origin === dst_org) {
-        var xhr = JSON.parse(ev.data);
-        if (xhr.status === 200) f(xhr);
-        else (b || function(x) { alert(x.responseText); })(xhr);
-      }
-      removeEventListener("message", onMsg, false);
-      D.rm(iframe);
-    }
-    addEventListener("message", onMsg, false);
-    D.q("body").add(iframe);
-  })//;
-  : b && b(false);
-};
-
-// Twitter Auth token Getter
-X.getAuthToken = (function() {
-  var token; //cache
-  return function getAuthToken(f) {
-    token ? f(token) : X.get("/account/bootstrap_data", function(xhr) {
-      token = JSON.parse(xhr.responseText).postAuthenticityToken;
-      f(token);
-    });
-  };
-})();
 
 
 // Twitter API Functions
@@ -1185,7 +1117,7 @@ API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
       "user[profile_use_background_image]": use,
       "user[profile_background_tile]": tile
     };
-    X.postMedia(url, data, callback, onErr);
+    X.post(url, data, callback, onErr);
     return;
   }
   var url = "/1/account/update_profile_background_image.xml";
@@ -1194,7 +1126,7 @@ API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
     "use": use,
     "tile": tile
   };
-  X.postMedia(url, data, callback, onErr);
+  X.post(url, data, callback, onErr);
 };
 
 API.updateProfileColors = function(background_color, text_color, link_color,
@@ -1231,7 +1163,7 @@ API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
                           callback, onErr) {
   var url = API().urls.tweet.upload();
-  X.postMediaX(url,
+  X.post(url,
   {
     "media_data[]": media,
     "status": status || "",
@@ -3546,7 +3478,7 @@ panel.showGlobalBar = function(my) {
 
 // Global Tweet box
 panel.showTweetBox = function() {
-  var media_raw = "";
+  var media_b64 = "";
   var t = {
     box: D.ce("div").sa("id", "update_controller"),
     status: D.ce("textarea").sa("id", "status"),
@@ -3608,8 +3540,8 @@ panel.showTweetBox = function() {
   }, false);
 
   t.update.addEventListener("click", function() {
-    if (t.usemedia.checked && media_raw) {
-      API.tweetMedia(media_raw, t.status.value, t.id.value, "", "", "", "",
+    if (t.usemedia.checked && media_b64) {
+      API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "",
       function(xhr) { alert(xhr.responseText); });
     } else {
       API.tweet(t.status.value, t.id.value, "", "", "", "", "",
@@ -3632,10 +3564,10 @@ panel.showTweetBox = function() {
     var file = t.media.files[0];
     var fr = new FileReader;
     fr.onload = function() {
-      media_raw = btoa(fr.result);
+      media_b64 = btoa(fr.result);
       var img = document.createElement("img");
       img.className = "media_image";
-      img.src = "data:" + file.type + ";base64," + btoa(fr.result);
+      img.src = "data:" + file.type + ";base64," + media_b64;
       img.alt = file.name;
       while (t.imgvw.hasChildNodes()) D.rm(t.imgvw.lastChild);
       t.imgvw.appendChild(img);
