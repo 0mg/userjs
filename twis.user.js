@@ -1310,7 +1310,15 @@ API.getRateLimitStatus = function(callback, onErr) {
 };
 
 API.logout = function(callback, onErr) {
-  X.post("/logout", "", callback, onErr);
+  var lsdata = LS.load();
+  var keep = ["consumer_secret"];
+  if (confirm("DELETE authentication cache sure?")) {
+    LS.reset();
+    keep.forEach(function(i) {
+      LS.save(i, lsdata[i]);
+    });
+    location.href = U.ROOT + "login";
+  }
 };
 
 
@@ -1887,7 +1895,7 @@ content.showLoginUI = function(qs) {
     D.id("main").add(O.htmlify(tokens));
   };
   var onErr = function(xhr) {
-    nd.errvw.textContent = xhr.responseText;
+    nd.errvw.textContent = xhr.responseText || xhr.getAllResponseHeaders();
   };
   var nd = {
     errvw: D.ce("dd"),
@@ -1913,7 +1921,8 @@ content.showLoginUI = function(qs) {
   if (qs) D.id("main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 2 of 2)")),
-      D.ce("dd").add(nd.verify)
+      D.ce("dd").add(nd.verify),
+      nd.errvw
     )
   );
   else D.id("main").add(
@@ -2396,7 +2405,7 @@ content.settingOptions = function() {
   };
   nd.rmLS.start.add(D.ct("DELETE"));
   nd.rmLS.start.addEventListener("click", function() {
-    if (confirm("DELETE ALL USER DATA SURE?")) {
+    if (confirm("DELETE this application's all settings data sure?")) {
       delete localStorage[LS.NS];
       D.rm(nd.rmLS.start);
       nd.rmLS.root.add(D.ct("DONE"));
