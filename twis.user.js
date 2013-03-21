@@ -9,7 +9,7 @@ var props = function(arg) {
   if (arg === null || arg === undefined) return arg;
   var proplist = [];
   for (var i in arg) proplist.push(i + " : " + arg[i]);
-  proplist.sort().unshift(arg);
+  proplist.unshift(arg);
   return proplist.join("\n");
 };
 var U, C, D, O, T, P, A, X, API, LS, init, content, panel, outline;
@@ -259,26 +259,30 @@ P.oauth.genSig = (function() {
   function genShaKey(secret1, secret2) {
     return enc(secret1) + "&" + enc(secret2);
   }
-  function genShaText(reqmethod, requrl, reqdata, q) {
+  function genShaText(method, url, oadata, qobj) {
     var s = [];
-    for (var i in reqdata) {
-      s.push([enc(i), enc(reqdata[i])]);
+    for (var i in oadata) {
+      s.push([enc(i), enc(oadata[i])]);
     }
-    for (var i in q) {
-      s.push([enc(i), enc(q[i])]);
+    for (var i in qobj) {
+      [].concat(qobj[i]).forEach(function(val) {
+        s.push([enc(i), enc(val)]);
+      });
     }
-    var urlParts = requrl.match(/([^?#]*)[?]?([^#]*)/);
+    var urlParts = url.match(/([^?#]*)[?]?([^#]*)/);
     var baseURL = urlParts[1];
     var search = urlParts[2];
     if (search) {
       var qrys = T.parseQuery(search);
       for (var i in qrys) {
-        s.push([enc(i), enc(qrys[i])]);
+        [].concat(qrys[i]).forEach(function(val) {
+          s.push([enc(i), enc(val)]);
+        });
       }
     }
     s.sort();
     var text =
-      enc(reqmethod) + "&" +
+      enc(method) + "&" +
       enc(baseURL) + "&" +
       enc(s.map(function(arr) {
         return arr[0] + "=" + arr[1];
@@ -549,13 +553,7 @@ T.normalizeURL = function(url) {
   baseURL.encoded = baseURL.raw;
   if (search.raw) {
     search.decobj = T.parseQuery(search.raw);
-    search.encarr = [];
-    for (var i in search.decobj) {
-      var name = P.oauth.enc(i);
-      var value = P.oauth.enc(search.decobj[i]);
-      search.encarr.push(name + "=" + value);
-    }
-    search.encoded = "?" + search.encarr.join("&");
+    search.encoded = "?" + T.strQuery(search.decobj);
   } else {
     search.encoded = "";
   }
@@ -572,16 +570,31 @@ T.parseQuery = function(qtext) {
   if (!qtext) return {};
   var qobj = {};
   var pts = qtext.split("&");
-  pts.reverse();
   pts.forEach(function(q) {
     var pts = q.split("=");
-    var name = pts[0];
-    var value = pts[1] || "";
+    var name = decodeURIComponent(pts[0]);
+    var value = decodeURIComponent(pts[1] || "");
     if (name) {
-      qobj[decodeURIComponent(name)] = decodeURIComponent(value);
+      if (name in qobj) {
+        qobj[name] = [].concat(qobj[name]).concat(value);
+      } else {
+        qobj[name] = value;
+      }
     }
   });
   return qobj;
+};
+// {a:"1",b:"@"} -> a=1&b=%40
+T.strQuery = function(qobj) {
+  if (!qobj) return "";
+  var qarr = [];
+  for (var i in qobj) {
+    [].concat(qobj[i]).forEach(function(val) {
+      qarr.push(P.oauth.enc(i) + "=" + P.oauth.enc(val));
+    });
+  }
+  var qtext = qarr.join("&");
+  return qtext;
 };
 // eg. '2011/5/27 11:11' to '3 minutes ago'
 T.gapTime = function gapTime(p) {
@@ -681,7 +694,7 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
   var consumer_secret = lsdata["consumer_secret"];
   var oauth_token;
   var oauth_token_secret;
-  var reqdata = {
+  var oadata = {
     "oauth_consumer_key": lsdata["consumer_key"] || C.CONSUMER_KEY,
     "oauth_nonce": (function(s) {
       while (s.length < 32) s += (Math.random()*36|0).toString(36);
@@ -694,29 +707,29 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
   switch (oauthPhase) {
   case "get_request_token":
     oauth_token_secret = "";
-    reqdata["oauth_callback"] = U.ROOT + "login";
+    oadata["oauth_callback"] = U.ROOT + "login";
     break;
   case "get_access_token":
     oauth_token = lsdata.request_token;
     oauth_token_secret = lsdata.request_token_secret;
-    reqdata["oauth_token"] = oauth_token;
+    oadata["oauth_token"] = oauth_token;
     break;
   default:
     oauth_token = lsdata.access_token;
     oauth_token_secret = lsdata.access_token_secret;
-    reqdata["oauth_token"] = oauth_token;
+    oadata["oauth_token"] = oauth_token;
     break;
   }
   if (typeof q === "string") {
     q = T.parseQuery(q);
   }
   url = D.ce("a").sa("href", url).href;
-  reqdata["oauth_signature"] =
+  oadata["oauth_signature"] =
     P.oauth.genSig(
-      method, url, reqdata, q, consumer_secret, oauth_token_secret);
+      method, url, oadata, q, consumer_secret, oauth_token_secret);
   var heads = [];
-  for (var i in reqdata) {
-    heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(reqdata[i]) + "\"");
+  for (var i in oadata) {
+    heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(oadata[i]) + "\"");
   }
   var header = "OAuth " + heads.join(",");
   return header;
@@ -783,7 +796,7 @@ X.post = function post(url, q, f, b, c) {
   if (!(c || confirm("sure?\n" + url + "?" + O.stringify(q)))) {
     return b && b(false);
   }
-  var data = q, oaq = q, ctype = "application/x-www-form-urlencoded";
+  var data, oaq, ctype = "application/x-www-form-urlencoded";
   var xhr = new XMLHttpRequest;
   var method = "POST";
   xhr.open(method, url, true);
@@ -791,9 +804,9 @@ X.post = function post(url, q, f, b, c) {
     data = new FormData, oaq = {}, ctype = null;
     for (var i in q) data.append(i, q[i]);
   } else if (typeof q === "object") {
-    data = [];
-    for (var i in q) data.push(P.oauth.enc(i) + "=" + P.oauth.enc(q[i]));
-    data = data.join("&");
+    oaq = T.parseQuery(data = T.strQuery(q));
+  } else {
+    data = T.strQuery(oaq = T.parseQuery(q));
   }
   var auth = X.getOAuthHeader(method, url, oaq, url.oauthPhase);
   xhr.setRequestHeader("Authorization", auth);
@@ -1918,15 +1931,13 @@ content.showLoginUI = function(qs) {
     errvw: D.ce("dd"),
     login: D.ce("button").add(D.ct("Get Request token")),
     verify: D.ce("button").add(D.ct("Get Access token")),
-    csbox: D.ce("input"),
-    cssubmit: D.ce("button").add(D.ct("Save")),
-    csstat: D.ce("code").add(D.ct(LS.load()["consumer_secret"]))
+    csbox: D.ce("input").sa("size", 50).sa("value", LS.load()["consumer_secret"]),
+    cssubmit: D.ce("button").add(D.ct("SAVE"))
   };
   var saveCS = function() {
     var csinput = nd.csbox.value;
-    if (confirm("sure?\nnew key = \"" + csinput + "\"")) {
+    if (confirm("sure?")) {
       LS.save("consumer_secret", csinput);
-      nd.csstat.textContent = csinput;
     }
   };
   nd.login.addEventListener("click", getReqToken);
@@ -1948,7 +1959,6 @@ content.showLoginUI = function(qs) {
       D.ce("dd").add(nd.login),
       nd.errvw,
       D.ce("dt").add(D.ct("Consumer secret key")),
-      D.ce("dd").add(nd.csstat),
       D.ce("dd").add(
         nd.csbox,
         nd.cssubmit
@@ -2314,7 +2324,7 @@ content.settingOptions = function() {
   };
   nd.vwLS.raw.value = lstext;
   nd.vwLS.save.addEventListener("click", function() {
-    if (confirm("SAVE or BREAK?")) try {
+    if (confirm("sure?")) try {
       var lstextInput = nd.vwLS.raw.value;
       var lsdataInput = JSON.parse(lstextInput);
       localStorage[LS.NS] = lstextInput;
@@ -2325,15 +2335,16 @@ content.settingOptions = function() {
     }
   });
   nd.rmLS.start.addEventListener("click", function() {
-    if (confirm("DELETE ALL this application's settings data sure?")) {
-      delete localStorage[LS.NS];
+    if (confirm("sure?")) {
+      //delete localStorage[LS.NS];
       D.rm(nd.rmLS.start);
-      nd.rmLS.root.add(D.ct("DONE"));
+      nd.rmLS.root.add(D.ct("DELETED"));
     }
   });
   D.id("main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct(lsn)),
+      D.ce("dd").add(D.ct("this application's settings data")),
       nd.rmLS.root.add(nd.rmLS.start),
       nd.vwLS.tree,
       D.ce("dd").add(nd.vwLS.raw),
