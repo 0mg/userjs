@@ -677,12 +677,12 @@ X = {};
 
 // make OAuth access token
 X.getOAuthHeader = function(method, url, q, oauthPhase) {
-  var appdata = LS.load();
-  var consumer_secret = appdata["consumer_secret"];
+  var lsdata = LS.load();
+  var consumer_secret = lsdata["consumer_secret"];
   var oauth_token;
   var oauth_token_secret;
   var reqdata = {
-    "oauth_consumer_key": C.CONSUMER_KEY,
+    "oauth_consumer_key": lsdata["consumer_key"] || C.CONSUMER_KEY,
     "oauth_nonce": (function(s) {
       while (s.length < 32) s += (Math.random()*36|0).toString(36);
       return s;
@@ -697,13 +697,13 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
     reqdata["oauth_callback"] = U.ROOT + "login";
     break;
   case "get_access_token":
-    oauth_token = appdata.request_token;
-    oauth_token_secret = appdata.request_token_secret;
+    oauth_token = lsdata.request_token;
+    oauth_token_secret = lsdata.request_token_secret;
     reqdata["oauth_token"] = oauth_token;
     break;
   default:
-    oauth_token = appdata.access_token;
-    oauth_token_secret = appdata.access_token_secret;
+    oauth_token = lsdata.access_token;
+    oauth_token_secret = lsdata.access_token_secret;
     reqdata["oauth_token"] = oauth_token;
     break;
   }
@@ -731,12 +731,17 @@ X.get = function get(url, f, b) {
   xhr.setRequestHeader("X-PHX", "true");
   var auth = X.getOAuthHeader(method, url, {});
   xhr.setRequestHeader("Authorization", auth);
-  xhr.onload = function() {
+  xhr.addEventListener("load", function() {
     if (this.status === 200) f(this);
     else (b || function(x) {
       alert([x.status, url, x.responseText].join("\n"));
     })(this);
-  };
+  });
+  xhr.addEventListener("error", function() {
+    (b || function(x) {
+      alert([x.status, url, x.responseText].join("\n"));
+    })(this);
+  });
   xhr.send(null);
   return xhr;
 };
@@ -797,6 +802,11 @@ X.post = function post(url, q, f, b, c) {
   xhr.addEventListener("load", function() {
     if (xhr.status === 200) f(xhr);
     else (b || function(xhr) { alert(xhr.responseText); })(xhr);
+  });
+  xhr.addEventListener("error", function() {
+    (b || function(x) {
+      alert([x.status, url, x.responseText].join("\n"));
+    })(this);
   });
   xhr.send(data);
 };
@@ -2205,105 +2215,9 @@ content.testAPI = function(my) {
         sa("value", "/1.1/blocks/destroy.json?screen_name=%40"),
       send: D.ce("button").add(D.ct("POST"))
     },
-    postauth: {
-      url: D.ce("input").sa("size", "60"),
-      send: D.ce("button").add(D.ct("AUTH"))
-    },
     dst: D.ce("div"),
-    req_header: D.ce("textarea"),
     header: D.ce("div")
   };
-  var senddata = [];
-  function newSendData(method, url, reqdata, reqQ) {
-    return {
-      method: method,
-      url: url,
-      reqdata: reqdata,
-      reqQ: reqQ
-    };
-  }
-  senddata[0] = (function() {
-    var savedata = LS.load();
-    var consecret = savedata.consumer_secret;
-    var oauth_token_secret = "";
-    var reqmethod = "POST";
-    var requrl = "https://api.twitter.com/oauth/request_token";
-    var reqdata = {
-      "oauth_callback": location.href,
-      "oauth_consumer_key": C.CONSUMER_KEY,
-      "oauth_nonce": (function(s) {
-        while (s.length < 32) s += (Math.random()*16|0).toString(16);
-        return s;
-      }("")),
-      "oauth_signature_method": "HMAC-SHA1",
-      "oauth_timestamp": (new Date/1000).toFixed(0),
-      "oauth_version": "1.0"
-    };
-    var q = {};
-    reqdata["oauth_signature"] =
-      P.oauth.genSig(
-        reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
-    return newSendData(reqmethod, requrl, reqdata, q);
-  })();
-  senddata[1] = (function() {
-    var consecret = "";
-    var oauth_token_secret = "";
-    var reqmethod = "POST";
-    var requrl = "https://api.twitter.com/oauth/access_token";
-    var reqdata = {
-      "oauth_consumer_key": C.CONSUMER_KEY,
-      "oauth_nonce": (function(s) {
-        while (s.length < 32) s += (Math.random()*16|0).toString(16);
-        return s;
-      }("")),
-      "oauth_signature_method": "HMAC-SHA1",
-      "oauth_timestamp": (new Date/1000).toFixed(0),
-      "oauth_version": "1.0",
-      "oauth_token": ""
-    };
-    var q = {
-      "oauth_verifier": ""
-    };
-    reqdata["oauth_signature"] =
-      P.oauth.genSig(
-        reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
-    return newSendData(reqmethod, requrl, reqdata, q);
-  })();
-  senddata[2] = (function() {
-    var consecret = "";
-    var oauth_token_secret = "";
-    var reqmethod = "GET";
-    var requrl =
-      "https://api.twitter.com/1.1/statuses/user_timeline.json?&x=1";
-    var reqdata = {
-      "oauth_consumer_key": C.CONSUMER_KEY,
-      "oauth_nonce": (function(s) {
-        while (s.length < 32) s += (Math.random()*16|0).toString(16);
-        return s;
-      }("")),
-      "oauth_signature_method": "HMAC-SHA1",
-      "oauth_timestamp": (new Date/1000).toFixed(0),
-      "oauth_version": "1.0",
-      "oauth_token": ""
-    };
-    var q = {
-    };
-    reqdata["oauth_signature"] =
-      P.oauth.genSig(
-        reqmethod, requrl, reqdata, q, consecret, oauth_token_secret);
-    return newSendData(reqmethod, requrl, reqdata, q);
-  })();
-  var currentData = senddata[0];
-  nd.postauth.url.value = currentData.url;
-  nd.req_header.value = function(reqdata) {
-    var s = [];
-    for (var i in reqdata) {
-      s.push(i + ":" + reqdata[i]);
-    }
-    return s.join("\n");
-  }(currentData.reqdata);
-  nd.req_header.cols = 64;
-  nd.req_header.rows = 10;
   function printErase() {
     while (nd.header.hasChildNodes()) D.rm(nd.header.lastChild);
     while (nd.dst.hasChildNodes()) D.rm(nd.dst.lastChild);
@@ -2342,19 +2256,6 @@ content.testAPI = function(my) {
     printErase();
     X.post(url, q, printData, printData, true);
   }, false);
-  nd.postauth.send.addEventListener("click", function() {
-    var method = currentData.method;
-    var url = currentData.url;
-    var q = currentData.reqQ;
-    var hds = {};
-    printErase();
-    nd.req_header.value.trim().split("\n").forEach(function(s) {
-      var ctx = s.match(/^([^:]+):([\S\s]+)$/);
-      hds[ctx[1]] = ctx[2];
-    });
-    X.sendAuth(method, url, hds, q, printData, printData);
-  }, false);
-
   nd.head.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
@@ -2376,13 +2277,6 @@ content.testAPI = function(my) {
       nd.post.send.dispatchEvent(ev);
     }
   }, false);
-  nd.postauth.url.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ev = document.createEvent("Event");
-      ev.initEvent("click", true, false);
-      nd.postauth.send.dispatchEvent(ev);
-    }
-  }, false);
 
   nd.main.add(
     D.ce("h3").add(D.ct(location.host)),
@@ -2395,12 +2289,6 @@ content.testAPI = function(my) {
       ),
       D.ce("li").add(
         nd.post.url, nd.post.send
-      ),
-      D.ce("li").add(
-        nd.postauth.url, nd.postauth.send
-      ),
-      D.ce("li").add(
-        nd.req_header
       )
     ),
     nd.dst
@@ -4058,18 +3946,33 @@ outline.rendProfileOutline = function(user) {
 // main
 (function() {
   var ls = LS.load();
+  var cons = ls["consumer_secret"];
+  var acs = ls["access_token"];
+  var acs_s = ls["access_token_secret"];
   var time = ls["verify_credentials_modified"] || 0;
-  if (Date.now() - time > 1000 * 60 * 15) {
-    X.get(API().urls.account.verify_credentials(), function(xhr) {
-      LS.save("verify_credentials_modified", Date.now());
-      LS.save("verify_credentials", JSON.parse(xhr.responseText));
-    }, function() {});
-  }
-  var my = ls["verify_credentials"] || {
-    "screen_name": ls["screen_name"],
-    "id_str": ls["user_id"]
+  var start = function() {
+    var ls = LS.load();
+    var my = ls["verify_credentials"] || {
+      "screen_name": ls["screen_name"],
+      "id_str": ls["user_id"]
+    };
+    var editDOM = function() {
+      init.initNode();
+      init.structPage();
+      content.showPage(my);
+    };
+    if (document.readyState === "complete") editDOM();
+    else addEventListener("load", function() { editDOM(); });
   };
-  init.initNode();
-  init.structPage();
-  content.showPage(my);
+  if (cons && acs && acs_s && Date.now() - time > 1000 * 60 * 15) {
+    X.get(API().urls.account.verify_credentials(), function(xhr) {
+      LS.save("verify_credentials", JSON.parse(xhr.responseText));
+      LS.save("verify_credentials_modified", Date.now());
+      start();
+    }, function(xhr) {
+      start();
+    });
+  } else {
+    start();
+  }
 })();
