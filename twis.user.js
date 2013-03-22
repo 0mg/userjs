@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name twis
+// @name tw-minus
 // @include https://api.twitter.com/robots.txt?-=/*
 // ==/UserScript==
 "use strict";
@@ -14,9 +14,13 @@ var props = function(arg) {
 };
 var U, C, D, O, T, P, A, X, API, LS, init, content, panel, outline;
 
+// CONST VALUE
+C = {};
+C.APP_NAME = "tw-minus";
+
 // Local Storage
 LS = {};
-LS.NS = "twis";
+LS.NS = C.APP_NAME;
 LS.save = function(name, value) {
   var text = localStorage[LS.NS];
   var data;
@@ -57,15 +61,16 @@ LS.reset = function() {
   return {};
 };
 LS.check = function() {
+  var text = localStorage[LS.NS];
   if (LS.NS in localStorage) {
     try {
-      return JSON.parse(localStorage[LS.NS]);
+      return JSON.parse(text);
     } catch(e) {
-      var msg = "localStorage." + LS.NS + " is broken.\nreset?";
-      if (prompt(msg, localStorage[LS.NS])) {
+      var msg = "localStorage['" + LS.NS + "'] is broken.\nreset?";
+      if (prompt(msg, text)) {
         return LS.reset();
       } else {
-        return false;
+        return text;
       }
     }
   } else {
@@ -238,6 +243,8 @@ P.sha1.calc = function sha1calc(block, hh) {
 
 // OAuth
 P.oauth = {};
+P.oauth.consumer_key = "e5uRPFBMQJcwfbEcPnwiw";
+P.oauth.consumer_secret = "";
 P.oauth.sha = function(sha_text, sha_key) {
   //return new jsSHA(sha_text,"TEXT").getHMAC(sha_key,"TEXT","SHA-1","B64");
   return btoa(P.hmac(P.sha1)(sha_key, sha_text));
@@ -298,6 +305,7 @@ P.oauth.genSig = (function() {
   return genSig;
 })();
 
+
 // URL CONST VALUE and Functions
 
 U = {
@@ -315,19 +323,29 @@ U = {
   }
 };
 
-// CONST VALUE
-C = {};
-C.CONSUMER_KEY = "e5uRPFBMQJcwfbEcPnwiw";
-C.TWRE = {
-  httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
-  url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
-  mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
-  hashTag: /^#\w*[a-zA-Z_]\w*/,
-  crlf: /^(?:\r\n|\r|\n)/,
-  entity: /^&#/,
-  text: /^[^hjdao@#\r\n&]+/
-};
-C.HTML_ENTITIES = {
+
+// DOM Functions
+
+D = (function() {
+  function add() {
+    for (var i = 0; i < arguments.length; ++i) this.appendChild(arguments[i]);
+    return this;
+  }
+  function sa() { this.setAttribute.apply(this, arguments); return this; }
+  function x(e) { if (e) e.add = add, e.sa = sa; return e; }
+  return {
+    ce: function(s) {
+      return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
+    },
+    ct: function(s) { return document.createTextNode(s); },
+    id: function(s) { return x(document.getElementById(s)); },
+    q: function(s) { return x(document.querySelector(s)); },
+    qs: function(s) { return document.querySelectorAll(s); },
+    cf: function() { return x(document.createDocumentFragment()); },
+    rm: function(e) { return e.parentNode.removeChild(e); }
+  };
+})();
+D.HTML_ENTITIES = {
   nbsp: 160, iexcl: 161, cent: 162, pound: 163, curren: 164,
   yen: 165, brvbar: 166, sect: 167, uml: 168, copy: 169,
   ordf: 170, laquo: 171, not: 172, shy: 173, reg: 174,
@@ -380,29 +398,6 @@ C.HTML_ENTITIES = {
   rdquo: 8221, bdquo: 8222, dagger: 8224, Dagger: 8225, permil: 8240,
   lsaquo: 8249, rsaquo: 8250, euro: 8364
 };
-
-
-// DOM Functions
-
-D = (function() {
-  function add() {
-    for (var i = 0; i < arguments.length; ++i) this.appendChild(arguments[i]);
-    return this;
-  }
-  function sa() { this.setAttribute.apply(this, arguments); return this; }
-  function x(e) { if (e) e.add = add, e.sa = sa; return e; }
-  return {
-    ce: function(s) {
-      return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
-    },
-    ct: function(s) { return document.createTextNode(s); },
-    id: function(s) { return x(document.getElementById(s)); },
-    q: function(s) { return x(document.querySelector(s)); },
-    qs: function(s) { return document.querySelectorAll(s); },
-    cf: function() { return x(document.createDocumentFragment()); },
-    rm: function(e) { return e.parentNode.removeChild(e); }
-  };
-})();
 // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
 D.tweetize = function(innerText, entities) {
   var str, ctx = innerText || "", fragment = D.cf();
@@ -428,6 +423,15 @@ D.tweetize = function(innerText, entities) {
     if (nd.nodeType === 3) nd.nodeValue = T.decodeHTML(nd.nodeValue);
   }
   return fragment;
+};
+D.tweetize.TWRE = {
+  httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+  url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+  mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
+  hashTag: /^#\w*[a-zA-Z_]\w*/,
+  crlf: /^(?:\r\n|\r|\n)/,
+  entity: /^&#/,
+  text: /^[^hjdao@#\r\n&]+/
 };
 D.tweetize.all = function callee(ctx, entities, fragment, i) {
   if (!ctx) return fragment.normalize(), fragment;
@@ -460,27 +464,28 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
   return callee(ctx.substring(str.length), entities, fragment, i + str.length);
 };
 D.tweetize.one = function(ctx, fragment) {
+  var TWRE = D.tweetize.TWRE;
   var str;
-  if (str = C.TWRE.text.exec(ctx)) {
+  if (str = TWRE.text.exec(ctx)) {
     str = str[0]; fragment.add(D.ct(str));
 
-  } else if (str = C.TWRE.crlf.exec(ctx)) {
+  } else if (str = TWRE.crlf.exec(ctx)) {
     str = str[0]; fragment.add(D.ce("br"));
 
-  } else if (str = C.TWRE.entity.exec(ctx)) {
+  } else if (str = TWRE.entity.exec(ctx)) {
     str = str[0]; fragment.add(D.ct(str));
 
-  } else if (str = C.TWRE.httpurl.exec(ctx)) {
+  } else if (str = TWRE.httpurl.exec(ctx)) {
     str = str[0]; var url = str; fragment.add(D.tweetize.url(url));
 
-  } else if (str = C.TWRE.hashTag.exec(ctx)) {
+  } else if (str = TWRE.hashTag.exec(ctx)) {
     str = str[0]; var hash = str; fragment.add(D.tweetize.hashtag(hash));
 
-  } else if (str = C.TWRE.mention.exec(ctx)) {
+  } else if (str = TWRE.mention.exec(ctx)) {
     str = str[0]; var uname = str.substring(1);
     fragment.add(D.tweetize.mention(uname));
 
-  } else if (str = C.TWRE.url.exec(ctx)) {
+  } else if (str = TWRE.url.exec(ctx)) {
     str = str[0]; var url = str;
     fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
 
@@ -515,30 +520,29 @@ D.tweetize.mention = function(username) {
 
 // Object Functions
 
-O = {
-  stringify: function stringify(arg) {
-    if (typeof arg === "string") {
-      return arg.match(
-      "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) " +
-      "(?:Jun|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) " +
-      "(?:0[1-9]|[12][0-9]|3[01])"
-      ) ? new Date(arg).toLocaleString() : arg;
-    }
-    if (arg === null || typeof arg !== "object") return arg;
-    var proplist = [];
-    for (var i in arg) proplist.push(i + ": " + stringify(arg[i]));
-    return "{\n" + proplist.join("\n").replace(/^/gm, "  ") + "\n}";
-  },
-  htmlify: function htmlify(arg) {
-    if (arg === null || typeof arg !== "object") {
-      return D.ct(arg);
-    }
-    var list = D.ce("dl");
-    for (var i in arg) {
-      list.add(D.ce("dt").add(D.ct(i)), D.ce("dd").add(htmlify(arg[i])));
-    }
-    return list.hasChildNodes() ? list : D.ce("em").add(D.ct("{}"));
+O = {};
+O.stringify = function stringify(arg) {
+  if (typeof arg === "string") {
+    return arg.match(
+    "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) " +
+    "(?:Jun|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) " +
+    "(?:0[1-9]|[12][0-9]|3[01])"
+    ) ? new Date(arg).toLocaleString() : arg;
   }
+  if (arg === null || typeof arg !== "object") return arg;
+  var proplist = [];
+  for (var i in arg) proplist.push(i + ": " + stringify(arg[i]));
+  return "{\n" + proplist.join("\n").replace(/^/gm, "  ") + "\n}";
+};
+O.htmlify = function htmlify(arg) {
+  if (arg === null || typeof arg !== "object") {
+    return D.ct(arg);
+  }
+  var list = D.ce("dl");
+  for (var i in arg) {
+    list.add(D.ce("dt").add(D.ct(i)), D.ce("dd").add(htmlify(arg[i])));
+  }
+  return list.hasChildNodes() ? list : D.ce("em").add(D.ct("{}"));
 };
 
 
@@ -640,7 +644,7 @@ T.dentityDec = function dentityDec(dec) {
   return String.fromCharCode(dec);
 };
 T.dentity = function dentity(entity) {
-  var charCode = C.HTML_ENTITIES[entity];
+  var charCode = D.HTML_ENTITIES[entity];
   if (typeof charCode === "number") {
     return String.fromCharCode(charCode);
   } else {
@@ -691,17 +695,15 @@ X = {};
 // make OAuth access token
 X.getOAuthHeader = function(method, url, q, oauthPhase) {
   var lsdata = LS.load();
-  var consumer_secret = lsdata["consumer_secret"];
+  var consumer_key = lsdata["consumer_key"] || P.oauth.consumer_key;
+  var consumer_secret = lsdata["consumer_secret"] || P.oauth.consumer_secret;
   var oauth_token;
   var oauth_token_secret;
   var oadata = {
-    "oauth_consumer_key": lsdata["consumer_key"] || C.CONSUMER_KEY,
-    "oauth_nonce": (function(s) {
-      while (s.length < 32) s += (Math.random()*36|0).toString(36);
-      return s;
-    }("")),
+    "oauth_consumer_key": consumer_key,
+    "oauth_nonce": Math.random().toString(36),
     "oauth_signature_method": "HMAC-SHA1",
-    "oauth_timestamp": (new Date/1000).toFixed(0),
+    "oauth_timestamp": (Date.now() / 1000).toFixed(0),
     "oauth_version": "1.0"
   };
   switch (oauthPhase) {
@@ -710,13 +712,13 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
     oadata["oauth_callback"] = U.ROOT + "login";
     break;
   case "get_access_token":
-    oauth_token = lsdata.request_token;
-    oauth_token_secret = lsdata.request_token_secret;
+    oauth_token = lsdata["request_token"];
+    oauth_token_secret = lsdata["request_token_secret"];
     oadata["oauth_token"] = oauth_token;
     break;
   default:
-    oauth_token = lsdata.access_token;
-    oauth_token_secret = lsdata.access_token_secret;
+    oauth_token = lsdata["access_token"];
+    oauth_token_secret = lsdata["access_token_secret"];
     oadata["oauth_token"] = oauth_token;
     break;
   }
@@ -1931,9 +1933,10 @@ content.showLoginUI = function(qs) {
     errvw: D.ce("dd"),
     login: D.ce("button").add(D.ct("Get Request token")),
     verify: D.ce("button").add(D.ct("Get Access token")),
-    csbox: D.ce("input").sa("size", 50).sa("value", LS.load()["consumer_secret"]),
+    csbox: D.ce("input").sa("size", 50),
     cssubmit: D.ce("button").add(D.ct("SAVE"))
   };
+  nd.csbox.value = LS.load()["consumer_secret"];
   var saveCS = function() {
     var csinput = nd.csbox.value;
     if (confirm("sure?")) {
@@ -2344,7 +2347,7 @@ content.settingOptions = function() {
   D.id("main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct(lsn)),
-      D.ce("dd").add(D.ct("this application's settings data")),
+      D.ce("dd").add(D.ct(C.APP_NAME + "'s settings data")),
       nd.rmLS.root.add(nd.rmLS.start),
       nd.vwLS.tree,
       D.ce("dd").add(nd.vwLS.raw),
