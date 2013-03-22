@@ -1494,8 +1494,10 @@ init.CSS = '\
     min-height: 48px;\
     padding: 1ex 1ex 1ex 60px;\
     border-bottom: 1px solid silver;\
+    transition: background-color 2s ease-out;\
   }\
   .tweet.focus {\
+    transition: 0s;\
     background-color: #fc0;\
   }\
   .user-profile.verified > dd:first-of-type::before,\
