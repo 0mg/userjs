@@ -2336,7 +2336,7 @@ content.settingOptions = function() {
   });
   nd.rmLS.start.addEventListener("click", function() {
     if (confirm("sure?")) {
-      //delete localStorage[LS.NS];
+      delete localStorage[LS.NS];
       D.rm(nd.rmLS.start);
       nd.rmLS.root.add(D.ct("DELETED"));
     }
