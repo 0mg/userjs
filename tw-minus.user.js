@@ -983,7 +983,7 @@ API = function(ver) {
         }),
         destroy: API.mkurl(ver, {
           1: function(id) { return "/1/direct_messages/destroy/" + id; },
-          1.1: function() { return "/1.1/direct_messages/destroy"; }
+          1.1: function(id) { return "/1.1/direct_messages/destroy"; }
         })
       },
       search: {
@@ -1216,7 +1216,7 @@ API.retweet = function(id, callback, onErr) {
 };
 
 API.deleteMessage = function(id, callback, onErr) {
-  X.post(API().urls.d.destroy(id), "",
+  X.post(API().urls.d.destroy(id), "id=" + id,
          callback, onErr);
 };
 
