@@ -21,61 +21,63 @@ C.APP_NAME = "tw-minus";
 // Local Storage
 LS = {};
 LS.NS = C.APP_NAME;
+LS.STRUCT = {
+  "consumer_key": "",
+  "consumer_secret": "",
+  "request_token": "",
+  "request_token_secret": "",
+  "access_token": "",
+  "access_token_secret": "",
+  "credentials": {},
+  "credentials_modified": 0,
+  "mylists": [],
+  "mylists_modified": 0
+};
+LS.reset = function() {
+  localStorage[LS.NS] = JSON.stringify(LS.STRUCT);
+  return LS.STRUCT;
+};
 LS.save = function(name, value) {
-  var text = localStorage[LS.NS];
-  var data;
-  try {
-    data = JSON.parse(text);
-  } catch(e) {
-    data = LS.check();
-    if (!data) return data;
+  var data = LS.load();
+  if (typeof data !== "object") return data;
+  if (name in LS.STRUCT) {
+    data[name] = value;
+    localStorage[LS.NS] = JSON.stringify(data);
+    return data;
+  } else {
+    return false;
   }
-  data[name] = value;
-  localStorage[LS.NS] = JSON.stringify(data);
-  return data;
 };
 LS.clear = function(name) {
-  var text = localStorage[LS.NS];
-  var data;
-  try {
-    data = JSON.parse(text);
-  } catch(e) {
-    return LS.check();
-  }
-  delete data[name];
-  localStorage[LS.NS] = JSON.stringify(data);
-  return data;
+  LS.save(name, LS.STRUCT[name]);
+};
+LS.put = function(data) {
+  for (var i in data) LS.save(i, data[i]);
 };
 LS.load = function() {
   var text = localStorage[LS.NS];
   var data;
+  if (!(LS.NS in localStorage)) return LS.reset();
   try {
     data = JSON.parse(text);
   } catch(e) {
-    data = LS.check();
+    var msg = "localStorage['" + LS.NS + "'] is broken.\nreset?";
+    if (prompt(msg, text)) return LS.reset();
+    else return text;
   }
-  return data;
-};
-LS.reset = function() {
-  localStorage[LS.NS] = "{}";
-  return {};
-};
-LS.check = function() {
-  var text = localStorage[LS.NS];
-  if (LS.NS in localStorage) {
-    try {
-      return JSON.parse(text);
-    } catch(e) {
-      var msg = "localStorage['" + LS.NS + "'] is broken.\nreset?";
-      if (prompt(msg, text)) {
-        return LS.reset();
-      } else {
-        return text;
-      }
+  for (var i in LS.STRUCT) {
+    if (!(i in data)) data[i] = LS.STRUCT[i];
+  }
+  for (var i in data) {
+    var invalid = [];
+    if (!(i in LS.STRUCT)) {
+      invalid.push(i + ":" + data[i]);
+      delete data[i];
     }
-  } else {
-    return LS.reset();
   }
+  localStorage[LS.NS] = JSON.stringify(data);
+  if (invalid.length) alert("deleted from LS\n" + invalid.join("\n"));
+  return data;
 };
 
 // Cipher objects
@@ -739,39 +741,46 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
 };
 
 // multipart/form-data
-X.Multipart = function(qrys) {
-  for (var i in qrys) {
-    this[i] = qrys[i];
+X.formData = function(qrys) {
+  var fd = new FormData;
+  for (var i in qrys) fd.append(i, qrys[i]);
+  return fd;
+};
+
+X.onload = function(method, url, q, f, b) {
+  if (!(this instanceof XMLHttpRequest)) throw method + ":not XHR obj";
+  var onScs = function(xhr, method, url) {
+    alert([xhr.status, url, xhr.responseText].join("\n"));
+  };
+  var onErr = function(xhr, method, url) {
+    alert([xhr.status, url, xhr.responseText].join("\n"));
+  };
+  if (this.status === 200) {
+    if (f !== undefined) f(this); else onScs(this, method, url);
+    API.reuseData.apply(this, arguments);
+  } else {
+    if (b !== undefined) b(this); else onErr(this, method, url);
   }
 };
 
-// default XHR.onload/200 function
-X.onScs = function(xhr, url) {
-  alert([xhr.status, url, xhr.responseText].join("\n"));
-};
-
-// default XHR.onerror/404 function
-X.onErr = function(xhr, url) {
-  alert([xhr.status, url, xhr.responseText].join("\n"));
+X.onerror = function(method, url, q, f, b) {
+  if (!(this instanceof XMLHttpRequest)) throw method + ":not XHR obj";
+  var onErr = function(xhr, method, url) {
+    alert([xhr.status, url, xhr.responseText].join("\n"));
+  };
+  if (b !== undefined) b(this); else X.onErr(this, method, url);
 };
 
 // HEAD Method for Twitter API
 X.head = function head(url, f, b) {
   var xhr = new XMLHttpRequest;
-  xhr.open("HEAD", url, true);
+  var method = "HEAD";
+  xhr.open(method, url, true);
   xhr.setRequestHeader("X-PHX", "true");
-  xhr.addEventListener("load", function() {
-    if (this.status === 200) {
-      if (f) f(this); else if (b === undefined) X.onScs(this, url);
-    } else {
-      if (b) b(this); else if (b === undefined) X.onErr(this, url);
-    }
-  });
-  xhr.addEventListener("error", function() {
-    if (b) b(this);
-    else if (b === undefined) X.onErr(this, url);
-  });
+  xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
+  xhr.addEventListener("error", X.onerror.bind(xhr, method, url, "", f, b));
   xhr.send(null);
+  return xhr;
 };
 
 // GET Method for Twitter API
@@ -783,17 +792,8 @@ X.get = function get(url, f, b) {
   xhr.setRequestHeader("X-PHX", "true");
   var auth = X.getOAuthHeader(method, url, {});
   xhr.setRequestHeader("Authorization", auth);
-  xhr.addEventListener("load", function() {
-    if (this.status === 200) {
-      if (f) f(this); else if (b === undefined) X.onScs(this, url);
-    } else {
-      if (b) b(this); else if (b === undefined) X.onErr(this, url);
-    }
-  });
-  xhr.addEventListener("error", function() {
-    if (b) b(this);
-    else if (b === undefined) X.onErr(this, url);
-  });
+  xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
+  xhr.addEventListener("error", X.onerror.bind(xhr, method, url, "", f, b));
   xhr.send(null);
   return xhr;
 };
@@ -807,9 +807,8 @@ X.post = function post(url, q, f, b, c) {
   var xhr = new XMLHttpRequest;
   var method = "POST";
   xhr.open(method, url, true);
-  if (q instanceof X.Multipart) {
-    data = new FormData, oaq = {}, ctype = null;
-    for (var i in q) data.append(i, q[i]);
+  if (q instanceof FormData) {
+    data = q, oaq = {}, ctype = null;
   } else if (typeof q === "object") {
     oaq = T.parseQuery(data = T.strQuery(q));
   } else {
@@ -819,18 +818,10 @@ X.post = function post(url, q, f, b, c) {
   xhr.setRequestHeader("Authorization", auth);
   //xhr.setRequestHeader("X-PHX", "true");
   if (ctype) xhr.setRequestHeader("Content-Type", ctype);
-  xhr.addEventListener("load", function() {
-    if (this.status === 200) {
-      if (f) f(this); else if (b === undefined) X.onScs(this, url);
-    } else {
-      if (b) b(this); else if (b === undefined) X.onErr(this, url);
-    }
-  });
-  xhr.addEventListener("error", function() {
-    if (b) b(this);
-    else if (b === undefined) X.onErr(this, url);
-  });
+  xhr.addEventListener("load", X.onload.bind(xhr, method, url, q, f, b));
+  xhr.addEventListener("error", X.onerror.bind(xhr, method, url, q, f, b));
   xhr.send(data);
+  return xhr;
 };
 
 // GET Method XDomain for Twitter API
@@ -1133,6 +1124,26 @@ API.mkurl = function(ver, urlgetters, ext) {
 };
 // default API version
 API.V = 1.1;
+// fun to call after callback(xhr)
+API.reuseData = function(method, url, q) {
+  var data = JSON.parse(this.responseText);
+  var ls = LS.load();
+  var my = ls["credentials"];
+  var urlpts = url.match(/([^?#]*)[?]?([^#]*)/);
+  var baseURL = urlpts[1];
+  var uqobj = T.parseQuery(urlpts[2]);
+  var qobj = T.parseQuery(q);
+  for (var i in uqobj) if (!(i in qobj)) qobj[i] = uqobj[i];
+  if (method === "GET") switch (baseURL) {
+  case API().urls.lists.list():
+    var q_screen_name = /\w+/.exec(qobj["screen_name"] || "");
+    if (!q_screen_name || q_screen_name[0] === my.screen_name) {
+      LS.save("mylists", data);
+      LS.save("mylists_modified", Date.now());
+    }
+    break;
+  }
+};
 // ongot JSON contains my credentials
 API.onGotMe = function(xhr) {
   var ls = LS.load();
@@ -1196,7 +1207,7 @@ API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
                           callback, onErr) {
   var url = API().urls.tweet.upload();
-  X.post(url, new X.Multipart({
+  X.post(url, X.formData({
     "media_data[]": media,
     "status": status || "",
     "in_reply_to_status_id": id || "",
@@ -1337,7 +1348,21 @@ API.search = function(q, opt, callback, onErr) {
 };
 
 API.getRateLimitStatus = function(callback, onErr) {
-  X.get(API(1.1).urls.account.rate_limit_status(), callback, onErr);
+  X.get(API().urls.account.rate_limit_status(), callback, onErr);
+};
+
+API.getMyLists = function(callback, onErr) {
+  var ls = LS.load();
+  var time = ls["mylists_modified"];
+  var interval = 1000 * 60 * 15;
+  if (Date.now() - time > interval) {
+    X.get(url, onGet, onErr);
+  } else {
+    if (reqMylists) {
+      LS.save("mylists", data);
+      LS.save("mylists_modified", Date.now());
+    }
+  }
 };
 
 API.logout = function(callback, onErr) {
@@ -1627,26 +1652,27 @@ V.init.structPage = function() {
     content: D.ce("div"),
     subtitle: D.ce("h2"),
     subaction: D.ce("div"),
+    subfw: D.ce("div"),
+    subli: D.ce("div"),
     submain: D.ce("div"),
     subcursor: D.ce("ul"),
     side: D.ce("div")
   };
-
   fw.header.id    = "header";
   fw.content.id   = "content";
   fw.subtitle.id  = "subtitle";
   fw.subaction.id = "subaction";
+  fw.subfw.id     = "subaction-inner-1";
+  fw.subli.id     = "subaction-inner-2";
   fw.submain.id   = "main";
   fw.subcursor.id = "cursor";
   fw.side.id      = "side";
-
   fw.subaction.className = "user-action";
-
   D.q("body").add(
     fw.header,
     fw.content.add(
       fw.subtitle,
-      fw.subaction,
+      fw.subaction.add(fw.subfw, fw.subli),
       fw.submain,
       fw.subcursor
     ),
@@ -1921,16 +1947,15 @@ V.content.showLoginUI = function(qs) {
     var tokens = T.parseQuery(xhr.responseText);
     LS.save("access_token", tokens["oauth_token"]);
     LS.save("access_token_secret", tokens["oauth_token_secret"]);
-    LS.save("user_id", tokens["user_id"]);
-    LS.save("screen_name", tokens["screen_name"]);
     LS.clear("request_token");
     LS.clear("request_token_secret");
-    D.id("main").add(O.htmlify(tokens));
     var my = {
       id_str: tokens["user_id"],
       screen_name: tokens["screen_name"]
     };
+    LS.save("credentials", my);
     V.panel.updMyStats(my);
+    D.id("main").add(O.htmlify(tokens));
   };
   var onErr = function(xhr) {
     nd.errvw.textContent = xhr.responseText || xhr.getAllResponseHeaders();
@@ -2110,6 +2135,7 @@ V.content.customizeDesign = function(my) {
   fm.update.add(D.ct("Update"));
   fm.update.addEventListener("click", function() {
     function onAPI(xhr) {
+      API.onGotMe(xhr);
       alert(xhr.responseText);
     }
     API.updateProfileColors(
@@ -2608,17 +2634,15 @@ V.content.showUsers = function(url, my, mode) {
 V.content.showLists = function(url, my) {
   var that = this;
   var re = url.match(/[?&]screen_name=(\w+)/);
-  var oname = re ? re[1] : my.screen_name;
+  var oname = re ? re[1]: my.screen_name;
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    if (!data.lists) data.lists = data; // lists/all.json
-
+    if (data.lists) data = data.lists; // lists.json (API 1.0)
     var lists = D.ce("dl");
     var subs = D.ce("dl");
     lists.className = "listslist own";
     subs.className = "listslist";
-
-    data.lists.forEach(function(l) {
+    data.forEach(function(l) {
       var listPath = U.ROOT + l.full_name.substring(1);
       var target = l.user.screen_name === oname ? lists : subs;
       target.add(
@@ -2628,12 +2652,9 @@ V.content.showLists = function(url, my) {
         D.ce("dd").add(D.tweetize(l.description))
       );
     });
-
-    var lists_c = lists.hasChildNodes();
-    var subs_c = subs.hasChildNodes();
     D.id("main").add(
-      lists_c ? lists : D.cf(),
-      subs_c ? subs : D.cf()
+      lists.hasChildNodes() ? lists : D.cf(),
+      subs.hasChildNodes() ? subs : D.cf()
     );
     that.misc.showCursor(data);
   };
@@ -3117,202 +3138,181 @@ V.panel.makeTwAct = function(t, my) {
 
 // Action buttons panel for follow, unfollow, spam.,
 V.panel.showFollowPanel = function(user) {
-  var Button = this.Button;
-  var ab = { // action: basic
-    node: D.ce("div"),
+  X.get(API().urls.users.friendship() + "?target_id=" + user.id_str,
+        function(xhr) { V.panel.lifeFollowButtons(xhr, user); });
+};
+V.panel.lifeFollowButtons = function(xhr, user) {
+  var Button = V.panel.Button;
+  var ab = {
+    node: D.cf(),
     follow: new Button("follow", "Follow", "Unfollow"),
     block: new Button("block", "Block", "Unblock"),
     spam: new Button("spam", "Spam", "Unspam"),
     req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
     dm: new Button("dm", "D"),
     want_rt: new Button("want_rt", "WantRT", "UnwantRT")
+  };
+  var data = JSON.parse(xhr.responseText);
+  var ship = data.relationship.source;
+  function changeFollowBtn() {
+    var isUserHidden = user.protected;
+    if (isUserHidden && ab.follow.node.parentNode === ab.node) {
+      ab.node.replaceChild(ab.req_follow.node, ab.follow.node);
+    }
   }
-
-  D.id("subaction").add(ab.node);
-
-  X.get(API().urls.users.friendship() + "?target_id=" + user.id_str,
-        lifeFollowButtons);
-
-  function lifeFollowButtons(xhr) {
-    var data = JSON.parse(xhr.responseText);
-    var ship = data.relationship.source;
-
-    function changeFollowBtn() {
-      var isUserHidden = user.protected;
-      if (isUserHidden && ab.follow.node.parentNode === ab.node) {
-        ab.node.replaceChild(ab.req_follow.node, ab.follow.node);
-      }
-    }
-
-    function onBlock() {
-      changeFollowBtn();
-      ab.req_follow.turn(false).disable().hide();
-      ab.follow.turn(false).disable().hide();
-      ab.block.turn(true).enable().show();
-      ab.spam.turn(false).enable().show();
-      ab.dm.turn(false).disable().hide();
-      ab.want_rt.turn(false).disable().hide();
-    }
-    function onUnBlock() {
-      ab.req_follow.turn(false).enable().show();
-      ab.follow.turn(false).enable().show();
-      ab.block.turn(false).enable().show();
-      ab.spam.turn(false).enable().show();
-    }
-
-    ship.blocking && onBlock();
-
-    ab.block.node.addEventListener("click", function() {
-      ab.block.on ? API.unblock(user.screen_name, onUnBlock) :
-                    API.block(user.screen_name, onBlock);
-    }, false);
-
-    function onSpam() {
-      changeFollowBtn();
-      ab.req_follow.turn(false).disable().hide();
-      ab.follow.turn(false).disable().hide();
-      ab.block.turn(true).enable().show();
-      ab.spam.turn(true).disable().hide();
-      ab.dm.turn(false).disable().hide();
-      ab.want_rt.turn(false).disable().hide();
-    }
-    function onUnSpam() {
-      ab.req_follow.turn(false).enable().show();
-      ab.follow.turn(false).enable().show();
-      ab.block.turn(false).enable().show();
-      ab.spam.turn(false).enable().show();
-    }
-
-    ship.marked_spam && onSpam();
-
-    ab.spam.node.addEventListener("click", function() {
-      ab.spam.on ? API.unblock(user.screen_name, onUnSpam) :
-                   API.spam(user.screen_name, onSpam);
-    }, false);
-
-    function onFollow() {
-      ab.follow.turn(true).enable();
-      ab.want_rt.turn(true).enable().show();
-    }
-    function onUnfollow() {
-      changeFollowBtn();
-      ab.follow.turn(false).enable();
-      ab.want_rt.turn(false).disable().hide();
-    }
-
-    ship.following ? onFollow() : onUnfollow();
-
-    ab.follow.node.addEventListener("click", function() {
-      ab.follow.on ? API.unfollow(user.screen_name, onUnfollow) :
-                     API.follow(user.screen_name, onFollow);
-    }, false);
-
-    function onWantRT() {
-      ab.want_rt.turn(true);
-    }
-    function onUnwantRT() {
-      ab.want_rt.turn(false);
-    }
-
-    ship.want_retweets ? onWantRT() : onUnwantRT();
-
-    ab.want_rt.node.addEventListener("click", function() {
-      ab.want_rt.on ? API.unwantRT(user.screen_name, onUnwantRT) :
-                      API.wantRT(user.screen_name, onWantRT);
-    }, false);
-
-    function onReqFollow() { ab.req_follow.turn(true).enable(); }
-    function onUnreqFollow() { ab.req_follow.turn(false).enable(); }
-
-    user.follow_request_sent && onReqFollow();
-
-    ab.req_follow.node.addEventListener("click", function() {
-      ab.req_follow.on ?
-              API.unrequestFollow(user.screen_name, onUnreqFollow) :
-              API.requestFollow(user.screen_name, onReqFollow);
-    }, false);
-
-    if (user.protected && !ship.following) {
-      ab.node.add(
-        ab.req_follow.node,
-        ab.block.node,
-        ab.spam.node
-      );
-    } else {
-      ab.node.add(
-        ab.follow.node,
-        ab.block.node,
-        ab.spam.node,
-        ab.want_rt.node
-      );
-    }
-
-    if (ship.followed_by) {
-      ab.dm.node.addEventListener("click", function() {
-        var status = D.id("status");
-        status.value = "d " + user.screen_name + " " + status.value;
-        status.focus();
-      }, false);
-      ab.node.add(ab.dm.node);
-    }
-
+  function onBlock() {
+    changeFollowBtn();
+    ab.req_follow.turn(false).disable().hide();
+    ab.follow.turn(false).disable().hide();
+    ab.block.turn(true).enable().show();
+    ab.spam.turn(false).enable().show();
+    ab.dm.turn(false).disable().hide();
+    ab.want_rt.turn(false).disable().hide();
   }
+  function onUnBlock() {
+    ab.req_follow.turn(false).enable().show();
+    ab.follow.turn(false).enable().show();
+    ab.block.turn(false).enable().show();
+    ab.spam.turn(false).enable().show();
+  }
+  ship.blocking && onBlock();
+  ab.block.node.addEventListener("click", function() {
+    ab.block.on ? API.unblock(user.screen_name, onUnBlock) :
+                  API.block(user.screen_name, onBlock);
+  }, false);
+  function onSpam() {
+    changeFollowBtn();
+    ab.req_follow.turn(false).disable().hide();
+    ab.follow.turn(false).disable().hide();
+    ab.block.turn(true).enable().show();
+    ab.spam.turn(true).disable().hide();
+    ab.dm.turn(false).disable().hide();
+    ab.want_rt.turn(false).disable().hide();
+  }
+  function onUnSpam() {
+    ab.req_follow.turn(false).enable().show();
+    ab.follow.turn(false).enable().show();
+    ab.block.turn(false).enable().show();
+    ab.spam.turn(false).enable().show();
+  }
+  ship.marked_spam && onSpam();
+  ab.spam.node.addEventListener("click", function() {
+    ab.spam.on ? API.unblock(user.screen_name, onUnSpam) :
+                 API.spam(user.screen_name, onSpam);
+  }, false);
+  function onFollow() {
+    ab.follow.turn(true).enable();
+    ab.want_rt.turn(true).enable().show();
+  }
+  function onUnfollow() {
+    changeFollowBtn();
+    ab.follow.turn(false).enable();
+    ab.want_rt.turn(false).disable().hide();
+  }
+  ship.following ? onFollow() : onUnfollow();
+  ab.follow.node.addEventListener("click", function() {
+    ab.follow.on ? API.unfollow(user.screen_name, onUnfollow) :
+                   API.follow(user.screen_name, onFollow);
+  }, false);
+  function onWantRT() {
+    ab.want_rt.turn(true);
+  }
+  function onUnwantRT() {
+    ab.want_rt.turn(false);
+  }
+  ship.want_retweets ? onWantRT() : onUnwantRT();
+  ab.want_rt.node.addEventListener("click", function() {
+    ab.want_rt.on ? API.unwantRT(user.screen_name, onUnwantRT) :
+                    API.wantRT(user.screen_name, onWantRT);
+  }, false);
+  function onReqFollow() { ab.req_follow.turn(true).enable(); }
+  function onUnreqFollow() { ab.req_follow.turn(false).enable(); }
+  user.follow_request_sent && onReqFollow();
+  ab.req_follow.node.addEventListener("click", function() {
+    ab.req_follow.on ?
+            API.unrequestFollow(user.screen_name, onUnreqFollow) :
+            API.requestFollow(user.screen_name, onReqFollow);
+  }, false);
+  if (user.protected && !ship.following) {
+    ab.node.add(
+      ab.req_follow.node,
+      ab.block.node,
+      ab.spam.node
+    );
+  } else {
+    ab.node.add(
+      ab.follow.node,
+      ab.block.node,
+      ab.spam.node,
+      ab.want_rt.node
+    );
+  }
+  if (ship.followed_by) {
+    ab.dm.node.addEventListener("click", function() {
+      var status = D.id("status");
+      status.value = "d " + user.screen_name + " " + status.value;
+      status.focus();
+    }, false);
+    ab.node.add(ab.dm.node);
+  }
+  D.id("subaction-inner-1").add(ab.node);
 };
-
 // Action buttons panel for add user to list
 V.panel.showAddListPanel = function(user, my) {
-  var Button = this.Button;
-  var al = { // action: list
+  var that = this;
+  var onScs = function(xhr) {
+    that.lifeListButtons(xhr, user, my);
+  };
+  var ls = LS.load();
+  var mylists = ls["mylists"];
+  var time = ls["mylists_modified"];
+  var interval = 1000 * 60 * 15;
+  var past = Date.now() - time;
+  if (Date.now() - time > interval) {
+    X.get(API().urls.lists.list(), onScs);
+  } else {
+    onScs({responseText:JSON.stringify(mylists)});
+  }
+};
+V.panel.lifeListButtons = function(xhr, user, my) {
+  var Button = V.panel.Button;
+  var al = {
     node: D.ce("div")
   };
-
-  D.id("subaction").add(al.node);
-
-  X.get(API().urls.lists.list(), lifeListButtons);
-
-  function lifeListButtons(xhr) {
+  var data = JSON.parse(xhr.responseText);
+  var lists = data.lists || data;
+  var list_btns = {};
+  lists = lists.filter(function(l) { return l.user.id_str === my.id_str; });
+  lists = lists.filter(function(a, i) {
+    return lists.every(function(b, j) {
+      return j >= i || a.slug !== b.slug;
+    });
+  });
+  lists.forEach(function(l) {
+    var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
+    var lb = new Button("list", lb_label, lb_label);
+    list_btns[l.slug] = lb;
+    function onListing() { lb.turn(true); }
+    function onUnlisting() { lb.turn(false); }
+    lb.node.addEventListener("click", function() {
+      lb.on ? API.unlisting(l.user.screen_name, l.slug,
+                            user.screen_name, onUnlisting) :
+              API.listing(l.user.screen_name, l.slug,
+                          user.screen_name, onListing);
+    }, false);
+    al.node.add(lb.node);
+  });
+  var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    var lists = data.lists || data;
-    var list_btns = {};
-
-    lists = lists.filter(function(l) { return l.user.id_str === my.id_str; });
-    lists = lists.filter(function(a, i) {
-      return lists.every(function(b, j) {
-        return j >= i || a.slug !== b.slug;
-      });
+    data.lists.forEach(function(l) {
+      list_btns[l.slug].turn(true);
     });
-    lists.forEach(function(l) {
-
-      var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
-      var lb = new Button("list", lb_label, lb_label);
-      list_btns[l.slug] = lb;
-
-      function onListing() { lb.turn(true); }
-      function onUnlisting() { lb.turn(false); }
-
-      lb.node.addEventListener("click", function() {
-        lb.on ? API.unlisting(l.user.screen_name, l.slug,
-                              user.screen_name, onUnlisting) :
-                API.listing(l.user.screen_name, l.slug,
-                            user.screen_name, onListing);
-      }, false);
-
-      al.node.add(lb.node);
-    });
-
-    X.get(API().urls.lists.listed() + "?" +
-          "filter_to_owned_lists=true&" +
-          "screen_name=" + user.screen_name, checkOnIfListedByMe);
-
-    function checkOnIfListedByMe(xhr) {
-      var data = JSON.parse(xhr.responseText);
-
-      data.lists.forEach(function(l) {
-        list_btns[l.slug].turn(true);
-      });
-    }
-
-  }
+  };
+  var onErr = function() {
+  };
+  D.id("subaction-inner-2").add(al.node);
+  X.get(API().urls.lists.listed() + "?filter_to_owned_lists=true&" +
+        "screen_name=" + user.screen_name, onScs, onErr);
 };
 
 // Button to do follow list
@@ -3322,21 +3322,16 @@ V.panel.showListFollowPanel = function(list) {
     node: D.ce("div"),
     follow: new Button("follow", "Follow", "Unfollow")
   };
-
   function onFollow() { ab.follow.turn(true); }
   function onUnfollow() { ab.follow.turn(false); }
-
   list.following && onFollow();
-
   ab.follow.node.addEventListener("click", function() {
     ab.follow.on ? API.unfollowList(list.user.screen_name,
                                     list.slug, onUnfollow) :
                    API.followList(list.user.screen_name,
                                   list.slug, onFollow);
   }, false);
-
   ab.node.add(ab.follow.node);
-
   D.id("subaction").add(ab.node);
 };
 
@@ -3993,14 +3988,7 @@ V.outline.rendProfileOutline = function(user) {
 // main
 (function() {
   var ls = LS.load();
-  var cons = ls["consumer_secret"];
-  var acs = ls["access_token"];
-  var acs_s = ls["access_token_secret"];
-  var time = ls["credentials_modified"] || 0;
-  var my = ls["credentials"] || {
-    "screen_name": ls["screen_name"],
-    "id_str": ls["user_id"]
-  };
+  var my = ls["credentials"];
   var editDOM = function() {
     V.init.initNode();
     V.init.structPage();
@@ -4008,7 +3996,12 @@ V.outline.rendProfileOutline = function(user) {
   };
   if (document.readyState === "complete") editDOM();
   else addEventListener("load", function() { editDOM(); });
-  if (cons && acs && acs_s && Date.now() - time > 1000 * 60 * 15) {
+  var cons = ls["consumer_secret"];
+  var acs = ls["access_token"];
+  var acs_s = ls["access_token_secret"];
+  var time = ls["credentials_modified"];
+  var interval = 1000 * 60 * 15;
+  if (cons && acs && acs_s && Date.now() - time > interval) {
     X.get(API().urls.account.verify_credentials(), function(xhr) {
       API.onGotMe(xhr);
       LS.save("credentials_modified", Date.now());
