@@ -756,10 +756,10 @@ X.onload = function(method, url, q, f, b) {
     alert([xhr.status, url, xhr.responseText].join("\n"));
   };
   if (this.status === 200) {
-    if (f !== undefined) f(this); else onScs(this, method, url);
-    API.reuseData.apply(this, arguments);
+    if (f) f(this); else if (f === undefined) onScs(this, method, url);
+    API.cc.reuseData.apply(this, arguments);
   } else {
-    if (b !== undefined) b(this); else onErr(this, method, url);
+    if (b) b(this); else if (b === undefined) onErr(this, method, url);
   }
 };
 
@@ -768,7 +768,7 @@ X.onerror = function(method, url, q, f, b) {
   var onErr = function(xhr, method, url) {
     alert([xhr.status, url, xhr.responseText].join("\n"));
   };
-  if (b !== undefined) b(this); else X.onErr(this, method, url);
+  if (b) b(this); else if (b === undefined) X.onErr(this, method, url);
 };
 
 // HEAD Method for Twitter API
@@ -1124,9 +1124,11 @@ API.mkurl = function(ver, urlgetters, ext) {
 };
 // default API version
 API.V = 1.1;
-// fun to call after callback(xhr)
-API.reuseData = function(method, url, q) {
-  var data = JSON.parse(this.responseText);
+// API cache
+API.cc = {};
+// memory data after callback(xhr)
+API.cc.reuseData = function(method, url, q) {
+  try { var data = JSON.parse(this.responseText); } catch(e) { return; }
   var ls = LS.load();
   var my = ls["credentials"];
   var urlpts = url.match(/([^?#]*)[?]?([^#]*)/);
@@ -1145,13 +1147,29 @@ API.reuseData = function(method, url, q) {
   }
 };
 // ongot JSON contains my credentials
-API.onGotMe = function(xhr) {
+API.cc.onGotMe = function(xhr) {
   var ls = LS.load();
   var data = JSON.parse(xhr.responseText);
   var my = data.user || data;
   LS.save("credentials", my);
+  LS.save("credentials_modified", Date.now());
   V.panel.updMyStats(my);
 };
+API.cc.getMyLists = function() {
+  var ls = LS.load();
+  var data = ls["mylists"];
+  var time = ls["mylists_modified"];
+  var interval = 1000 * 60 * 15;
+  return Date.now() - time < interval ? data: null;
+};
+API.cc.getCredentials = function() {
+  var ls = LS.load();
+  var data = ls["credentials"];
+  var time = ls["credentials_modified"];
+  var interval = 1000 * 60 * 15;
+  return Date.now() - time < interval ? data: null;
+};
+
 API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
   if (1) {
     var url = "/settings/design/update";
@@ -1349,20 +1367,6 @@ API.search = function(q, opt, callback, onErr) {
 
 API.getRateLimitStatus = function(callback, onErr) {
   X.get(API().urls.account.rate_limit_status(), callback, onErr);
-};
-
-API.getMyLists = function(callback, onErr) {
-  var ls = LS.load();
-  var time = ls["mylists_modified"];
-  var interval = 1000 * 60 * 15;
-  if (Date.now() - time > interval) {
-    X.get(url, onGet, onErr);
-  } else {
-    if (reqMylists) {
-      LS.save("mylists", data);
-      LS.save("mylists_modified", Date.now());
-    }
-  }
 };
 
 API.logout = function(callback, onErr) {
@@ -1958,6 +1962,7 @@ V.content.showLoginUI = function(qs) {
     D.id("main").add(O.htmlify(tokens));
   };
   var onErr = function(xhr) {
+    if (!xhr) return;
     nd.errvw.textContent = xhr.responseText || xhr.getAllResponseHeaders();
   };
   var nd = {
@@ -2135,7 +2140,7 @@ V.content.customizeDesign = function(my) {
   fm.update.add(D.ct("Update"));
   fm.update.addEventListener("click", function() {
     function onAPI(xhr) {
-      API.onGotMe(xhr);
+      API.cc.onGotMe(xhr);
       alert(xhr.responseText);
     }
     API.updateProfileColors(
@@ -3088,14 +3093,14 @@ V.panel.makeTwAct = function(t, my) {
       API.untweet(t.id_str, function(xhr) {
         ab.rt.turn(false);
         D.rm(ab.node.parentNode);
-        API.onGotMe(xhr);
+        API.cc.onGotMe(xhr);
       });
     } else if (isTweetRTedByMe) {
       // undo RT (button on owner tweet or others' RT)
       API.untweet(t.current_user_retweet.id_str, function(xhr) {
         isTweetRTedByMe = false;
         ab.rt.turn(false);
-        API.onGotMe(xhr);
+        API.cc.onGotMe(xhr);
       });
     } else {
       // do RT
@@ -3104,7 +3109,7 @@ V.panel.makeTwAct = function(t, my) {
         t.current_user_retweet = data;
         isTweetRTedByMe = true;
         ab.rt.turn(true);
-        API.onGotMe(xhr);
+        API.cc.onGotMe(xhr);
       });
     }
   }, false);
@@ -3123,7 +3128,7 @@ V.panel.makeTwAct = function(t, my) {
     ab.del.node.addEventListener("click", function() {
       API.untweet((rt || t).id_str, function(xhr) {
         D.rm(ab.node.parentNode);
-        API.onGotMe(xhr);
+        API.cc.onGotMe(xhr);
       });
     }, false);
     ab.node.add(ab.del.node);
@@ -3263,15 +3268,11 @@ V.panel.showAddListPanel = function(user, my) {
   var onScs = function(xhr) {
     that.lifeListButtons(xhr, user, my);
   };
-  var ls = LS.load();
-  var mylists = ls["mylists"];
-  var time = ls["mylists_modified"];
-  var interval = 1000 * 60 * 15;
-  var past = Date.now() - time;
-  if (Date.now() - time > interval) {
-    X.get(API().urls.lists.list(), onScs);
-  } else {
+  var mylists = API.cc.getMyLists();
+  if (mylists) {
     onScs({responseText:JSON.stringify(mylists)});
+  } else {
+    X.get(API().urls.lists.list(), onScs);
   }
 };
 V.panel.lifeListButtons = function(xhr, user, my) {
@@ -3525,10 +3526,10 @@ V.panel.showTweetBox = function() {
   t.update.addEventListener("click", function() {
     if (t.usemedia.checked && media_b64) {
       API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "",
-      function(xhr) { API.onGotMe(xhr); alert(xhr.responseText); });
+      function(xhr) { API.cc.onGotMe(xhr); alert(xhr.responseText); });
     } else {
       API.tweet(t.status.value, t.id.value, "", "", "", "", "",
-      function(xhr) { API.onGotMe(xhr); alert(xhr.responseText); });
+      function(xhr) { API.cc.onGotMe(xhr); alert(xhr.responseText); });
     }
   }, false);
 
@@ -3996,15 +3997,7 @@ V.outline.rendProfileOutline = function(user) {
   };
   if (document.readyState === "complete") editDOM();
   else addEventListener("load", function() { editDOM(); });
-  var cons = ls["consumer_secret"];
-  var acs = ls["access_token"];
-  var acs_s = ls["access_token_secret"];
-  var time = ls["credentials_modified"];
-  var interval = 1000 * 60 * 15;
-  if (cons && acs && acs_s && Date.now() - time > interval) {
-    X.get(API().urls.account.verify_credentials(), function(xhr) {
-      API.onGotMe(xhr);
-      LS.save("credentials_modified", Date.now());
-    }, null);
+  if (!API.cc.getCredentials()) {
+    X.get(API().urls.account.verify_credentials(), API.cc.onGotMe, null);
   }
 })();
