@@ -12,7 +12,7 @@ var props = function(arg) {
   proplist.unshift(arg);
   return proplist.join("\n");
 };
-var U, C, D, O, T, P, A, X, API, LS, init, content, panel, outline;
+var U, C, D, O, T, P, A, X, V, API, LS;
 
 // CONST VALUE
 C = {};
@@ -93,15 +93,16 @@ P.bits = function bits(str) {
   });
   return data;
 };
-P.hmac = function(hf) {
+P.hmac = function hmacenc(hf) {
   var BLOCK_SIZE = hf.BLOCK_SIZE;
   var IPAD = 0x36;
   var OPAD = 0x5C;
   function pad(p) {
-    var base = ("00000000" + p.toString(2)).slice(-8);
+    var BYTE = 8;
+    var base = (Array(BYTE).join("0") + p.toString(2)).slice(-BYTE);
     return function(data) {
       return data.map(function(c, i) {
-        return c ^ base[i % 8];
+        return c ^ base[i % BYTE];
       });
     };
   }
@@ -737,6 +738,42 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
   return header;
 };
 
+// multipart/form-data
+X.Multipart = function(qrys) {
+  for (var i in qrys) {
+    this[i] = qrys[i];
+  }
+};
+
+// default XHR.onload/200 function
+X.onScs = function(xhr, url) {
+  alert([xhr.status, url, xhr.responseText].join("\n"));
+};
+
+// default XHR.onerror/404 function
+X.onErr = function(xhr, url) {
+  alert([xhr.status, url, xhr.responseText].join("\n"));
+};
+
+// HEAD Method for Twitter API
+X.head = function head(url, f, b) {
+  var xhr = new XMLHttpRequest;
+  xhr.open("HEAD", url, true);
+  xhr.setRequestHeader("X-PHX", "true");
+  xhr.addEventListener("load", function() {
+    if (this.status === 200) {
+      if (f) f(this); else if (b === undefined) X.onScs(this, url);
+    } else {
+      if (b) b(this); else if (b === undefined) X.onErr(this, url);
+    }
+  });
+  xhr.addEventListener("error", function() {
+    if (b) b(this);
+    else if (b === undefined) X.onErr(this, url);
+  });
+  xhr.send(null);
+};
+
 // GET Method for Twitter API
 X.get = function get(url, f, b) {
   var xhr = new XMLHttpRequest;
@@ -747,50 +784,18 @@ X.get = function get(url, f, b) {
   var auth = X.getOAuthHeader(method, url, {});
   xhr.setRequestHeader("Authorization", auth);
   xhr.addEventListener("load", function() {
-    if (this.status === 200) f(this);
-    else (b || function(x) {
-      alert([x.status, url, x.responseText].join("\n"));
-    })(this);
+    if (this.status === 200) {
+      if (f) f(this); else if (b === undefined) X.onScs(this, url);
+    } else {
+      if (b) b(this); else if (b === undefined) X.onErr(this, url);
+    }
   });
   xhr.addEventListener("error", function() {
-    (b || function(x) {
-      alert([x.status, url, x.responseText].join("\n"));
-    })(this);
+    if (b) b(this);
+    else if (b === undefined) X.onErr(this, url);
   });
   xhr.send(null);
   return xhr;
-};
-
-// GET Method XDomain for Twitter API
-X.getX = function get(url, f, b) {
-  var script = D.ce("script");
-  for (var fn; fn = "f" + String(Math.random()).slice(2), window[fn];);
-  script.src = url + "&callback=" + fn;
-  window[fn] = function(str) {
-    f({responseText:JSON.stringify(str)});
-    delete window[fn];
-    D.rm(script);
-  };
-  D.q("body").add(script);
-};
-
-// HEAD Method for Twitter API
-X.head = function head(url, f, b) {
-  var xhr = new XMLHttpRequest;
-  xhr.open("HEAD", url, true);
-  xhr.setRequestHeader("X-PHX", "true");
-  xhr.onload = function() {
-    if (this.status === 200) f(this);
-    else (b || function(x) { alert(x.responseText); })(this);
-  };
-  xhr.send(null);
-};
-
-// multipart/form-data
-X.Multipart = function(qrys) {
-  for (var i in qrys) {
-    this[i] = qrys[i];
-  }
 };
 
 // POST Method for Twitter API
@@ -815,44 +820,30 @@ X.post = function post(url, q, f, b, c) {
   //xhr.setRequestHeader("X-PHX", "true");
   if (ctype) xhr.setRequestHeader("Content-Type", ctype);
   xhr.addEventListener("load", function() {
-    if (xhr.status === 200) f(xhr);
-    else (b || function(xhr) { alert(xhr.responseText); })(xhr);
+    if (this.status === 200) {
+      if (f) f(this); else if (b === undefined) X.onScs(this, url);
+    } else {
+      if (b) b(this); else if (b === undefined) X.onErr(this, url);
+    }
   });
   xhr.addEventListener("error", function() {
-    (b || function(x) {
-      alert([x.status, url, x.responseText].join("\n"));
-    })(this);
+    if (b) b(this);
+    else if (b === undefined) X.onErr(this, url);
   });
   xhr.send(data);
 };
 
-// Method (with Custom Header) for Twitter OAuth
-X.sendAuth = function sendAuth(method, url, hd, q, f, b) {
-  var xhr = new XMLHttpRequest;
-  xhr.open(method, url, true);
-  xhr.setRequestHeader("Content-Type",
-                       "application/x-www-form-urlencoded");
-  var heads = [];
-  for (var i in hd) {
-    heads.push(P.oauth.enc(i) + "=\"" + P.oauth.enc(hd[i]) + "\"");
-  }
-  var auth = "OAuth " + heads.join(",");
-  xhr.setRequestHeader("Authorization", auth);
-  xhr.addEventListener("load", function() {
-    if (this.status === 200) {
-      f(this);
-    } else {
-      (b || function(x) { alert(x.responseText); })(this);
-    }
-  });
-  xhr.addEventListener("error", function(e) {
-    alert("?_? XHR: " + e.type);
-  });
-  var query = [];
-  for (var i in q) {
-    query.push(i + "=" + P.oauth.enc(q[i]));
-  }
-  xhr.send(query.join("&"));
+// GET Method XDomain for Twitter API
+X.getX = function get(url, f, b) {
+  var script = D.ce("script");
+  for (var fn; window[fn = "f" + String(Math.random()).slice(2)];);
+  script.src = url + "&callback=" + fn;
+  window[fn] = function(str) {
+    f({responseText:JSON.stringify(str)});
+    delete window[fn];
+    D.rm(script);
+  };
+  D.q("body").add(script);
 };
 
 
@@ -918,7 +909,8 @@ API = function(ver) {
           1.1: function() { return "/1.1/account/verify_credentials"; }
         }),
         update_profile_colors: API.mkurl(ver, {
-          1: function() { return "/1/account/update_profile_colors"; }
+          1: function() { return "/1/account/update_profile_colors"; },
+          1.1: function() { return "/1.1/account/update_profile_colors"; }
         })
       },
       users: {
@@ -1139,7 +1131,16 @@ API.mkurl = function(ver, urlgetters, ext) {
     return ret;
   };
 };
+// default API version
 API.V = 1.1;
+// ongot JSON contains my credentials
+API.onGotMe = function(xhr) {
+  var ls = LS.load();
+  var data = JSON.parse(xhr.responseText);
+  var my = data.user || data;
+  LS.save("credentials", my);
+  V.panel.updMyStats(my);
+};
 API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
   if (1) {
     var url = "/settings/design/update";
@@ -1216,8 +1217,7 @@ API.retweet = function(id, callback, onErr) {
 };
 
 API.deleteMessage = function(id, callback, onErr) {
-  X.post(API().urls.d.destroy(id), "id=" + id,
-         callback, onErr);
+  X.post(API().urls.d.destroy(id), "id=" + id, callback, onErr);
 };
 
 API.fav = function(id, callback, onErr) {
@@ -1352,12 +1352,13 @@ API.logout = function(callback, onErr) {
   }
 };
 
+// Objects for View
+V = {};
 
 // Page Init Functions
+V.init = {};
 
-init = {};
-
-init.CSS = '\
+V.init.CSS = '\
   *:not(button) {\
     margin: 0;\
     padding: 0;\
@@ -1595,7 +1596,7 @@ init.CSS = '\
 '.replace(/\s+/g, " ");
 
 // Clear all node and set new one
-init.initNode = function() {
+V.init.initNode = function() {
 
   D.rm(document.documentElement);
 
@@ -1614,13 +1615,13 @@ init.initNode = function() {
 
   meta.sa("charset", "utf-8");
   title.add(D.ct("tw-"));
-  style.add(D.ct(init.CSS));
+  style.add(D.ct(V.init.CSS));
 
   document.appendChild(html.add(head.add(meta, title, style), body));
 };
 
 // Set DOM struct of tw-
-init.structPage = function() {
+V.init.structPage = function() {
   var fw = {
     header: D.ce("div"),
     content: D.ce("div"),
@@ -1653,38 +1654,36 @@ init.structPage = function() {
   );
 };
 
-
 // Functions of Render main content
-
-content = {};
+V.content = {};
 // Show Content by path in URL
-content.showPage = function(my) {
+V.content.showPage = function(my) {
   var curl = U.getURL();
   var path = curl.path;
   var hash = path.split("/");
   var q = curl.query;
 
   D.q("title").textContent = "tw-/" + path;
-  outline.showSubTitle(hash);
-  panel.showGlobalBar(my);
-  panel.showTweetBox();
+  V.outline.showSubTitle(hash);
+  V.panel.showGlobalBar(my);
+  V.panel.showTweetBox();
 
   switch (hash.length) {
   case 1:
-    content.showPage.on1.call(this, hash, q, my);
+    this.showPage.on1.call(this, hash, q, my);
     break;
   case 2:
-    content.showPage.on2.call(this, hash, q, my);
+    this.showPage.on2.call(this, hash, q, my);
     break;
   case 3:
-    content.showPage.on3.call(this, hash, q, my);
+    this.showPage.on3.call(this, hash, q, my);
     break;
   default:
-    content.showPage.on3.call(this, hash, q, my);
+    this.showPage.on3.call(this, hash, q, my);
     break;
   }
 };
-content.showPage.on1 = function(hash, q, my) {
+V.content.showPage.on1 = function(hash, q, my) {
   switch (hash[0]) {
   case "login":
     this.showLoginUI(q);
@@ -1694,7 +1693,7 @@ content.showPage.on1 = function(hash, q, my) {
     break;
   case "lists":
     this.showLists(API().urls.lists.list() + "?" + q + "&cursor=-1", my);
-    panel.showListPanel(my);
+    V.panel.showListPanel(my);
     break;
   case "inbox":
     this.showTL(API().urls.d.inbox() + "?" + q +
@@ -1732,11 +1731,11 @@ content.showPage.on1 = function(hash, q, my) {
     this.showTL(API().urls.timeline.user() + "?" + q +
                 "&include_entities=true&include_rts=true" +
                 "&screen_name=" + hash[0], my);
-    outline.showProfileOutline(hash[0], my);
+    V.outline.showProfileOutline(hash[0], my);
   }
 };
 
-content.showPage.on2 = function(hash, q, my) {
+V.content.showPage.on2 = function(hash, q, my) {
   if (hash[0] === "settings") switch (hash[1]) {
   case "options":
     this.settingOptions();
@@ -1773,7 +1772,7 @@ content.showPage.on2 = function(hash, q, my) {
   case "subscriptions":
     if (hash[0] === "lists") {
       this.showLists(API().urls.lists.subscriptions() + "?" + q, my);
-      panel.showUserManager(my);
+      V.panel.showUserManager(my);
     }
     break;
   case "status":
@@ -1786,24 +1785,24 @@ content.showPage.on2 = function(hash, q, my) {
     this.showTL(API().urls.favorites.list() + "?" + q +
                 "&include_entities=true" +
                 "&screen_name=" + hash[0], my);
-    outline.showProfileOutline(hash[0], my, 3);
+    V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
     this.showUsersByIds(API().urls.users.friends_ids() + "?" + q +
                    "&screen_name=" + hash[0] +
                    "&count=20&cursor=-1&stringify_ids=true", my);
-    outline.showProfileOutline(hash[0], my, 3);
+    V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "followers":
     this.showUsersByIds(API().urls.users.followers_ids() + "?" + q +
                    "&screen_name=" + hash[0] +
                    "&count=20&cursor=-1&stringify_ids=true", my);
-    outline.showProfileOutline(hash[0], my, 3);
+    V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
     this.showLists(API().urls.lists.list() + "?" + q +
                    "&screen_name=" + hash[0], my);
-    outline.showProfileOutline(hash[0], my, 3);
+    V.outline.showProfileOutline(hash[0], my, 3);
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
@@ -1816,12 +1815,12 @@ content.showPage.on2 = function(hash, q, my) {
                 "&include_rts=false" +
                 "&include_entities=true";
       this.showTL(url, my);
-      outline.showListOutline(hash, my);
+      V.outline.showListOutline(hash, my);
     }
   }
 };
 
-content.showPage.on3 = function(hash, q, my) {
+V.content.showPage.on3 = function(hash, q, my) {
   if (hash[0] === "search" && hash[1] === "users") {
     this.showUsers(API().urls.search.users() + "?q=" + hash[2] + "&" + q +
                    "&count=20&include_entities=true", my, 4);
@@ -1832,7 +1831,7 @@ content.showPage.on3 = function(hash, q, my) {
       this.showTL("/1/statuses/following_timeline.json?" + q +
                   "&include_entities=true" +
                   "&screen_name=" + hash[0], my);
-      outline.showProfileOutline(hash[0], my, 3);
+      V.outline.showProfileOutline(hash[0], my, 3);
     } else {
       var url = API().urls.lists.tweets() + "?" + q +
                 "&owner_screen_name=" + hash[0] +
@@ -1845,39 +1844,39 @@ content.showPage.on3 = function(hash, q, my) {
     this.showUsers(API().urls.lists.users.members() + "?" + q +
                    "&owner_screen_name=" + hash[0] +
                    "&slug=" + hash[1], my);
-    outline.showListOutline(hash, my, 3);
+    V.outline.showListOutline(hash, my, 3);
     break;
   case "subscribers":
     this.showUsers(API().urls.lists.users.subscribers() + "?" + q +
                    "&owner_screen_name=" + hash[0] +
                    "&slug=" + hash[1], my);
-    outline.showListOutline(hash, my, 3);
+    V.outline.showListOutline(hash, my, 3);
     break;
   case "memberships":
     if (hash[1] === "lists") {
       this.showLists(API().urls.lists.listed() + "?" + q +
                      "&screen_name=" + hash[0], my);
-      outline.showProfileOutline(hash[0], my, 3);
+      V.outline.showProfileOutline(hash[0], my, 3);
     }
     break;
   case "subscriptions":
     if (hash[1] === "lists") {
       this.showLists(API().urls.lists.subscriptions() + "?" + q +
                      "&screen_name=" + hash[0], my);
-      outline.showProfileOutline(hash[0], my, 3);
+      V.outline.showProfileOutline(hash[0], my, 3);
     }
     break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
       this.showTL(API().urls.tweet.get(hash[2]) + "?" + q +
                   "&include_entities=true", my);
-      outline.showProfileOutline(hash[0], my, 1);
+      V.outline.showProfileOutline(hash[0], my, 1);
     }
   }
 };
 
 // Render view of list of settings
-content.showSettings = function(my) {
+V.content.showSettings = function(my) {
   var root = U.ROOT + "settings/";
   var nd = {
     api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
@@ -1896,7 +1895,7 @@ content.showSettings = function(my) {
 };
 
 // Login UI
-content.showLoginUI = function(qs) {
+V.content.showLoginUI = function(qs) {
   var getReqToken = function() {
     var url = API().urls.oauth.request();
     X.post(url, "", ongetReqToken, onErr);
@@ -1927,6 +1926,11 @@ content.showLoginUI = function(qs) {
     LS.clear("request_token");
     LS.clear("request_token_secret");
     D.id("main").add(O.htmlify(tokens));
+    var my = {
+      id_str: tokens["user_id"],
+      screen_name: tokens["screen_name"]
+    };
+    V.panel.updMyStats(my);
   };
   var onErr = function(xhr) {
     nd.errvw.textContent = xhr.responseText || xhr.getAllResponseHeaders();
@@ -1974,13 +1978,13 @@ content.showLoginUI = function(qs) {
 
 // Render View of Colors Setting
 // Change colors of text, link, background-color.,
-content.customizeDesign = function(my) {
+V.content.customizeDesign = function(my) {
   if (my.status) {
     my.status.user = my;
     this.rendTL(my.status, my);
   }
-  outline.rendProfileOutline(my, my, 2);
-  outline.changeDesign(my);
+  V.outline.rendProfileOutline(my, my, 2);
+  V.outline.changeDesign(my);
 
   var background = D.q("html");
   var fm = {
@@ -2150,7 +2154,7 @@ content.customizeDesign = function(my) {
 };
 
 // Render UI of account settings
-content.settingAccount = function(my) {
+V.content.settingAccount = function(my) {
   var uname = D.ce("input");
   var unameBtn = D.ce("button").add(D.ct("Check"));
   var auto = D.ce("input").sa("type", "number").sa("min", "0").sa("value", "4");
@@ -2212,7 +2216,7 @@ content.settingAccount = function(my) {
 };
 
 // Render UI for API testing
-content.testAPI = function(my) {
+V.content.testAPI = function(my) {
   var nd = {
     main: D.id("main"),
     side: D.id("side"),
@@ -2312,7 +2316,7 @@ content.testAPI = function(my) {
 };
 
 // Settings of this application
-content.settingOptions = function() {
+V.content.settingOptions = function() {
   var lsn = "localStorage['" + LS.NS + "']";
   var lsdata = LS.load();
   var lstext = JSON.stringify(lsdata);
@@ -2359,7 +2363,7 @@ content.settingOptions = function() {
 };
 
 // Render UI of following settings
-content.settingFollow = function(my) {
+V.content.settingFollow = function(my) {
   var ids = {
     following: null,
     followers: null
@@ -2456,7 +2460,7 @@ content.settingFollow = function(my) {
 };
 
 // Step to Render View of list of users by ids (follow requests in/out.,)
-content.showUsersByIds = function(url, my, mode) {
+V.content.showUsersByIds = function(url, my, mode) {
   var that = this;
   var re = {
     cursor: url.match(/[?&]cursor=([-\d]+)/),
@@ -2489,7 +2493,7 @@ content.showUsersByIds = function(url, my, mode) {
       users_data.users = users_data.users.sort(function(a, b) {
         return ids.indexOf(a.id_str) - ids.indexOf(b.id_str);
       });
-      content.rendUsers(users_data, my, mode | 2);
+      that.rendUsers(users_data, my, mode | 2);
     }
     var ids = ids_data.ids.slice(start, start + count);
     if (ids.length) {
@@ -2508,11 +2512,11 @@ content.showUsersByIds = function(url, my, mode) {
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGetIds, onErr);
-  panel.showUserManager(my);
+  V.panel.showUserManager(my);
 };
 
 // Render View of list of users
-content.rendUsers = function(data, my, mode) {
+V.content.rendUsers = function(data, my, mode) {
   data.users = data.users || data;
   var followerRequests = mode & 1;
   var idsCursor = mode & 2;
@@ -2568,7 +2572,7 @@ content.rendUsers = function(data, my, mode) {
     );
 
     if (followerRequests) {
-      lu.root.add(panel.makeReqDecider(user));
+      lu.root.add(V.panel.makeReqDecider(user));
     }
 
     users_list.add(lu.root);
@@ -2582,11 +2586,11 @@ content.rendUsers = function(data, my, mode) {
 };
 
 // Step to Render View of list of users (following/ers, lists members.,)
-content.showUsers = function(url, my, mode) {
+V.content.showUsers = function(url, my, mode) {
   var that = this;
   function onGetUsers(xhr) {
     var data = JSON.parse(xhr.responseText);
-    content.rendUsers(data, my, mode);
+    that.rendUsers(data, my, mode);
   }
   var onErr = function(xhr) {
     if (xhr.status === 401) {
@@ -2597,11 +2601,11 @@ content.showUsers = function(url, my, mode) {
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGetUsers, onErr);
-  panel.showUserManager(my);
+  V.panel.showUserManager(my);
 };
 
 // Render View of list of lists
-content.showLists = function(url, my) {
+V.content.showLists = function(url, my) {
   var that = this;
   var re = url.match(/[?&]screen_name=(\w+)/);
   var oname = re ? re[1] : my.screen_name;
@@ -2645,7 +2649,8 @@ content.showLists = function(url, my) {
 };
 
 // Step to Render View of Search Results
-content.showSearchTL = function(q, opt, my) {
+V.content.showSearchTL = function(q, opt, my) {
+  var that = this;
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     var tl = data.statuses;
@@ -2663,7 +2668,7 @@ content.showSearchTL = function(q, opt, my) {
         };
       });
     }
-    content.rendTL(tl, my);
+    that.rendTL(tl, my);
     A.expandUrls(D.id("timeline"));
   };
   var onErr = function(xhr) {
@@ -2678,7 +2683,7 @@ content.showSearchTL = function(q, opt, my) {
 };
 
 // Step to Render View of Timeline
-content.showTL = function(url, my, mode) {
+V.content.showTL = function(url, my, mode) {
   var that = this;
 
   function onGetTLData(xhr) {
@@ -2707,14 +2712,15 @@ content.showTL = function(url, my, mode) {
 };
 
 // Render View of Timeline (of home, mentions, messages, lists.,)
-content.rendTL = function(timeline, my) {
+V.content.rendTL = function(timeline, my) {
+  var that = this;
   timeline = [].concat(timeline); // for single tweet
 
   var tl_element = D.ce("ol");
   tl_element.id = "timeline";
 
   timeline.forEach(function(tweet) {
-    tl_element.add(content.rendTL.tweet(tweet, my));
+    tl_element.add(that.rendTL.tweet(tweet, my));
   });
 
   D.id("main").add(tl_element);
@@ -2734,7 +2740,7 @@ content.rendTL = function(timeline, my) {
   } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
 };
 
-content.rendTL.tweet = function(tweet, my) {
+V.content.rendTL.tweet = function(tweet, my) {
   var tweet_org = tweet;
 
   var isDM = "sender" in tweet && "recipient" in tweet;
@@ -2832,15 +2838,15 @@ content.rendTL.tweet = function(tweet, my) {
     ent.reid,
     ent.text,
     ent.meta,
-    panel.makeTwAct(tweet_org, my)
+    V.panel.makeTwAct(tweet_org, my)
   );
 
   return ent.ry;
 };
 
-content.misc = {};
+V.content.misc = {};
 // Render parts of cursor (eg. following page's [back][next])
-content.misc.showCursor = function(data) {
+V.content.misc.showCursor = function(data) {
   var cur = {
     sor: D.ce("ol"),
     next: D.ce("a"),
@@ -2860,7 +2866,7 @@ content.misc.showCursor = function(data) {
   }
   D.id("cursor").add(cur.sor);
 };
-content.misc.showCursorIds = function(data) {
+V.content.misc.showCursorIds = function(data) {
   var cur = {
     sor: D.ce("ol"),
     next: D.ce("a"),
@@ -2886,7 +2892,7 @@ content.misc.showCursorIds = function(data) {
   }
   D.id("cursor").add(cur.sor);
 };
-content.misc.showCursorPage = function(data) {
+V.content.misc.showCursorPage = function(data) {
   var cur = {
     sor: D.ce("ol"),
     next: D.ce("a"),
@@ -2906,9 +2912,9 @@ content.misc.showCursorPage = function(data) {
 
 // Make Action buttons panel
 
-panel = {};
+V.panel = {};
 // ON/OFF Button Constructor
-panel.Button = (function() {
+V.panel.Button = (function() {
   var Button = function(name, labelDefault, labelOn) {
     this.name = name;
     this.labelDefault = labelDefault;
@@ -2946,7 +2952,7 @@ panel.Button = (function() {
 })();
 
 // Buttons to do Follow Request Accept/Deny
-panel.makeReqDecider = function(user) {
+V.panel.makeReqDecider = function(user) {
   var Button = this.Button;
   var ad = {
     node: D.ce("div").sa("class", "user-action"),
@@ -2975,7 +2981,7 @@ panel.makeReqDecider = function(user) {
 };
 
 // Action buttons panel for fav, reply, retweet
-panel.makeTwAct = function(t, my) {
+V.panel.makeTwAct = function(t, my) {
   var rt = t.retweeted_status;
 
   var isDM = "sender" in t;
@@ -3010,10 +3016,10 @@ panel.makeTwAct = function(t, my) {
     )
   );/**/
 
-  (rt || t).favorited && onFav();
+  (rt || t).favorited && ab.fav.turn(true);
 
-  function onFav() { ab.fav.turn(true); }
-  function onUnfav() { ab.fav.turn(false); }
+  function onFav(xhr) { ab.fav.turn(true); }
+  function onUnfav(xhr) { ab.fav.turn(false); }
 
   ab.fav.node.addEventListener("click", function() {
     ab.fav.on ? API.unfav((rt || t).id_str, onUnfav) :
@@ -3058,15 +3064,17 @@ panel.makeTwAct = function(t, my) {
   ab.rt.node.addEventListener("click", function() {
     if (isMyRT) {
       // undo RT (button on my RT)
-      API.untweet(t.id_str, function() {
+      API.untweet(t.id_str, function(xhr) {
         ab.rt.turn(false);
         D.rm(ab.node.parentNode);
+        API.onGotMe(xhr);
       });
     } else if (isTweetRTedByMe) {
       // undo RT (button on owner tweet or others' RT)
-      API.untweet(t.current_user_retweet.id_str, function() {
+      API.untweet(t.current_user_retweet.id_str, function(xhr) {
         isTweetRTedByMe = false;
         ab.rt.turn(false);
+        API.onGotMe(xhr);
       });
     } else {
       // do RT
@@ -3075,6 +3083,7 @@ panel.makeTwAct = function(t, my) {
         t.current_user_retweet = data;
         isTweetRTedByMe = true;
         ab.rt.turn(true);
+        API.onGotMe(xhr);
       });
     }
   }, false);
@@ -3091,10 +3100,10 @@ panel.makeTwAct = function(t, my) {
   } else if (isMyTweet || isRTtoMe) {
     // Delete button for my tweets
     ab.del.node.addEventListener("click", function() {
-      API.untweet((rt || t).id_str,
-                  function(xhr) {
-                    D.rm(ab.node.parentNode);
-                  });
+      API.untweet((rt || t).id_str, function(xhr) {
+        D.rm(ab.node.parentNode);
+        API.onGotMe(xhr);
+      });
     }, false);
     ab.node.add(ab.del.node);
 
@@ -3107,7 +3116,7 @@ panel.makeTwAct = function(t, my) {
 };
 
 // Action buttons panel for follow, unfollow, spam.,
-panel.showFollowPanel = function(user) {
+V.panel.showFollowPanel = function(user) {
   var Button = this.Button;
   var ab = { // action: basic
     node: D.ce("div"),
@@ -3251,7 +3260,7 @@ panel.showFollowPanel = function(user) {
 };
 
 // Action buttons panel for add user to list
-panel.showAddListPanel = function(user, my) {
+V.panel.showAddListPanel = function(user, my) {
   var Button = this.Button;
   var al = { // action: list
     node: D.ce("div")
@@ -3307,7 +3316,7 @@ panel.showAddListPanel = function(user, my) {
 };
 
 // Button to do follow list
-panel.showListFollowPanel = function(list) {
+V.panel.showListFollowPanel = function(list) {
   var Button = this.Button;
   var ab = {
     node: D.ce("div"),
@@ -3331,8 +3340,21 @@ panel.showListFollowPanel = function(list) {
   D.id("subaction").add(ab.node);
 };
 
+// update my stats in header
+V.panel.updMyStats = function(my) {
+  var g = this.global_bar;
+  g.profile.href = U.ROOT + my.screen_name;
+  g.tweets_len.textContent = my.statuses_count;
+  g.screen_name.textContent = my.screen_name;
+  g.fav_len.textContent = my.favourites_count;
+  g.fwing_len.textContent = my.friends_count;
+  g.fwers_len.textContent = my.followers_count;
+  g.listed_len.textContent = my.listed_count;
+};
+
 // Global bar: links to home, profile, mentions, lists.,
-panel.showGlobalBar = function(my) {
+V.panel.global_bar = null;
+V.panel.showGlobalBar = function(my) {
 
   var g = {
     bar: D.ce("ul"),
@@ -3352,8 +3374,17 @@ panel.showGlobalBar = function(my) {
     blocking: D.ce("a"),
     settings: D.ce("a"),
     api: D.ce("button"),
-    logout: D.ce("button")
+    logout: D.ce("button"),
+
+    tweets_len: D.ce("span").sa("class", "statuses_count"),
+    screen_name: D.ce("span").sa("class", "screen_name"),
+    fav_len: D.ce("span").sa("class", "favourites_count"),
+    fwing_len: D.ce("span").sa("class", "friends_count"),
+    fwers_len: D.ce("span").sa("class", "followers_count"),
+    listed_len: D.ce("span").sa("class", "listed_count")
   };
+  this.global_bar = g;
+  this.updMyStats(my);
 
   g.bar.id = "globalbar";
 
@@ -3361,10 +3392,10 @@ panel.showGlobalBar = function(my) {
   g.home.add(D.ct("Home"));
 
   g.profile.href = U.ROOT + my.screen_name;
-  g.profile.add(D.ct("Profile:" + my.statuses_count));
+  g.profile.add(D.ct("Profile:"), g.tweets_len);
 
   g.replies.href = U.ROOT + "mentions";
-  g.replies.add(D.ct("@" + my.screen_name));
+  g.replies.add(D.ct("@"), g.screen_name);
 
   g.inbox.href = U.ROOT + "inbox";
   g.inbox.add(D.ct("Inbox"));
@@ -3373,13 +3404,13 @@ panel.showGlobalBar = function(my) {
   g.sent.add(D.ct("Sent"));
 
   g.favorites.href = U.ROOT + "favorites";
-  g.favorites.add(D.ct("Favorites:" + my.favourites_count));
+  g.favorites.add(D.ct("Favorites:"), g.fav_len);
 
   g.following.href = U.ROOT + "following";
-  g.following.add(D.ct("Following:" + my.friends_count));
+  g.following.add(D.ct("Following:"), g.fwing_len);
 
   g.followers.href = U.ROOT + "followers";
-  g.followers.add(D.ct("Followers:" + my.followers_count));
+  g.followers.add(D.ct("Followers:"), g.fwers_len);
 
   g.follow_req_in.href = U.ROOT + "followers/requests";
   g.follow_req_in.add(D.ct("req"));
@@ -3394,7 +3425,7 @@ panel.showGlobalBar = function(my) {
   g.listsub.add(D.ct("Subscriptions"));
 
   g.listed.href = U.ROOT + "lists/memberships";
-  g.listed.add(D.ct("Listed:" + my.listed_count));
+  g.listed.add(D.ct("Listed:"), g.listed_len);
 
   g.blocking.href = U.ROOT + "blocking";
   g.blocking.add(D.ct("Blocking"));
@@ -3434,7 +3465,7 @@ panel.showGlobalBar = function(my) {
 };
 
 // Global Tweet box
-panel.showTweetBox = function() {
+V.panel.showTweetBox = function() {
   var media_b64 = "";
   var t = {
     box: D.ce("div").sa("id", "update_controller"),
@@ -3499,10 +3530,10 @@ panel.showTweetBox = function() {
   t.update.addEventListener("click", function() {
     if (t.usemedia.checked && media_b64) {
       API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "",
-      function(xhr) { alert(xhr.responseText); });
+      function(xhr) { API.onGotMe(xhr); alert(xhr.responseText); });
     } else {
       API.tweet(t.status.value, t.id.value, "", "", "", "", "",
-      function(xhr) { alert(xhr.responseText); });
+      function(xhr) { API.onGotMe(xhr); alert(xhr.responseText); });
     }
   }, false);
 
@@ -3561,7 +3592,7 @@ panel.showTweetBox = function() {
 };
 
 // Panel for manage list members, following, followers.,
-panel.showUserManager = function(my) {
+V.panel.showUserManager = function(my) {
   var um = {
     node: D.ce("div"),
     dir: D.ce("input"),
@@ -3652,7 +3683,7 @@ panel.showUserManager = function(my) {
 };
 
 // Panel for Manage list
-panel.showListPanel = function(my) {
+V.panel.showListPanel = function(my) {
   var list = {
     panel: D.ce("dl"),
     name: D.ce("input"),
@@ -3721,9 +3752,9 @@ panel.showListPanel = function(my) {
 
 
 // Render View of Outline (users profile, list profile.,)
-outline = {};
+V.outline = {};
 // tw- path information
-outline.showSubTitle = function(hash) {
+V.outline.showSubTitle = function(hash) {
   var sub = D.cf();
 
   hash.forEach(function(name, i, hash) {
@@ -3738,7 +3769,7 @@ outline.showSubTitle = function(hash) {
 };
 
 // Change CSS(text color, background-image) by user settings
-outline.changeDesign = function(user) {
+V.outline.changeDesign = function(user) {
   var colorBg = user.profile_background_color ?
                 "#" + user.profile_background_color : "";
   var colorSideFill = user.profile_sidebar_fill_color ?
@@ -3775,7 +3806,7 @@ outline.changeDesign = function(user) {
 };
 
 // Step to Render list outline and color
-outline.showListOutline = function(hash, my, mode) {
+V.outline.showListOutline = function(hash, my, mode) {
   var that = this;
   var url = API().urls.lists.show() + "?" +
             "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
@@ -3796,7 +3827,7 @@ outline.showListOutline = function(hash, my, mode) {
 };
 
 // Render outline of list information
-outline.showListProfile = function(list) {
+V.outline.showListProfile = function(list) {
   var li = {
     st: D.ce("dl"),
     members: D.ce("a"),
@@ -3833,7 +3864,7 @@ outline.showListProfile = function(list) {
 };
 
 // Step to Render user profile outline and color
-outline.showProfileOutline = function(screen_name, my, mode) {
+V.outline.showProfileOutline = function(screen_name, my, mode) {
   var that = this;
 
   if (mode === undefined) mode = 15;
@@ -3845,8 +3876,8 @@ outline.showProfileOutline = function(screen_name, my, mode) {
 
     mode & 1 && that.changeDesign(user);
     mode & 2 && that.rendProfileOutline(user);
-    mode & 4 && panel.showFollowPanel(user);
-    mode & 8 && panel.showAddListPanel(user, my);
+    mode & 4 && V.panel.showFollowPanel(user);
+    mode & 8 && V.panel.showAddListPanel(user, my);
   }
 
   function onErr(xhr) { // hacking(using API bug) function
@@ -3867,7 +3898,7 @@ outline.showProfileOutline = function(screen_name, my, mode) {
 };
 
 // Render outline of User Profile
-outline.rendProfileOutline = function(user) {
+V.outline.rendProfileOutline = function(user) {
   var p = {
     box: D.ce("dl"),
     icon: D.ce("img"),
@@ -3965,30 +3996,22 @@ outline.rendProfileOutline = function(user) {
   var cons = ls["consumer_secret"];
   var acs = ls["access_token"];
   var acs_s = ls["access_token_secret"];
-  var time = ls["verify_credentials_modified"] || 0;
-  var start = function() {
-    var ls = LS.load();
-    var my = ls["verify_credentials"] || {
-      "screen_name": ls["screen_name"],
-      "id_str": ls["user_id"]
-    };
-    var editDOM = function() {
-      init.initNode();
-      init.structPage();
-      content.showPage(my);
-    };
-    if (document.readyState === "complete") editDOM();
-    else addEventListener("load", function() { editDOM(); });
+  var time = ls["credentials_modified"] || 0;
+  var my = ls["credentials"] || {
+    "screen_name": ls["screen_name"],
+    "id_str": ls["user_id"]
   };
+  var editDOM = function() {
+    V.init.initNode();
+    V.init.structPage();
+    V.content.showPage(my);
+  };
+  if (document.readyState === "complete") editDOM();
+  else addEventListener("load", function() { editDOM(); });
   if (cons && acs && acs_s && Date.now() - time > 1000 * 60 * 15) {
     X.get(API().urls.account.verify_credentials(), function(xhr) {
-      LS.save("verify_credentials", JSON.parse(xhr.responseText));
-      LS.save("verify_credentials_modified", Date.now());
-      start();
-    }, function(xhr) {
-      start();
-    });
-  } else {
-    start();
+      API.onGotMe(xhr);
+      LS.save("credentials_modified", Date.now());
+    }, null);
   }
 })();
