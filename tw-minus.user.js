@@ -1618,6 +1618,11 @@ V.init.CSS = '\
   .tweet-action {\
     font-size: smaller;\
   }\
+  .tweet-action button.null::before,\
+  .user-action button.null::before {\
+    content: "\\ff1f";\
+    font-weight: bold;\
+  }\
   .tweet-action button.true::before,\
   .user-action button.true::before {\
     content: "\\2714";\
@@ -2950,11 +2955,20 @@ V.panel.Button = (function() {
   Button.prototype = {
     on: false,
     turn: function(flag) {
-      flag = !!flag;
-      this.on = flag;
-      this.node.classList.add(String(flag));
-      this.node.classList.remove(String(!flag));
-      this.node.textContent = flag ? this.labelOn : this.labelDefault;
+      if (flag !== null) {
+        flag = !!flag;
+        this.on = flag;
+        this.node.classList.remove(String(null));
+        this.node.classList.remove(String(!flag));
+        this.node.classList.add(String(flag));
+        this.node.textContent = flag ? this.labelOn: this.labelDefault;
+      } else {
+        this.on = null;
+        this.node.classList.remove(String(true));
+        this.node.classList.remove(String(false));
+        this.node.classList.add(String(null));
+        this.node.textContent = this.labelDefault;
+      }
       return this;
     },
     enable: function() {
@@ -2985,43 +2999,32 @@ V.panel.makeReqDecider = function(user) {
     accept: new Button("accept-follow", "Accept", "Accept"),
     deny: new Button("deny-follow", "Deny", "Deny")
   };
-
   function onDecide() {
     D.rm(ad.node.parentNode);
   }
-
   var onAccept = onDecide;
   var onDeny = onDecide;
-
   ad.accept.node.addEventListener("click", function() {
     API.acceptFollow(user.screen_name, onAccept);
   }, false);
-
   ad.deny.node.addEventListener("click", function() {
     API.denyFollow(user.screen_name, onDeny);
   }, false);
-
   ad.node.add(ad.accept.node, ad.deny.node);
-
   return ad.node;
 };
 
 // Action buttons panel for fav, reply, retweet
 V.panel.makeTwAct = function(t, my) {
   var rt = t.retweeted_status;
-
   var isDM = "sender" in t;
   var isRT = !!rt;
-
   var isMyTweet = !isDM && !isRT && t.user.id_str === my.id_str;
   var isMyRT = isRT && t.user.id_str === my.id_str;
-
   var isRTtoMe = isRT && rt.user.id_str === my.id_str;
   var isTweetRTedByMe = "current_user_retweet" in t;
   var isRTRTedByMeToo = isRT && isTweetRTedByMe && false;
-
   if (isDM) t.user = t.sender;
-
   var Button = this.Button;
   var ab = {
     node: D.ce("div").sa("class", "tweet-action"),
@@ -3030,7 +3033,6 @@ V.panel.makeTwAct = function(t, my) {
     del: new Button("delete", "Delete", "Delete"),
     rt: new Button("retweet", "RT", "UnRT")
   };
-
   /*ab.node.add(
     D.ct(isRT ? "This is a RT by " + t.user.screen_name + ". " :
                 "This is a Tweet. "),
@@ -3041,23 +3043,17 @@ V.panel.makeTwAct = function(t, my) {
       isRTRTedByMeToo ? "You RTed it too." :""
     )
   );/**/
-
   (rt || t).favorited && ab.fav.turn(true);
-
   function onFav(xhr) { ab.fav.turn(true); }
   function onUnfav(xhr) { ab.fav.turn(false); }
-
   ab.fav.node.addEventListener("click", function() {
     ab.fav.on ? API.unfav((rt || t).id_str, onUnfav) :
                 API.fav((rt || t).id_str, onFav);
   }, false);
-
   if (!isDM) ab.node.add(ab.fav.node);
-
   ab.rep.className = "reply";
   ab.rep.title = (rt || t).id_str;
   ab.rep.add(D.ct("Reply"));
-
   if (isDM) {
     ab.rep.addEventListener("click", function() {
       var status = D.id("status");
@@ -3068,25 +3064,18 @@ V.panel.makeTwAct = function(t, my) {
     ab.rep.addEventListener("click", function() {
       var status = D.id("status");
       var repid = D.id("in_reply_to_status_id");
-
       status.value = "@" + (rt || t).user.screen_name + " " + status.value;
       repid.value = (rt || t).id_str;
-
       var e = document.createEvent("Event");
       e.initEvent("input", true, false);
       status.dispatchEvent(e);
-
       status.focus();
     }, false);
   }
-
   ab.node.add(ab.rep);
-
   (isMyRT || isTweetRTedByMe) && onRT();
-
   function onRT() { ab.rt.turn(true); }
   function onUnRT() { ab.rt.turn(false); }
-
   ab.rt.node.addEventListener("click", function() {
     if (isMyRT) {
       // undo RT (button on my RT)
@@ -3113,7 +3102,6 @@ V.panel.makeTwAct = function(t, my) {
       });
     }
   }, false);
-
   if (isDM) {
     // Delete button for DM
     ab.del.node.addEventListener("click", function() {
@@ -3122,7 +3110,6 @@ V.panel.makeTwAct = function(t, my) {
       });
     }, false);
     ab.node.add(ab.del.node);
-
   } else if (isMyTweet || isRTtoMe) {
     // Delete button for my tweets
     ab.del.node.addEventListener("click", function() {
@@ -3132,21 +3119,21 @@ V.panel.makeTwAct = function(t, my) {
       });
     }, false);
     ab.node.add(ab.del.node);
-
   } else {
     // Show RT buttons on tweets without my tweets
     ab.node.add(ab.rt.node);
   }
-
   return ab.node;
 };
 
 // Action buttons panel for follow, unfollow, spam.,
 V.panel.showFollowPanel = function(user) {
-  X.get(API().urls.users.friendship() + "?target_id=" + user.id_str,
-        function(xhr) { V.panel.lifeFollowButtons(xhr, user); });
-};
-V.panel.lifeFollowButtons = function(xhr, user) {
+  var ship = {
+    blocking: false,
+    followed_by: false,
+    marked_spam: false,
+    want_retweets: false
+  };
   var Button = V.panel.Button;
   var ab = {
     node: D.cf(),
@@ -3157,110 +3144,180 @@ V.panel.lifeFollowButtons = function(xhr, user) {
     dm: new Button("dm", "D"),
     want_rt: new Button("want_rt", "WantRT", "UnwantRT")
   };
-  var data = JSON.parse(xhr.responseText);
-  var ship = data.relationship.source;
-  function changeFollowBtn() {
-    var isUserHidden = user.protected;
-    if (isUserHidden && ab.follow.node.parentNode === ab.node) {
-      ab.node.replaceChild(ab.req_follow.node, ab.follow.node);
-    }
-  }
-  function onBlock() {
-    changeFollowBtn();
-    ab.req_follow.turn(false).disable().hide();
-    ab.follow.turn(false).disable().hide();
-    ab.block.turn(true).enable().show();
-    ab.spam.turn(false).enable().show();
-    ab.dm.turn(false).disable().hide();
-    ab.want_rt.turn(false).disable().hide();
-  }
-  function onUnBlock() {
-    ab.req_follow.turn(false).enable().show();
-    ab.follow.turn(false).enable().show();
-    ab.block.turn(false).enable().show();
-    ab.spam.turn(false).enable().show();
-  }
-  ship.blocking && onBlock();
-  ab.block.node.addEventListener("click", function() {
-    ab.block.on ? API.unblock(user.screen_name, onUnBlock) :
-                  API.block(user.screen_name, onBlock);
-  }, false);
-  function onSpam() {
-    changeFollowBtn();
-    ab.req_follow.turn(false).disable().hide();
-    ab.follow.turn(false).disable().hide();
-    ab.block.turn(true).enable().show();
-    ab.spam.turn(true).disable().hide();
-    ab.dm.turn(false).disable().hide();
-    ab.want_rt.turn(false).disable().hide();
-  }
-  function onUnSpam() {
-    ab.req_follow.turn(false).enable().show();
-    ab.follow.turn(false).enable().show();
-    ab.block.turn(false).enable().show();
-    ab.spam.turn(false).enable().show();
-  }
-  ship.marked_spam && onSpam();
-  ab.spam.node.addEventListener("click", function() {
-    ab.spam.on ? API.unblock(user.screen_name, onUnSpam) :
-                 API.spam(user.screen_name, onSpam);
-  }, false);
-  function onFollow() {
-    ab.follow.turn(true).enable();
-    ab.want_rt.turn(true).enable().show();
-  }
-  function onUnfollow() {
-    changeFollowBtn();
-    ab.follow.turn(false).enable();
-    ab.want_rt.turn(false).disable().hide();
-  }
-  ship.following ? onFollow() : onUnfollow();
-  ab.follow.node.addEventListener("click", function() {
-    ab.follow.on ? API.unfollow(user.screen_name, onUnfollow) :
-                   API.follow(user.screen_name, onFollow);
-  }, false);
-  function onWantRT() {
-    ab.want_rt.turn(true);
-  }
-  function onUnwantRT() {
-    ab.want_rt.turn(false);
-  }
-  ship.want_retweets ? onWantRT() : onUnwantRT();
-  ab.want_rt.node.addEventListener("click", function() {
-    ab.want_rt.on ? API.unwantRT(user.screen_name, onUnwantRT) :
-                    API.wantRT(user.screen_name, onWantRT);
-  }, false);
-  function onReqFollow() { ab.req_follow.turn(true).enable(); }
-  function onUnreqFollow() { ab.req_follow.turn(false).enable(); }
-  user.follow_request_sent && onReqFollow();
-  ab.req_follow.node.addEventListener("click", function() {
+  var update = function(xhr) {
+    /*if (xhr && xhr.status === 200) {
+      //API may return old data
+      var data = JSON.parse(xhr.responseText);
+      if (data.relationship) ship = data.relationship.source; else user = data;
+    }/**/
+    // state
+    ab.follow.turn(user.following);
+    ab.req_follow.turn(user.follow_request_sent);
+    ab.block.turn(ship.blocking || ship.marked_spam);
+    ab.spam.turn(ship.marked_spam);
+    ab.want_rt.turn(ship.want_retweets);
+    ab.dm.turn(user.followed_by);
+    // visibility
+    if ((!user.protected || user.following) && !ship.blocking) {
+      ab.follow.show().enable();
+    } else ab.follow.hide().disable();
+    if (user.protected && !user.following && !ship.blocking) {
+      ab.req_follow.show().enable();
+    } else ab.req_follow.hide().disable();
+    if (true) ab.block.show().enable();
+    else ab.block.hide().disable();
+    if (!ship.marked_spam) ab.spam.show().enable();
+    else ab.spam.hide().disable();
+    if (user.following) ab.want_rt.show().enable();
+    else ab.want_rt.hide().disable();
+    if (ship.followed_by) ab.dm.show().enable();
+    else ab.dm.hide().disable();
+  };
+  /*
+  # user
+    following
+    follow_request_sent
+    protected
+  # ship
+    blocking
+    followed_by
+    marked_spam
+    want_retweets
+  */
+  var onFollow = function(xhr) {
+    user.following = true;
+    //user.follow_request_sent;
+    ship.blocking = false;
+    //ship.followed_by;
+    ship.marked_spam = false;
+    ship.want_retweets = true;
+    update(xhr);
+  };
+  var onUnfollow = function(xhr) {
+    user.following = false;
+    //user.follow_request_sent;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    ship.want_retweets = false;
+    update(xhr);
+  };
+  var onReq = function(xhr) {
+    //user.following;
+    user.follow_request_sent = true;
+    ship.blocking = false;
+    //ship.followed_by;
+    ship.marked_spam = false;
+    //ship.want_retweets;
+    update(xhr);
+  };
+  var onUnreq = function(xhr) {
+    //user.following;
+    user.follow_request_sent = false;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    //ship.want_retweets;
+    update(xhr);
+  };
+  var onBlock = function(xhr) {
+    user.following = false;
+    user.follow_request_sent = false;
+    ship.blocking = true;
+    ship.followed_by = false;
+    ship.marked_spam = true;
+    ship.want_retweets = false;
+    update(xhr);
+  };
+  var onUnblock = function(xhr) {
+    //user.following;
+    //user.follow_request_sent;
+    ship.blocking = false;
+    //ship.followed_by;
+    ship.marked_spam = false;
+    //ship.want_retweets;
+    update(xhr);
+  };
+  var onSpam = function(xhr) {
+    user.following = false;
+    user.follow_request_sent = false;
+    ship.blocking = true;
+    ship.followed_by = false;
+    ship.marked_spam = true;
+    ship.want_retweets = true;
+    update(xhr);
+  };
+  var onWantRT = function(xhr) {
+    //user.following;
+    //user.follow_request_sent;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    ship.want_retweets = true;
+    update(xhr);
+  };
+  var onUnwantRT = function(xhr) {
+    //user.following;
+    //user.follow_request_sent;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    ship.want_retweets = false;
+    update(xhr);
+  };
+  ab.follow.node.addEventListener("click", function(e) {
+    ab.follow.on ?
+      API.unfollow(user.screen_name, onUnfollow, update):
+      API.follow(user.screen_name, onFollow, update);
+  });
+  ab.req_follow.node.addEventListener("click", function(e) {
     ab.req_follow.on ?
-            API.unrequestFollow(user.screen_name, onUnreqFollow) :
-            API.requestFollow(user.screen_name, onReqFollow);
-  }, false);
-  if (user.protected && !ship.following) {
-    ab.node.add(
-      ab.req_follow.node,
-      ab.block.node,
-      ab.spam.node
-    );
-  } else {
-    ab.node.add(
-      ab.follow.node,
-      ab.block.node,
-      ab.spam.node,
-      ab.want_rt.node
-    );
-  }
-  if (ship.followed_by) {
-    ab.dm.node.addEventListener("click", function() {
-      var status = D.id("status");
-      status.value = "d " + user.screen_name + " " + status.value;
-      status.focus();
-    }, false);
-    ab.node.add(ab.dm.node);
-  }
+      API.unrequestFollow(user.screen_name, onUnreq, update):
+      API.requestFollow(user.screen_name, onReq, update);
+  });
+  ab.block.node.addEventListener("click", function(e) {
+    ab.block.on ?
+      API.unblock(user.screen_name, onUnblock, update):
+      API.block(user.screen_name, onBlock, update);
+  });
+  ab.spam.node.addEventListener("click", function(e) {
+    ab.spam.on ?
+      API.unblock(user.screen_name, onUnblock, update):
+      API.spam(user.screen_name, onSpam, update);
+  });
+  ab.want_rt.node.addEventListener("click", function(e) {
+    ab.want_rt.on ?
+      API.unwantRT(user.screen_name, onUnwantRT, update):
+      API.wantRT(user.screen_name, onWantRT, update);
+  });
+  ab.dm.node.addEventListener("click", function() {
+    var status = D.id("status");
+    status.value = "d " + user.screen_name + " " + status.value;
+    status.focus();
+  });
+  ab.node.add(
+    ab.follow.node,
+    ab.req_follow.node,
+    ab.block.node,
+    ab.spam.node,
+    ab.want_rt.node,
+    ab.dm.node
+  );
+  update(null);
   D.id("subaction-inner-1").add(ab.node);
+  var onScs = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    ship = data.relationship.source;
+    update(xhr);
+  };
+  var onErr = function() {
+    ab.block.turn(null);
+    ab.spam.turn(null);
+    ab.want_rt.turn(null);
+    ab.dm.turn(null).show().enable();
+  };
+  X.get(API().urls.users.friendship() + "?target_id=" + user.id_str,
+        onScs, onErr);
 };
 // Action buttons panel for add user to list
 V.panel.showAddListPanel = function(user, my) {
@@ -3272,7 +3329,7 @@ V.panel.showAddListPanel = function(user, my) {
   if (mylists) {
     onScs({responseText:JSON.stringify(mylists)});
   } else {
-    X.get(API().urls.lists.list(), onScs);
+    X.get(API().urls.lists.list(), onScs, null);
   }
 };
 V.panel.lifeListButtons = function(xhr, user, my) {
@@ -3290,17 +3347,17 @@ V.panel.lifeListButtons = function(xhr, user, my) {
     });
   });
   lists.forEach(function(l) {
-    var lb_label = (l.mode === "private" ? "-" : "+") + l.slug;
+    var lb_label = (l.mode === "private" ? "-": "+") + l.slug;
     var lb = new Button("list", lb_label, lb_label);
     list_btns[l.slug] = lb;
     function onListing() { lb.turn(true); }
     function onUnlisting() { lb.turn(false); }
     lb.node.addEventListener("click", function() {
       lb.on ? API.unlisting(l.user.screen_name, l.slug,
-                            user.screen_name, onUnlisting) :
+                            user.screen_name, onUnlisting):
               API.listing(l.user.screen_name, l.slug,
                           user.screen_name, onListing);
-    }, false);
+    });
     al.node.add(lb.node);
   });
   var onScs = function(xhr) {
@@ -3310,6 +3367,9 @@ V.panel.lifeListButtons = function(xhr, user, my) {
     });
   };
   var onErr = function() {
+    for (var i in list_btns) {
+      list_btns[i].turn(null);
+    }
   };
   D.id("subaction-inner-2").add(al.node);
   X.get(API().urls.lists.listed() + "?filter_to_owned_lists=true&" +
@@ -3806,20 +3866,25 @@ V.outline.showListOutline = function(hash, my, mode) {
   var that = this;
   var url = API().urls.lists.show() + "?" +
             "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
-
-  X.get(url, function(xhr) {
+  var onScs = function(xhr) {
     var list = JSON.parse(xhr.responseText);
-
     if (mode === undefined) mode = 7;
     if (list.mode === "private") mode &= ~4;
-
     mode & 1 && that.changeDesign(list.user);
     mode & 2 && that.showListProfile(list);
     mode & 4 && panel.showListFollowPanel(list);
-
-  }, function(xhr) {
+  };
+  var onErr = function(xhr) {
     D.id("side").add(O.htmlify(JSON.parse(xhr.responseText)))
-  });
+  };
+  var mylists = LS.load()["mylists"];
+  for (var i = 0; i < mylists.length; ++i) {
+    var list = mylists[i];
+    if (list.user.screen_name === hash[0] && list.slug === hash[1]) {
+      return onScs({responseText:JSON.stringify(list)});
+    }
+  }
+  X.get(url, onScs, onErr);
 };
 
 // Render outline of list information
