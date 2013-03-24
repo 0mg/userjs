@@ -334,8 +334,13 @@ D = (function() {
     for (var i = 0; i < arguments.length; ++i) this.appendChild(arguments[i]);
     return this;
   }
+  function ins() {
+    for (var i = 0; i < arguments.length; ++i) {
+      this.insertBefore(arguments[i], this.firstChild);
+    }
+  }
   function sa() { this.setAttribute.apply(this, arguments); return this; }
-  function x(e) { if (e) e.add = add, e.sa = sa; return e; }
+  function x(e) { if (e) e.add = add, e.ins = ins, e.sa = sa; return e; }
   return {
     ce: function(s) {
       return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
@@ -345,7 +350,10 @@ D = (function() {
     q: function(s) { return x(document.querySelector(s)); },
     qs: function(s) { return document.querySelectorAll(s); },
     cf: function() { return x(document.createDocumentFragment()); },
-    rm: function(e) { return e.parentNode.removeChild(e); }
+    rm: function(e) { return e && e.parentNode.removeChild(e); },
+    empty: function(e) {
+      while (e.hasChildNodes()) e.removeChild(e.lastChild); return e;
+    }
   };
 })();
 D.HTML_ENTITIES = {
@@ -558,8 +566,8 @@ T.normalizeURL = function(url) {
   var search = { raw: urlParts[2] };
   var hash = { raw: urlParts[3] };
   baseURL.encoded = baseURL.raw;
+  search.decobj = T.parseQuery(search.raw);
   if (search.raw) {
-    search.decobj = T.parseQuery(search.raw);
     search.encoded = "?" + T.strQuery(search.decobj);
   } else {
     search.encoded = "";
@@ -569,7 +577,10 @@ T.normalizeURL = function(url) {
   } else {
     hash.encoded = "";
   }
-  var encurl = baseURL.encoded + search.encoded + hash.encoded;
+  var encurl = new String(baseURL.encoded + search.encoded + hash.encoded);
+  encurl.base = baseURL.encoded;
+  encurl.query = search.decobj;
+  encurl.hash = hash.encoded;
   return encurl;
 };
 // a=1&b=%40 -> {a:"1",b:"@"}
@@ -1131,15 +1142,12 @@ API.cc.reuseData = function(method, url, q) {
   try { var data = JSON.parse(this.responseText); } catch(e) { return; }
   var ls = LS.load();
   var my = ls["credentials"];
-  var urlpts = url.match(/([^?#]*)[?]?([^#]*)/);
-  var baseURL = urlpts[1];
-  var uqobj = T.parseQuery(urlpts[2]);
-  var qobj = T.parseQuery(q);
-  for (var i in uqobj) if (!(i in qobj)) qobj[i] = uqobj[i];
-  if (method === "GET") switch (baseURL) {
+  var urlpts = T.normalizeURL(url);
+  var qobj = urlpts.query;
+  if (method === "GET") switch (urlpts.base) {
   case API().urls.lists.list():
-    var q_screen_name = /\w+/.exec(qobj["screen_name"] || "");
-    if (!q_screen_name || q_screen_name[0] === my.screen_name) {
+    var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
+    if (!q_screen_name || q_screen_name === my.screen_name) {
       LS.save("mylists", data);
       LS.save("mylists_modified", Date.now());
     }
@@ -1788,7 +1796,8 @@ V.content.showPage.on2 = function(hash, q, my) {
     this.testAPI(my);
     break;
   } else if (hash[0] === "search") {
-    this.showSearchTL(hash[1], q, my);
+    this.showTL(API().urls.search.tweets() + "?q=" + hash[1] + "&" + q +
+                "&rpp=20&include_entities=true", my);
   } else switch (hash[1]) {
   case "requests":
     if (hash[0] === "following") {
@@ -2273,10 +2282,7 @@ V.content.testAPI = function(my) {
     dst: D.ce("div"),
     header: D.ce("div")
   };
-  function printErase() {
-    while (nd.header.hasChildNodes()) D.rm(nd.header.lastChild);
-    while (nd.dst.hasChildNodes()) D.rm(nd.dst.lastChild);
-  }
+  function printErase() { D.empty(nd.header); D.empty(nd.dst); }
   function printData(xhr) {
     printHead(xhr);
     printText(xhr);
@@ -2648,25 +2654,7 @@ V.content.showLists = function(url, my) {
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     if (data.lists) data = data.lists; // lists.json (API 1.0)
-    var lists = D.ce("dl");
-    var subs = D.ce("dl");
-    lists.className = "listslist own";
-    subs.className = "listslist";
-    data.forEach(function(l) {
-      var listPath = U.ROOT + l.full_name.substring(1);
-      var target = l.user.screen_name === oname ? lists : subs;
-      target.add(
-        D.ce("dt").sa("class", l.mode).add(
-          D.ce("a").sa("href", listPath).add(D.ct(l.full_name))
-        ),
-        D.ce("dd").add(D.tweetize(l.description))
-      );
-    });
-    D.id("main").add(
-      lists.hasChildNodes() ? lists : D.cf(),
-      subs.hasChildNodes() ? subs : D.cf()
-    );
-    that.misc.showCursor(data);
+    that.rendLists(data, oname);
   };
   var onErr = function(xhr) {
     if (xhr.status === 401) {
@@ -2678,52 +2666,38 @@ V.content.showLists = function(url, my) {
   };
   X.get(url, onGet, onErr);
 };
-
-// Step to Render View of Search Results
-V.content.showSearchTL = function(q, opt, my) {
+V.content.rendLists = function(data, oname) {
   var that = this;
-  var onGet = function(xhr) {
-    var data = JSON.parse(xhr.responseText);
-    var tl = data.statuses;
-    if (!tl) {
-      tl = data.results;
-      tl.forEach(function(t) {
-        t.in_reply_to_screen_name = t.to_user;
-        t.in_reply_to_user_id_str = t.to_user_id_str;
-        t.source = T.decodeHTML(t.source);
-        t.user = {
-          screen_name: t.from_user,
-          name: t.from_user_name,
-          id_str: t.from_user_id_str,
-          profile_image_url: t.profile_image_url
-        };
-      });
-    }
-    that.rendTL(tl, my);
-    A.expandUrls(D.id("timeline"));
-  };
-  var onErr = function(xhr) {
-    if (xhr.status === 401) {
-      D.id("main").add(
-        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
-      );
-    }
-    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
-  };
-  API.search(q, opt, onGet, onErr);
+  var lists = D.ce("dl");
+  var subs = D.ce("dl");
+  lists.className = "listslist own";
+  subs.className = "listslist";
+  data.forEach(function(l) {
+    var listPath = U.ROOT + l.full_name.substring(1);
+    var target = l.user.screen_name === oname ? lists: subs;
+    target.add(
+      D.ce("dt").sa("class", l.mode).add(
+        D.ce("a").sa("href", listPath).add(D.ct(l.full_name))
+      ),
+      D.ce("dd").add(D.tweetize(l.description))
+    );
+  });
+  D.empty(D.id("main")).add(
+    lists.hasChildNodes() ? lists : D.cf(),
+    subs.hasChildNodes() ? subs : D.cf()
+  );
+  that.misc.showCursor(data);
 };
 
 // Step to Render View of Timeline
-V.content.showTL = function(url, my, mode) {
+V.content.showTL = function(url, my) {
   var that = this;
-
   function onGetTLData(xhr) {
     var timeline = JSON.parse(xhr.responseText);
-    if (mode & 1) timeline = timeline.statuses;
+    if (timeline.statuses) timeline = timeline.statuses;
     that.rendTL(timeline, my);
     A.expandUrls(D.id("timeline"));
   }
-
   function onError(xhr) {
     var data;
     if (xhr.responseText === "") { // protected user timeline
@@ -2738,33 +2712,24 @@ V.content.showTL = function(url, my, mode) {
     }
     D.id("main").add(O.htmlify(data));
   }
-
   X.get(url, onGetTLData, onError);
 };
 
 // Render View of Timeline (of home, mentions, messages, lists.,)
 V.content.rendTL = function(timeline, my) {
   var that = this;
-  timeline = [].concat(timeline); // for single tweet
-
-  var tl_element = D.ce("ol");
-  tl_element.id = "timeline";
-
-  timeline.forEach(function(tweet) {
+  var tl_element = D.ce("ol").sa("id", "timeline");
+  [].concat(timeline).forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
-
   D.id("main").add(tl_element);
-
   if (timeline.length) {
     var curl = U.getURL();
     var last_id = timeline[timeline.length - 1].id_str;
     var max_id = T.decrement(last_id);
     var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
     var past = D.ce("a").sa("href", href).add(D.ct("past"));
-
     D.id("cursor").add(past);
-
     D.q("head").add(
       D.ce("link").sa("rel", "next").sa("href", past.href)
     );
@@ -3323,7 +3288,12 @@ V.panel.showFollowPanel = function(user) {
 V.panel.showAddListPanel = function(user, my) {
   var that = this;
   var onScs = function(xhr) {
-    that.lifeListButtons(xhr, user, my);
+    var expander = D.ce("button").add(D.ct("Lists"));
+    expander.addEventListener("click", function() {
+      D.rm(expander);
+      that.lifeListButtons(xhr, user, my);
+    });
+    D.id("subaction-inner-1").add(expander);
   };
   var mylists = API.cc.getMyLists();
   if (mylists) {
@@ -3758,30 +3728,48 @@ V.panel.showListPanel = function(my) {
   list.del.add(D.ct("Delete"));
 
   list.create.addEventListener("click", function() {
-    API.createList(list.name.value,
-                   list.privat.checked ? "private" : "public",
-                   list.description.value,
-                   function(xhr) {
-                     alert(xhr.responseText);
-                   });
+    var onScs = function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      var mylists = LS.load()["mylists"].concat(data);
+      LS.save("mylists", mylists);
+      V.content.rendLists(mylists, my.screen_name);
+    };
+    API.createList(list.name.value, list.privat.checked ? "private": "public",
+                   list.description.value, onScs);
   }, false);
 
   list.update.addEventListener("click", function() {
-    API.updateList(my.screen_name,
-                   list.name.value,
-                   list.rename.value,
+    var onScs = function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      var mylists = LS.load()["mylists"];
+      mylists.some(function(myli, i) {
+        if (myli.name === list.name.value &&
+          myli.user.screen_name === my.screen_name) {
+          return mylists[i] = data;
+        }
+      });
+      LS.save("mylists", mylists);
+      V.content.rendLists(mylists, my.screen_name);
+    };
+    API.updateList(my.screen_name, list.name.value, list.rename.value,
                    list.privat.checked ? "private" : "public",
-                   list.description.value,
-                   function(xhr) {
-                     alert(xhr.responseText);
-                   });
+                   list.description.value, onScs);
   }, false);
 
   list.del.addEventListener("click", function() {
-    API.deleteList(my.screen_name, list.name.value,
-                   function(xhr) {
-                     alert(xhr.responseText);
-                   });
+    var onScs = function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      var mylists = LS.load()["mylists"];
+      mylists.some(function(myli, i) {
+        if (myli.name === list.name.value &&
+          myli.user.screen_name === my.screen_name) {
+          return mylists.splice(i, 1);
+        }
+      });
+      LS.save("mylists", mylists);
+      V.content.rendLists(mylists, my.screen_name);
+    };
+    API.deleteList(my.screen_name, list.name.value, onScs);
   }, false);
 
   list.panel.add(
