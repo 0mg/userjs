@@ -577,7 +577,12 @@ T.normalizeURL = function(url) {
   } else {
     hash.encoded = "";
   }
-  var encurl = new String(baseURL.encoded + search.encoded + hash.encoded);
+  var encurl = new String;
+  encurl.toString = function() {
+    var search = T.strQuery(this.query);
+    if (search) search = "?" + search;
+    return this.base + search + this.hash;
+  };
   encurl.base = baseURL.encoded;
   encurl.query = search.decobj;
   encurl.hash = hash.encoded;
@@ -2695,7 +2700,7 @@ V.content.showTL = function(url, my) {
   function onGetTLData(xhr) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses;
-    that.rendTL(timeline, my);
+    that.rendTL([].concat(timeline), my, url);
     A.expandUrls(D.id("timeline"));
   }
   function onError(xhr) {
@@ -2716,24 +2721,46 @@ V.content.showTL = function(url, my) {
 };
 
 // Render View of Timeline (of home, mentions, messages, lists.,)
-V.content.rendTL = function(timeline, my) {
+V.content.rendTL = function(timeline, my, url) {
   var that = this;
   var tl_element = D.ce("ol").sa("id", "timeline");
-  [].concat(timeline).forEach(function(tweet) {
+  timeline.forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
+  document.body.scrollIntoView();
+  D.rm(D.id("timeline"));
   D.id("main").add(tl_element);
   if (timeline.length) {
     var curl = U.getURL();
     var last_id = timeline[timeline.length - 1].id_str;
     var max_id = T.decrement(last_id);
     var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
-    var past = D.ce("a").sa("href", href).add(D.ct("past"));
+    var past = D.ce("a").sa("href", href).
+      sa("id", "cursor_past").add(D.ct("past"));
+    D.rm(D.id("cursor_past"));
     D.id("cursor").add(past);
     D.q("head").add(
       D.ce("link").sa("rel", "next").sa("href", past.href)
     );
+    // show next page + change url
+    past.addEventListener("click", function(e) {
+      var pasturl = T.normalizeURL(url);
+      pasturl.query["max_id"] = max_id;
+      pasturl = pasturl.toString(); // for Opera 12.14 JSON.stringify bug
+      V.content.showTL(pasturl, my);
+      history.pushState("", undefined, href);
+      e.preventDefault();
+    });
   } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
+  // save [url's state]
+  var state = JSON.stringify({url:url, timeline:timeline, my:my});
+  history.replaceState(state, undefined, location.href);
+  addEventListener("popstate", V.content.onPopState);
+};
+// load [url's state]
+V.content.onPopState = function(e) {
+  var data = JSON.parse(e.state);
+  V.content.rendTL(data.timeline, data.my, data.url);
 };
 
 V.content.rendTL.tweet = function(tweet, my) {
