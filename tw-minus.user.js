@@ -577,12 +577,7 @@ T.normalizeURL = function(url) {
   } else {
     hash.encoded = "";
   }
-  var encurl = new String;
-  encurl.toString = function() {
-    var search = T.strQuery(this.query);
-    if (search) search = "?" + search;
-    return this.base + search + this.hash;
-  };
+  var encurl = new String(baseURL.encoded + search.encoded + hash.encoded);
   encurl.base = baseURL.encoded;
   encurl.query = search.decobj;
   encurl.hash = hash.encoded;
@@ -763,6 +758,11 @@ X.formData = function(qrys) {
   return fd;
 };
 
+X.onloadstart = function(method, url, q) {
+  V.content.misc.onXHRStart(method, url, q);
+};
+X.onloadend = function(xhr, method, url, q) {};
+
 X.onload = function(method, url, q, f, b) {
   if (!(this instanceof XMLHttpRequest)) throw method + ":not XHR obj";
   var onScs = function(xhr, method, url) {
@@ -774,8 +774,10 @@ X.onload = function(method, url, q, f, b) {
   if (this.status === 200) {
     if (f) f(this); else if (f === undefined) onScs(this, method, url);
     API.cc.reuseData.apply(this, arguments);
+    V.content.misc.onXHREnd(true, this, method, url, q);
   } else {
     if (b) b(this); else if (b === undefined) onErr(this, method, url);
+    V.content.misc.onXHREnd(false, this, method, url, q);
   }
 };
 
@@ -785,6 +787,7 @@ X.onerror = function(method, url, q, f, b) {
     alert([xhr.status, url, xhr.responseText].join("\n"));
   };
   if (b) b(this); else if (b === undefined) X.onErr(this, method, url);
+  V.content.misc.onXHREnd(false, this, method, url, q);
 };
 
 // HEAD Method for Twitter API
@@ -795,6 +798,8 @@ X.head = function head(url, f, b) {
   xhr.setRequestHeader("X-PHX", "true");
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
   xhr.addEventListener("error", X.onerror.bind(xhr, method, url, "", f, b));
+  xhr.addEventListener("loadstart", X.onloadstart.bind(xhr, method, url, ""));
+  xhr.addEventListener("loadend", X.onloadend.bind(xhr, method, url, ""));
   xhr.send(null);
   return xhr;
 };
@@ -810,6 +815,8 @@ X.get = function get(url, f, b) {
   xhr.setRequestHeader("Authorization", auth);
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
   xhr.addEventListener("error", X.onerror.bind(xhr, method, url, "", f, b));
+  xhr.addEventListener("loadstart", X.onloadstart.bind(xhr, method, url, ""));
+  xhr.addEventListener("loadend", X.onloadend.bind(xhr, method, url, ""));
   xhr.send(null);
   return xhr;
 };
@@ -836,6 +843,8 @@ X.post = function post(url, q, f, b, c) {
   if (ctype) xhr.setRequestHeader("Content-Type", ctype);
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, q, f, b));
   xhr.addEventListener("error", X.onerror.bind(xhr, method, url, q, f, b));
+  xhr.addEventListener("loadstart", X.onloadstart.bind(xhr, method, url, q));
+  xhr.addEventListener("loadend", X.onloadend.bind(xhr, method, url, q));
   xhr.send(data);
   return xhr;
 };
@@ -2701,6 +2710,7 @@ V.content.showTL = function(url, my) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses;
     that.rendTL([].concat(timeline), my, url);
+    D.q("body").scrollIntoView();
     A.expandUrls(D.id("timeline"));
   }
   function onError(xhr) {
@@ -2727,7 +2737,6 @@ V.content.rendTL = function(timeline, my, url) {
   timeline.forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
-  document.body.scrollIntoView();
   D.rm(D.id("timeline"));
   D.id("main").add(tl_element);
   if (timeline.length) {
@@ -2746,7 +2755,7 @@ V.content.rendTL = function(timeline, my, url) {
     past.addEventListener("click", function(e) {
       var pasturl = T.normalizeURL(url);
       pasturl.query["max_id"] = max_id;
-      pasturl = pasturl.toString(); // for Opera 12.14 JSON.stringify bug
+      pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
       V.content.showTL(pasturl, my);
       history.pushState("", undefined, href);
       e.preventDefault();
@@ -2931,7 +2940,30 @@ V.content.misc.showCursorPage = function(data) {
   D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
   D.id("cursor").add(cur.sor);
 };
-
+V.content.misc.onXHRStart = function(method, url, q) {
+  var loading = D.ce("div").sa("id", "xhr-state").add(D.ct("loading.."));
+  loading.style = "position:fixed;top:0;left:0;" +
+    "background:gray;color:white;font-size:xx-small;" +
+    "transition:opacity 1s steps(1,end);";
+  D.rm(D.id("xhr-state"));
+  D.q("body").add(loading);
+};
+V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
+  var s = D.id("xhr-state");
+  if (success) {
+    s.hidden = true;
+    s.style.background = "white";
+    s.style.color = "gray";
+    s.textContent = "Success!";
+    s.style.opacity = "0";
+  } else {
+    s.style.background = "red";
+    s.style.color = "white";
+    s.textContent = "Failed(" + xhr.status + ")" +
+      " " + method + " " + url + (q ? "?" + q: "");
+    s.style.opacity = "0";
+  }
+};
 
 // Make Action buttons panel
 
