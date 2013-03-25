@@ -3743,10 +3743,7 @@ V.panel.showListPanel = function(my) {
       var data = JSON.parse(xhr.responseText);
       var mylists = LS.load()["mylists"];
       mylists.some(function(myli, i) {
-        if (myli.name === list.name.value &&
-          myli.user.screen_name === my.screen_name) {
-          return mylists[i] = data;
-        }
+        if (myli.id_str === data.id_str) return mylists[i] = data;
       });
       LS.save("mylists", mylists);
       V.content.rendLists(mylists, my.screen_name);
@@ -3761,10 +3758,7 @@ V.panel.showListPanel = function(my) {
       var data = JSON.parse(xhr.responseText);
       var mylists = LS.load()["mylists"];
       mylists.some(function(myli, i) {
-        if (myli.name === list.name.value &&
-          myli.user.screen_name === my.screen_name) {
-          return mylists.splice(i, 1);
-        }
+        if (myli.id_str === data.id_str) return mylists.splice(i, 1);
       });
       LS.save("mylists", mylists);
       V.content.rendLists(mylists, my.screen_name);
