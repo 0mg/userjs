@@ -687,34 +687,33 @@ T.decrement = function decrement(s) {
 
 // Scripts after render page
 A = {};
-A.expandUrls = function expandUrls(parent) {
-  var links = parent.querySelectorAll("a.maybe_shorten_url");
-  var urls = [];
+A.expandUrls = function expandUrls(parent, expurls) {
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
+    LS.state.save("expanded_urls", data);
+    expand(data);
+  };
+  var expand = function(data) {
     for (var raw_url in data) {
       var exp_url = data[raw_url];
       if (exp_url) {
         data[raw_url] = exp_url.replace(/\/(?=$|\?)/, "");
       }
     }
-    urls.forEach(function(raw_url, i) {
-      var exp_url = data[raw_url];
+    [].forEach.call(anchors, function(a, i) {
+      var exp_url = data[a.href];
       if (exp_url) {
-        var a = links[i];
         a.classList.add("expanded_url");
         a.classList.remove("maybe_shorten_url");
         a.href = a.textContent = decodeURIComponent(escape(exp_url));
       }
     });
-    // modify [url's state]
-    LS.state.save("xhr_expand_url", xhr);
   };
-  [].forEach.call(links, function(a) { urls.push(a.href); });
+  var anchors = parent.querySelectorAll("a.maybe_shorten_url");
+  var urls = [].map.call(anchors, function(a) { return a.href; });
   if (urls.length) {
-    // use cache if [url's state][xhr]
-    var xhr = LS.state.load()["xhr_expand_url"];
-    if (xhr) onScs(xhr); else API.resolveURL(urls, onScs);
+    if (expurls) expand(expurls);
+    else API.resolveURL(urls, onScs);
   }
 };
 
@@ -1538,7 +1537,9 @@ V.init.CSS = '\
   }\
   #timeline {\
   }\
-  #cursor {\
+  #cursor li {\
+    display: inline-block;\
+    padding: 0 3ex;\
   }\
   .debugbox {\
     width: 100%;\
@@ -2259,7 +2260,7 @@ V.content.settingAccount = function(my) {
           var data = JSON.parse(xhr.responseText);
           autoResult.add(D.ct(s + ":" + (data.valid && "#true#") + " "));
           if (i === max) autoFinish();
-        });
+        }, null);
         xhrpool.push(xhrobj);
       })(s, i, max);
     }
@@ -2269,7 +2270,7 @@ V.content.settingAccount = function(my) {
       var main = D.id("main");
       while (main.hasChildNodes()) D.rm(main.lastChild);
       main.add(O.htmlify(JSON.parse(xhr.responseText)));
-    });
+    }, null);
   }
   unameBtn.addEventListener("click", function(e) {
     checkUname(uname.value);
@@ -2532,50 +2533,13 @@ V.content.settingFollow = function(my) {
   });
 };
 
-// Step to Render View of list of users by ids (follow requests in/out.,)
+// step to render users list by ids
 V.content.showUsersByIds = function(url, my, mode) {
   var that = this;
-  var re = {
-    cursor: url.match(/[?&]cursor=([-\d]+)/),
-    start: url.match(/[?&]start=(\d+)/),
-    count: url.match(/[?&]count=(\d+)/)
+  var onScs = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    V.content.showUsersByLookup(data, url, my, mode);
   };
-  var cursor = re.cursor ? re.cursor[1] : "-1";
-  var start = re.start ? +re.start[1] : 0;
-  var count = re.count ? +re.count[1] : 20;
-  function onGetIds(xhr) {
-    var ids_data = JSON.parse(xhr.responseText);
-    function onGetUsers(xhr) {
-      var users_data = JSON.parse(xhr.responseText);
-      users_data = {users: users_data};
-      if (start + count < ids_data.ids.length) {
-        users_data.next_cursor = cursor;
-        users_data.next_start = start + count;
-      } else {
-        users_data.next_cursor = ids_data.next_cursor_str;
-        users_data.next_start = 0;
-      }
-      if (start - count >= 0) {
-        users_data.previous_cursor = cursor;
-        users_data.prev_start = start - count;
-      } else {
-        users_data.previous_cursor = ids_data.previous_cursor_str;
-        users_data.prev_start = ids_data.ids.length - count;
-      }
-      users_data.count = count;
-      users_data.users = users_data.users.sort(function(a, b) {
-        return ids.indexOf(a.id_str) - ids.indexOf(b.id_str);
-      });
-      that.rendUsers(users_data, my, mode | 2);
-    }
-    var ids = ids_data.ids.slice(start, start + count);
-    if (ids.length) {
-      X.get(API().urls.users.lookup() + "?user_id=" + ids.join(","),
-        onGetUsers);
-    } else {
-      D.id("main").add(O.htmlify({"Empty": "No users found"}));
-    }
-  }
   var onErr = function(xhr) {
     if (xhr.status === 401) {
       D.id("main").add(
@@ -2584,8 +2548,80 @@ V.content.showUsersByIds = function(url, my, mode) {
     }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
-  X.get(url, onGetIds, onErr);
+  // set ?count=<max>
+  var urlpts = T.normalizeURL(url), search, requrl;
+  delete urlpts.query["count"];
+  search = T.strQuery(urlpts.query);
+  requrl = urlpts.base + "?" + search;
+  mode |= 2;
+  X.get(requrl, onScs, onErr);
   V.panel.showUserManager(my);
+};
+
+// lookup by ids.json
+V.content.showUsersByLookup = function(data, url, my, mode) {
+  var that = this;
+  var object = that.genCursors(data, url);
+  var start = object.start, count = object.count;
+  var sliced_ids = data.ids.slice(start, start + count);  // ids:[1, 23, 77]
+  if (!sliced_ids.length) {
+    D.id("main").add(O.htmlify({"Empty": "No users found"}));
+    return;
+  }
+  // get users data with ids
+  var onScs = function(xhr) {
+    var users = JSON.parse(xhr.responseText); // users:[1, 23, 77]
+    users.sort(function(a, b) {
+      return sliced_ids.indexOf(a.id_str) - sliced_ids.indexOf(b.id_str);
+    });
+    object["users"] = users;
+    LS.state.save("ids_object", object);
+    that.rendUsers(object, my, mode);
+  };
+  X.get(API().urls.users.lookup() + "?user_id=" + sliced_ids.join(","), onScs);
+  LS.state.save("ids_data", data);
+  LS.state.save("ids_url", url);
+  LS.state.save("ids_my", my);
+  LS.state.save("ids_mode", mode);
+};
+
+// set cursor
+V.content.genCursors = function(data, url) {
+  var re = {
+    cursor: url.match(/[?&]cursor=([-\d]+)/),
+    start: url.match(/[?&]start=(\d+)/),
+    count: url.match(/[?&]count=(\d+)/)
+  };
+  var cursor = re.cursor ? re.cursor[1] : "-1"; // ids.json's ?<cursor>
+  var start = re.start ? +re.start[1] : 0; // index of ids.json array
+  var count = re.count ? +re.count[1] : 20; // ids.json's ?<count>
+  /*
+    append cursors data to object.
+    the data for nxt/prv ids API.
+  */
+  var object = {};
+  object.cursor = cursor;
+  object.start = start;
+  object.count = count;
+  // set next/prev common count
+  object["count"] = count;
+  // set next page's ids.json?<cursor x>
+  if (start + count < data.ids.length) {
+    object["next_cursor"] = cursor;
+    object["next_start"] = start + count;
+  } else {
+    object["next_cursor"] = data["next_cursor_str"];
+    object["next_start"] = 0;
+  }
+  // set prev page's ids.json cursor
+  if (start - count >= 0) {
+    object["previous_cursor"] = cursor;
+    object["prev_start"] = start - count;
+  } else {
+    object["previous_cursor"] = data["previous_cursor_str"];
+    object["prev_start"] = data["ids"].length - count;
+  }
+  return object;
 };
 
 // Render View of list of users
@@ -2651,11 +2687,69 @@ V.content.rendUsers = function(data, my, mode) {
     users_list.add(lu.root);
   });
 
+  D.empty(D.id("cursor"));
+  D.rm(D.id("users"));
   D.id("main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
   pageCursor ? that.misc.showCursorPage(data) :
   idsCursor ? that.misc.showCursorIds(data) : that.misc.showCursor(data);
+
+  addEventListener("scroll", V.content.onScroll);
+  addEventListener("popstate", V.content.cursorIdsPopState);
+};
+V.content.misc = {};
+V.content.misc.showCursorIds = function(data) {
+  var cur = {
+    sor: D.ce("ol"),
+    next: D.ce("a"),
+    prev: D.ce("a")
+  };
+  var curl = U.getURL();
+  if (+data.previous_cursor !== 0) {
+    cur.prev.href = U.ROOT + curl.path + U.Q +
+                    "cursor=" + data.previous_cursor +
+                    "&start=" + data.prev_start +
+                    "&count=" + data.count;
+    cur.prev.add(D.ct("Prev"));
+    cur.sor.add(D.ce("li").add(cur.prev));
+  }
+  if (+data.next_cursor !== 0) {
+    cur.next.href = U.ROOT + curl.path + U.Q +
+                    "cursor=" + data.next_cursor +
+                    "&start=" + data.next_start +
+                    "&count=" + data.count;
+    cur.next.add(D.ct("Next"));
+    cur.sor.add(D.ce("li").add(cur.next));
+  }
+  var onClick = function(e, cursork, startk) {
+    var state = LS.state.load();
+    var urlpts = T.normalizeURL(state.ids_url);
+    var qrys = urlpts.query;
+    qrys["cursor"] = [].concat(qrys["cursor"])[0];
+    if (qrys["cursor"] !== data[cursork]) return;
+    qrys["cursor"] = data[cursork];
+    qrys["start"] = data[startk];
+    qrys["count"] = data.count;
+    var url = urlpts.base + "?" + T.strQuery(qrys);
+    history.pushState("", undefined, e.target.href);
+    D.rm(D.id("users"));
+    D.empty(D.id("cursor"));
+    D.q("body").scrollIntoView();
+    V.content.showUsersByLookup(
+      state.ids_data, url, state.ids_my, state.ids_mode);
+    e.preventDefault();
+  };
+  cur.next.addEventListener("click",
+    function(e) { onClick(e, "next_cursor", "next_start"); });
+  cur.prev.addEventListener("click",
+    function(e) { onClick(e, "previous_cursor", "prev_start"); });
+  D.id("cursor").add(cur.sor);
+};
+V.content.cursorIdsPopState = function(e) {
+  var state = LS.state.load();
+  V.content.rendUsers(state.ids_object, state.ids_my, state.ids_mode);
+  if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
 // Step to Render View of list of users (following/ers, lists members.,)
@@ -2726,9 +2820,8 @@ V.content.showTL = function(url, my) {
   function onScs(xhr) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses;
-    that.rendTL([].concat(timeline), my);
-    A.expandUrls(D.id("timeline"));
-    LS.state.save("timeline_xhr", xhr);
+    LS.state.save("timeline_data", timeline);
+    that.prendTL([].concat(timeline), my);
   }
   function onErr(xhr) {
     var data;
@@ -2743,16 +2836,16 @@ V.content.showTL = function(url, my) {
       );
     }
     D.id("main").add(O.htmlify(data));
-    LS.state.save("timeline_xhr", xhr);
+    LS.state.save("timeline_data", []);
   }
-  var xhrcache = LS.state.load()["timeline_xhr"];
-  if (xhrcache) {
-    if (xhrcache.status === 200) onScs(xhrcache); else onErr(xhrcache);
-  } else X.get(url, onScs, onErr);
+  X.get(url, onScs, onErr);
   LS.state.save("timeline_url", url);
   LS.state.save("my", my);
 };
-
+V.content.prendTL = function(timeline, my, expurls) {
+  this.rendTL(timeline, my);
+  A.expandUrls(D.id("timeline"), expurls);
+};
 // Render View of Timeline (of home, mentions, messages, lists.,)
 V.content.rendTL = function rendTL(timeline, my) {
   var that = this;
@@ -2788,6 +2881,7 @@ V.content.rendTL = function rendTL(timeline, my) {
     // change url + show next page
     history.pushState("", undefined, href);
     V.content.showTL(pasturl, my);
+    D.rm(D.id("timeline"));
     D.q("body").scrollIntoView();
     // cancel <a> navigation
     e.preventDefault();
@@ -2800,7 +2894,8 @@ V.content.onScroll = function() {
 // load [url's state]
 V.content.onPopState = function(e) {
   var state = LS.state.load();
-  V.content.showTL(state["timeline_url"], state["my"]);
+  V.content.prendTL(state["timeline_data"],
+    state["my"], state["expanded_urls"]);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
@@ -2908,7 +3003,6 @@ V.content.rendTL.tweet = function(tweet, my) {
   return ent.ry;
 };
 
-V.content.misc = {};
 // Render parts of cursor (eg. following page's [back][next])
 V.content.misc.showCursor = function(data) {
   var cur = {
@@ -2930,32 +3024,6 @@ V.content.misc.showCursor = function(data) {
   }
   D.id("cursor").add(cur.sor);
 };
-V.content.misc.showCursorIds = function(data) {
-  var cur = {
-    sor: D.ce("ol"),
-    next: D.ce("a"),
-    prev: D.ce("a")
-  };
-  var curl = U.getURL();
-  if (+data.previous_cursor !== 0) {
-    cur.prev.href = U.ROOT + curl.path + U.Q +
-                    "cursor=" + data.previous_cursor +
-                    "&start=" + data.prev_start +
-                    "&count=" + data.count;
-    cur.prev.add(D.ct("Prev"));
-    cur.sor.add(D.ce("li").add(cur.prev));
-  }
-  if (+data.next_cursor !== 0) {
-    cur.next.href = U.ROOT + curl.path + U.Q +
-                    "cursor=" + data.next_cursor +
-                    "&start=" + data.next_start +
-                    "&count=" + data.count;
-    cur.next.add(D.ct("Next"));
-    cur.sor.add(D.ce("li").add(cur.next));
-    D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
-  }
-  D.id("cursor").add(cur.sor);
-};
 V.content.misc.showCursorPage = function(data) {
   var cur = {
     sor: D.ce("ol"),
@@ -2970,30 +3038,32 @@ V.content.misc.showCursorPage = function(data) {
   cur.next.add(D.ct("Next"));
   cur.sor.add(D.ce("li").add(cur.next));
   D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
+  D.q("");
   D.id("cursor").add(cur.sor);
 };
 V.content.misc.onXHRStart = function(method, url, q) {
-  var loading = D.ce("div").sa("id", "xhr-state").add(D.ct("loading.."));
+  var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
+  loading.classList.add("loading");
   loading.style = "position:fixed;top:0;left:0;" +
     "background:gray;color:white;font-size:xx-small;" +
     "transition:opacity 1s steps(1,end);";
-  D.rm(D.id("xhr-state"));
   D.q("body").add(loading);
 };
 V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
-  var s = D.id("xhr-state");
+  var s = D.q(".xhr-state.loading");
+  s.classList.remove("loading");
+  s.classList.add("done");
+  setTimeout(function() { D.rm(s); }, 1000);
   if (success) {
     s.hidden = true;
     s.style.background = "white";
     s.style.color = "gray";
     s.textContent = "Success!";
-    s.style.opacity = "0";
   } else {
     s.style.background = "red";
     s.style.color = "white";
     s.textContent = "Failed(" + xhr.status + ")" +
       " " + method + " " + url + (q ? "?" + q: "");
-    s.style.opacity = "0";
   }
 };
 
@@ -4046,6 +4116,7 @@ V.outline.rendProfileOutline = function(user) {
     listsub: D.ce("a"),
     favorites: D.ce("a")
   };
+  var entities = user.entities || {};
 
   p.box.className = "user-profile";
   if (user.protected) p.box.classList.add("protected");
@@ -4093,9 +4164,9 @@ V.outline.rendProfileOutline = function(user) {
     D.ce("dt").add(D.ct("Location")),
     D.ce("dd").add(D.ct(T.decodeHTML(user.location))),
     D.ce("dt").add(D.ct("Web")),
-    D.ce("dd").add(D.tweetize(user.url, user.entities.url)),
+    D.ce("dd").add(D.tweetize(user.url, entities.url)),
     D.ce("dt").add(D.ct("Bio")),
-    D.ce("dd").add(D.tweetize(user.description, user.entities.description)),
+    D.ce("dd").add(D.tweetize(user.description, entities.description)),
     D.ce("dt").add(p.tweets),
     D.ce("dd").add(D.ct(user.statuses_count)),
     D.ce("dt").add(p.favorites),
