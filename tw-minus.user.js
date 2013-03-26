@@ -79,6 +79,17 @@ LS.load = function() {
   if (invalid.length) alert("deleted from LS\n" + invalid.join("\n"));
   return data;
 };
+// history.state
+LS.state = {};
+LS.state.save = function(name, value) {
+  var state = JSON.parse(history.state || "{}");
+  state[name] = value;
+  history.replaceState(JSON.stringify(state), undefined, location.href);
+  return state;
+};
+LS.state.load = function() {
+  return JSON.parse(history.state || "{}");
+};
 
 // Cipher objects
 P = {};
@@ -679,9 +690,7 @@ A = {};
 A.expandUrls = function expandUrls(parent) {
   var links = parent.querySelectorAll("a.maybe_shorten_url");
   var urls = [];
-  [].forEach.call(links, function(a) { urls.push(a.href); });
-
-  urls.length && API.resolveURL(urls, function(xhr) {
+  var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     for (var raw_url in data) {
       var exp_url = data[raw_url];
@@ -698,7 +707,15 @@ A.expandUrls = function expandUrls(parent) {
         a.href = a.textContent = decodeURIComponent(escape(exp_url));
       }
     });
-  });
+    // modify [url's state]
+    LS.state.save("xhr_expand_url", xhr);
+  };
+  [].forEach.call(links, function(a) { urls.push(a.href); });
+  if (urls.length) {
+    // use cache if [url's state][xhr]
+    var xhr = LS.state.load()["xhr_expand_url"];
+    if (xhr) onScs(xhr); else API.resolveURL(urls, onScs);
+  }
 };
 
 
@@ -2706,14 +2723,14 @@ V.content.rendLists = function(data, oname) {
 // Step to Render View of Timeline
 V.content.showTL = function(url, my) {
   var that = this;
-  function onGetTLData(xhr) {
+  function onScs(xhr) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses;
-    that.rendTL([].concat(timeline), my, url);
-    D.q("body").scrollIntoView();
+    that.rendTL([].concat(timeline), my);
     A.expandUrls(D.id("timeline"));
+    LS.state.save("timeline_xhr", xhr);
   }
-  function onError(xhr) {
+  function onErr(xhr) {
     var data;
     if (xhr.responseText === "") { // protected user timeline
       data = {"Empty": "No tweets found"};
@@ -2726,50 +2743,65 @@ V.content.showTL = function(url, my) {
       );
     }
     D.id("main").add(O.htmlify(data));
+    LS.state.save("timeline_xhr", xhr);
   }
-  X.get(url, onGetTLData, onError);
+  var xhrcache = LS.state.load()["timeline_xhr"];
+  if (xhrcache) {
+    if (xhrcache.status === 200) onScs(xhrcache); else onErr(xhrcache);
+  } else X.get(url, onScs, onErr);
+  LS.state.save("timeline_url", url);
+  LS.state.save("my", my);
 };
 
 // Render View of Timeline (of home, mentions, messages, lists.,)
-V.content.rendTL = function(timeline, my, url) {
+V.content.rendTL = function rendTL(timeline, my) {
   var that = this;
   var tl_element = D.ce("ol").sa("id", "timeline");
   timeline.forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
+  D.rm(D.id("cursor_past"));
   D.rm(D.id("timeline"));
   D.id("main").add(tl_element);
-  if (timeline.length) {
-    var curl = U.getURL();
-    var last_id = timeline[timeline.length - 1].id_str;
-    var max_id = T.decrement(last_id);
-    var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
-    var past = D.ce("a").sa("href", href).
-      sa("id", "cursor_past").add(D.ct("past"));
-    D.rm(D.id("cursor_past"));
-    D.id("cursor").add(past);
-    D.q("head").add(
-      D.ce("link").sa("rel", "next").sa("href", past.href)
-    );
-    // show next page + change url
-    past.addEventListener("click", function(e) {
-      var pasturl = T.normalizeURL(url);
-      pasturl.query["max_id"] = max_id;
-      pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
-      V.content.showTL(pasturl, my);
-      history.pushState("", undefined, href);
-      e.preventDefault();
-    });
-  } else tl_element.add(O.htmlify({"Empty": "No tweets found"}));
-  // save [url's state]
-  var state = JSON.stringify({url:url, timeline:timeline, my:my});
-  history.replaceState(state, undefined, location.href);
   addEventListener("popstate", V.content.onPopState);
+  addEventListener("scroll", V.content.onScroll);
+  if (!timeline.length) {
+    tl_element.add(O.htmlify({"Empty": "No tweets found"}));
+    return;
+  }
+  var curl = U.getURL();
+  var last_id = timeline[timeline.length - 1].id_str;
+  var max_id = T.decrement(last_id);
+  var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
+  var past = D.ce("a").sa("href", href).
+    sa("id", "cursor_past").add(D.ct("past"));
+  D.id("cursor").add(past);
+  D.q("head").add(
+    D.ce("link").sa("rel", "next").sa("href", past.href)
+  );
+  // change url + show next page
+  past.addEventListener("click", function(e) {
+    var url = LS.state.load()["timeline_url"];
+    var pasturl = T.normalizeURL(url);
+    pasturl.query["max_id"] = max_id;
+    pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
+    // change url + show next page
+    history.pushState("", undefined, href);
+    V.content.showTL(pasturl, my);
+    D.q("body").scrollIntoView();
+    // cancel <a> navigation
+    e.preventDefault();
+  });
+};
+// modify [url's state]
+V.content.onScroll = function() {
+  LS.state.save("scrollTop", D.q("body").scrollTop);
 };
 // load [url's state]
 V.content.onPopState = function(e) {
-  var data = JSON.parse(e.state);
-  V.content.rendTL(data.timeline, data.my, data.url);
+  var state = LS.state.load();
+  V.content.showTL(state["timeline_url"], state["my"]);
+  if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
 V.content.rendTL.tweet = function(tweet, my) {
