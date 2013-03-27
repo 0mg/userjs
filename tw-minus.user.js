@@ -1537,9 +1537,19 @@ V.init.CSS = '\
   }\
   #timeline {\
   }\
+  #users {\
+  }\
+  #cursor {\
+    display: table;\
+    width: 100%;\
+  }\
   #cursor li {\
-    display: inline-block;\
-    padding: 0 3ex;\
+    display: table-cell;\
+    text-align: center;\
+  }\
+  .cursor_next {\
+  }\
+  .cursor_prev {\
   }\
   .debugbox {\
     width: 100%;\
@@ -2546,7 +2556,7 @@ V.content.showUsersByIds = function(url, my, mode) {
         D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
       );
     }
-    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText || xhr.status)));
   };
   // set ?count=<max>
   var urlpts = T.normalizeURL(url), search, requrl;
@@ -2607,18 +2617,18 @@ V.content.genCursors = function(data, url) {
   object["count"] = count;
   // set next page's ids.json?<cursor x>
   if (start + count < data.ids.length) {
-    object["next_cursor"] = cursor;
+    object["next_cursor_str"] = cursor;
     object["next_start"] = start + count;
   } else {
-    object["next_cursor"] = data["next_cursor_str"];
+    object["next_cursor_str"] = data["next_cursor_str"];
     object["next_start"] = 0;
   }
   // set prev page's ids.json cursor
   if (start - count >= 0) {
-    object["previous_cursor"] = cursor;
+    object["previous_cursor_str"] = cursor;
     object["prev_start"] = start - count;
   } else {
-    object["previous_cursor"] = data["previous_cursor_str"];
+    object["previous_cursor_str"] = data["previous_cursor_str"];
     object["prev_start"] = data["ids"].length - count;
   }
   return object;
@@ -2701,25 +2711,25 @@ V.content.rendUsers = function(data, my, mode) {
 V.content.misc = {};
 V.content.misc.showCursorIds = function(data) {
   var cur = {
-    sor: D.ce("ol"),
-    next: D.ce("a"),
-    prev: D.ce("a")
+    sor: D.cf(),
+    next: D.ce("a").sa("class", "cursor_next"),
+    prev: D.ce("a").sa("class", "cursor_prev")
   };
   var curl = U.getURL();
-  if (+data.previous_cursor !== 0) {
+  if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
     cur.prev.href = U.ROOT + curl.path + U.Q +
-                    "cursor=" + data.previous_cursor +
+                    "cursor=" + data.previous_cursor_str +
                     "&start=" + data.prev_start +
                     "&count=" + data.count;
-    cur.prev.add(D.ct("Prev"));
+    cur.prev.add(D.ct("prev"));
     cur.sor.add(D.ce("li").add(cur.prev));
   }
-  if (+data.next_cursor !== 0) {
+  if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
     cur.next.href = U.ROOT + curl.path + U.Q +
-                    "cursor=" + data.next_cursor +
+                    "cursor=" + data.next_cursor_str +
                     "&start=" + data.next_start +
                     "&count=" + data.count;
-    cur.next.add(D.ct("Next"));
+    cur.next.add(D.ct("next"));
     cur.sor.add(D.ce("li").add(cur.next));
   }
   var onClick = function(e, cursork, startk) {
@@ -2733,17 +2743,17 @@ V.content.misc.showCursorIds = function(data) {
     qrys["count"] = data.count;
     var url = urlpts.base + "?" + T.strQuery(qrys);
     history.pushState("", undefined, e.target.href);
-    D.rm(D.id("users"));
     D.empty(D.id("cursor"));
+    D.rm(D.id("users"));
     D.q("body").scrollIntoView();
     V.content.showUsersByLookup(
       state.ids_data, url, state.ids_my, state.ids_mode);
     e.preventDefault();
   };
   cur.next.addEventListener("click",
-    function(e) { onClick(e, "next_cursor", "next_start"); });
+    function(e) { onClick(e, "next_cursor_str", "next_start"); });
   cur.prev.addEventListener("click",
-    function(e) { onClick(e, "previous_cursor", "prev_start"); });
+    function(e) { onClick(e, "previous_cursor_str", "prev_start"); });
   D.id("cursor").add(cur.sor);
 };
 V.content.cursorIdsPopState = function(e) {
@@ -2778,7 +2788,7 @@ V.content.showLists = function(url, my) {
   var oname = re ? re[1]: my.screen_name;
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    if (data.lists) data = data.lists; // lists.json (API 1.0)
+    if (!data.lists) data = {lists:data}; // format {cursor:0,lists[]}
     that.rendLists(data, oname);
   };
   var onErr = function(xhr) {
@@ -2797,7 +2807,7 @@ V.content.rendLists = function(data, oname) {
   var subs = D.ce("dl");
   lists.className = "listslist own";
   subs.className = "listslist";
-  data.forEach(function(l) {
+  data.lists.forEach(function(l) {
     var listPath = U.ROOT + l.full_name.substring(1);
     var target = l.user.screen_name === oname ? lists: subs;
     target.add(
@@ -2853,7 +2863,7 @@ V.content.rendTL = function rendTL(timeline, my) {
   timeline.forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
-  D.rm(D.id("cursor_past"));
+  D.empty(D.id("cursor"));
   D.rm(D.id("timeline"));
   D.id("main").add(tl_element);
   addEventListener("popstate", V.content.onPopState);
@@ -2866,12 +2876,9 @@ V.content.rendTL = function rendTL(timeline, my) {
   var last_id = timeline[timeline.length - 1].id_str;
   var max_id = T.decrement(last_id);
   var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
-  var past = D.ce("a").sa("href", href).
-    sa("id", "cursor_past").add(D.ct("past"));
-  D.id("cursor").add(past);
-  D.q("head").add(
-    D.ce("link").sa("rel", "next").sa("href", past.href)
-  );
+  var past = D.ce("a").sa("href", href).add(D.ct("past"));
+  past.className = "cursor_next";
+  D.id("cursor").add(D.ce("li").add(past));
   // change url + show next page
   past.addEventListener("click", function(e) {
     var url = LS.state.load()["timeline_url"];
@@ -2881,6 +2888,7 @@ V.content.rendTL = function rendTL(timeline, my) {
     // change url + show next page
     history.pushState("", undefined, href);
     V.content.showTL(pasturl, my);
+    D.empty(D.id("cursor"));
     D.rm(D.id("timeline"));
     D.q("body").scrollIntoView();
     // cancel <a> navigation
@@ -3006,39 +3014,36 @@ V.content.rendTL.tweet = function(tweet, my) {
 // Render parts of cursor (eg. following page's [back][next])
 V.content.misc.showCursor = function(data) {
   var cur = {
-    sor: D.ce("ol"),
-    next: D.ce("a"),
-    prev: D.ce("a")
+    sor: D.cf(),
+    next: D.ce("a").add(D.ct("next")),
+    prev: D.ce("a").add(D.ct("prev"))
   };
   var curl = U.getURL();
-  if (data.previous_cursor) {
-    cur.prev.href = U.ROOT + curl.path + U.Q + "cursor=" + data.previous_cursor;
-    cur.prev.add(D.ct("Prev"));
+  if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
+    cur.prev.href = U.ROOT + curl.path +
+      U.Q + "cursor=" + data.previous_cursor_str;
     cur.sor.add(D.ce("li").add(cur.prev));
   }
-  if (data.next_cursor) {
-    cur.next.href = U.ROOT + curl.path + U.Q + "cursor=" + data.next_cursor;
-    cur.next.add(D.ct("Next"));
+  if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
+    cur.next.href = U.ROOT + curl.path +
+      U.Q + "cursor=" + data.next_cursor_str;
     cur.sor.add(D.ce("li").add(cur.next));
-    D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
   }
   D.id("cursor").add(cur.sor);
 };
 V.content.misc.showCursorPage = function(data) {
   var cur = {
     sor: D.ce("ol"),
-    next: D.ce("a"),
-    prev: D.ce("a")
+    next: D.ce("a").sa("class", "cursor_next"),
+    prev: D.ce("a").sa("class", "cursor_prev")
   };
   var curl = U.getURL();
   cur.prev.href = U.ROOT + curl.path + U.Q + "page=" + data.prev_page;
-  cur.prev.add(D.ct("Prev"));
+  cur.prev.add(D.ct("prev"));
   cur.sor.add(D.ce("li").add(cur.prev));
   cur.next.href = U.ROOT + curl.path + U.Q + "page=" + data.next_page;
-  cur.next.add(D.ct("Next"));
+  cur.next.add(D.ct("next"));
   cur.sor.add(D.ce("li").add(cur.next));
-  D.q("head").add(D.ce("link").sa("rel", "next").sa("href", cur.next.href));
-  D.q("");
   D.id("cursor").add(cur.sor);
 };
 V.content.misc.onXHRStart = function(method, url, q) {
