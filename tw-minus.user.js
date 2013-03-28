@@ -3563,7 +3563,7 @@ V.panel.lifeListButtons = function(xhr, user, my) {
   });
   lists.forEach(function(l) {
     var lb_label = (l.mode === "private" ? "-": "+") + l.slug;
-    var lb = new Button("list", lb_label, lb_label);
+    var lb = new Button("listing", lb_label, lb_label);
     list_btns[l.slug] = lb;
     function onListing() { lb.turn(true); }
     function onUnlisting() { lb.turn(false); }
