@@ -2853,6 +2853,7 @@ V.content.showLists = function(url, my) {
 };
 V.content.rendLists = function rendLists(data, oname) {
   var that = this;
+  var root = D.cf();
   var lists = D.ce("ul");
   var subs = D.ce("ul");
   lists.className = subs.className = "listslist";
@@ -2862,9 +2863,13 @@ V.content.rendLists = function rendLists(data, oname) {
     target.add(rendLists.one(l));
   });
   D.empty(D.id("cursor"));
-  D.empty(D.id("main")).add(
+  D.empty(D.id("main"));
+  root.add(
     lists.hasChildNodes() ? lists : D.cf(),
     subs.hasChildNodes() ? subs : D.cf()
+  );
+  D.id("main").add(
+    data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
   that.misc.showCursorLists(data);
 };
