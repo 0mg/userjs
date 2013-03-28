@@ -2692,7 +2692,7 @@ V.content.rendUsers = function(data, my, mode) {
   D.id("main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
-  basicCursor ? that.misc.showCursor(data):
+  basicCursor ? that.misc.showCursor(data, V.content.showUsers):
   idsCursor ? that.misc.showCursorIds(data):
   pageCursor ? that.misc.showCursorPage(data): undefined;
 
@@ -2761,10 +2761,9 @@ V.content.cursorIdsPopState = function(e) {
 
 // Step to Render View of list of users (following/ers, lists members.,)
 V.content.showUsers = function(url, my, mode) {
-  var that = this;
   function onGetUsers(xhr) {
     var data = JSON.parse(xhr.responseText);
-    that.rendUsers(data, my, mode);
+    V.content.rendUsers(data, my, mode);
     LS.state.save("users_object", data);
   }
   var onErr = function(xhr) {
@@ -2781,7 +2780,7 @@ V.content.showUsers = function(url, my, mode) {
   X.get(url, onGetUsers, onErr);
   V.panel.showUserManager(my);
 };
-V.content.misc.showCursor = function(data) {
+V.content.misc.showCursor = function(data, sender) {
   var cur = {
     sor: D.cf(),
     next: D.ce("a").add(D.ct("next")),
@@ -2800,15 +2799,21 @@ V.content.misc.showCursor = function(data) {
   }
   var onClick = function(e, newcur) {
     var state = LS.state.load();
-    var urlpts = T.normalizeURL(state.users_url);
+    var url, my, mode;
+    if (sender === V.content.showUsers) {
+      url = state.users_url, my = state.users_my, mode = state.users_mode;
+    } else if (sender === V.content.showLists) {
+      url = state.lists_url, my = state.lists_my;
+    }
+    var urlpts = T.normalizeURL(url);
     var qrys = urlpts.query;
     qrys["cursor"] = data[newcur];
     var url = urlpts.base + "?" + T.strQuery(qrys);
     history.pushState("", undefined, e.target.href);
     D.empty(D.id("cursor"));
-    D.rm(D.id("users"));
+    D.empty(D.id("main"));
     D.q("body").scrollIntoView();
-    V.content.showUsers(url, state.users_my, state.users_mode);
+    sender(url, my, mode);
     e.preventDefault();
   };
   cur.next.addEventListener("click", function(e) {
@@ -2827,13 +2832,12 @@ V.content.cursorPopState = function(e) {
 
 // Render View of list of lists
 V.content.showLists = function(url, my) {
-  var that = this;
   var re = url.match(/[?&]screen_name=(\w+)/);
   var oname = re ? re[1]: my.screen_name;
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     if (!data.lists) data = {lists:data}; // format {cursor:0,lists[]}
-    that.rendLists(data, oname);
+    V.content.rendLists(data, oname);
     LS.state.save("lists_object", data);
   };
   var onErr = function(xhr) {
@@ -2852,7 +2856,6 @@ V.content.showLists = function(url, my) {
   LS.state.save("lists_oname", oname);
 };
 V.content.rendLists = function rendLists(data, oname) {
-  var that = this;
   var root = D.cf();
   var lists = D.ce("ul");
   var subs = D.ce("ul");
@@ -2871,45 +2874,7 @@ V.content.rendLists = function rendLists(data, oname) {
   D.id("main").add(
     data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
-  that.misc.showCursorLists(data);
-};
-V.content.misc.showCursorLists = function(data) {
-  var cur = {
-    sor: D.cf(),
-    next: D.ce("a").add(D.ct("next")),
-    prev: D.ce("a").add(D.ct("prev"))
-  };
-  var curl = U.getURL();
-  if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
-    cur.prev.href = U.ROOT + curl.path +
-      U.Q + "cursor=" + data.previous_cursor_str;
-    cur.sor.add(D.ce("li").add(cur.prev));
-  }
-  if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
-    cur.next.href = U.ROOT + curl.path +
-      U.Q + "cursor=" + data.next_cursor_str;
-    cur.sor.add(D.ce("li").add(cur.next));
-  }
-  var onClick = function(e, newcur) {
-    var state = LS.state.load();
-    var urlpts = T.normalizeURL(state.lists_url);
-    var qrys = urlpts.query;
-    qrys["cursor"] = data[newcur];
-    var url = urlpts.base + "?" + T.strQuery(qrys);
-    history.pushState("", undefined, e.target.href);
-    D.empty(D.id("cursor"));
-    D.empty(D.id("main"));
-    D.q("body").scrollIntoView();
-    V.content.showLists(url, state.lists_my);
-    e.preventDefault();
-  };
-  cur.next.addEventListener("click", function(e) {
-    onClick(e, "next_cursor_str");
-  });
-  cur.prev.addEventListener("click", function(e) {
-    onClick(e, "previous_cursor_str");
-  });
-  D.id("cursor").add(cur.sor);
+  V.content.misc.showCursor(data, V.content.showLists);
 };
 V.content.cursorListsPopState = function(e) {
   var state = LS.state.load();
