@@ -2774,11 +2774,11 @@ V.content.showUsers = function(url, my, mode) {
     }
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
+  X.get(url, onGetUsers, onErr);
+  if (!(mode & 8)) { mode |= 8; V.panel.showUserManager(my); }
   LS.state.save("users_url", url);
   LS.state.save("users_my", my);
   LS.state.save("users_mode", mode);
-  X.get(url, onGetUsers, onErr);
-  V.panel.showUserManager(my);
 };
 V.content.misc.showCursor = function(data, sender) {
   var cur = {
@@ -2861,6 +2861,7 @@ V.content.rendLists = function rendLists(data, oname) {
   var subs = D.ce("ul");
   lists.className = subs.className = "listslist";
   lists.classList.add("own");
+  if (!data.lists) data = {lists:data}; // format {cursor:0,lists[]}
   data.lists.forEach(function(l) {
     var target = l.user.screen_name === oname ? lists: subs;
     target.add(rendLists.one(l));
