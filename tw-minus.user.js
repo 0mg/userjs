@@ -84,7 +84,7 @@ LS.state = {};
 LS.state.save = function(name, value) {
   var state = JSON.parse(history.state || "{}");
   state[name] = value;
-  history.replaceState(JSON.stringify(state), undefined, location.href);
+  history.replaceState(JSON.stringify(state), document.title, location.href);
   return state;
 };
 LS.state.load = function() {
