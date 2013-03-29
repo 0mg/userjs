@@ -874,6 +874,11 @@ API = function(ver) {
     urls: {
       oauth: {
         request: API.mkurl(ver, {
+          1: function() {
+            var url = new String("/oauth/request_token");
+            url.oauthPhase = "get_request_token";
+            return url;
+          },
           1.1: function() {
             var url = new String("/oauth/request_token");
             url.oauthPhase = "get_request_token";
@@ -881,9 +886,15 @@ API = function(ver) {
           }
         }, ""),
         authorize: API.mkurl(ver, {
+          1: function() { return "/oauth/authorize"; },
           1.1: function() { return "/oauth/authorize"; }
         }, ""),
         access: API.mkurl(ver, {
+          1: function() {
+            var url = new String("/oauth/access_token");
+            url.oauthPhase = "get_access_token";
+            return url;
+          },
           1.1: function() {
             var url = new String("/oauth/access_token");
             url.oauthPhase = "get_access_token";
@@ -1554,6 +1565,18 @@ V.init.CSS = '\
   }\
   a.expanded_tco_url.expanded_url {\
     background-color: #cfc;\
+  }\
+  .xhr-state {\
+    position: fixed; top: 0; left: 0; font-size:xx-small;\
+  }\
+  .xhr-state.loading {\
+    background: gray; color: white;\
+  }\
+  .xhr-state.done.success {\
+    background: white; color: gray;\
+  }\
+  .xhr-state.done.failed {\
+    background: red; color: white;\
   }\
   #subaction a,\
   .list,\
@@ -3118,9 +3141,6 @@ V.content.misc.showCursorPage = function(data) {
 V.content.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
-  loading.style = "position:fixed;top:0;left:0;" +
-    "background:gray;color:white;font-size:xx-small;" +
-    "transition:opacity 1s steps(1,end);";
   D.q("body").ins(loading);
 };
 V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
@@ -3130,12 +3150,10 @@ V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
   setTimeout(function() { D.rm(s); }, 1000);
   if (success) {
     s.hidden = true;
-    s.style.background = "white";
-    s.style.color = "gray";
+    s.classList.add("success");
     s.textContent = "Success!";
   } else {
-    s.style.background = "red";
-    s.style.color = "white";
+    s.classList.add("failed");
     s.textContent = "Failed(" + xhr.status + ")" +
       " " + method + " " + url + (q ? "?" + q: "");
   }
