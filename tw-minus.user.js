@@ -943,6 +943,14 @@ API = function(ver) {
         update_profile_colors: API.mkurl(ver, {
           1: function() { return "/1/account/update_profile_colors"; },
           1.1: function() { return "/1.1/account/update_profile_colors"; }
+        }),
+        update_background_image: API.mkurl(ver, {
+          1: function() {
+            return "/1/account/update_profile_background_image";
+          },
+          1.1: function() {
+            return "/1.1/account/update_profile_background_image";
+          }
         })
       },
       users: {
@@ -1218,18 +1226,7 @@ API.cc.getCredentials = function() {
 };
 
 API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
-  if (1) {
-    var url = "/settings/design/update";
-    var data = {
-      "media_data[]": image,
-      "media_file_name": image,
-      "user[profile_use_background_image]": use,
-      "user[profile_background_tile]": tile
-    };
-    X.post(url, data, callback, onErr);
-    return;
-  }
-  var url = "/1/account/update_profile_background_image.xml";
+  var url = API().urls.account.update_background_image();
   var data = {
     "image": image,
     "use": use,
@@ -2070,8 +2067,8 @@ V.content.showLoginUI = function(qs) {
 // Change colors of text, link, background-color.,
 V.content.customizeDesign = function(my) {
   if (my.status) {
-    my.status.user = my;
-    this.rendTL(my.status, my);
+    var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
+    this.rendTL([tweet], my);
   }
   V.outline.rendProfileOutline(my, my, 2);
   V.outline.changeDesign(my);
