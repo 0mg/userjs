@@ -2554,11 +2554,10 @@ V.content.showUsersByIds = function(url, my, mode) {
     D.id("main").add(O.htmlify(JSON.parse(xhr.responseText || xhr.status)));
   };
   // set ?count=<max>
-  var urlpts = T.normalizeURL(url), search, requrl;
+  var urlpts = T.normalizeURL(url);
   delete urlpts.query["index"];
   delete urlpts.query["size"];
-  var search = T.strQuery(urlpts.query);
-  var requrl = urlpts.base + "?" + search;
+  var requrl = urlpts.base + "?" + T.strQuery(urlpts.query);
   mode |= 2;
   X.get(requrl, onScs, onErr);
   V.panel.showUserManager(my);
@@ -2710,34 +2709,33 @@ V.content.misc.showCursorIds = function(data) {
     next: D.ce("a").sa("class", "cursor_next"),
     prev: D.ce("a").sa("class", "cursor_prev")
   };
-  var curl = U.getURL();
+  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
   if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
-    cur.prev.href = U.ROOT + curl.path + U.Q +
-      "cursor=" + data.previous_cursor_str +
-      "&index=" + data.prev_index +
-      "&size=" + data.size;
+    qrys["cursor"] = data.previous_cursor_str;
+    qrys["index"] = data.prev_index;
+    qrys["size"] = data.size;
+    cur.prev.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
     cur.prev.add(D.ct("prev"));
     cur.sor.add(D.ce("li").add(cur.prev));
   }
   if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
-    cur.next.href = U.ROOT + curl.path + U.Q +
-      "cursor=" + data.next_cursor_str +
-      "&index=" + data.next_index +
-      "&size=" + data.size;
+    qrys["cursor"] = data.next_cursor_str;
+    qrys["index"] = data.next_index;
+    qrys["size"] = data.size;
+    cur.next.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
     cur.next.add(D.ct("next"));
     cur.sor.add(D.ce("li").add(cur.next));
   }
   var onClick = function(e, newcur, newidx) {
     var state = LS.state.load();
-    var urlpts = T.normalizeURL(state.ids_url);
-    var qrys = urlpts.query;
+    var urlpts = T.normalizeURL(state.ids_url), qrys = urlpts.query;
     qrys["cursor"] = [].concat(qrys["cursor"])[0];
     if (qrys["cursor"] !== data[newcur]) return;
     qrys["cursor"] = data[newcur];
     qrys["index"] = data[newidx];
     qrys["size"] = data["size"];
     var url = urlpts.base + "?" + T.strQuery(qrys);
-    history.pushState("", undefined, e.target.href);
+    history.pushState("", "", e.target.href);
     D.empty(D.id("cursor"));
     D.rm(D.id("users"));
     D.q("body").scrollIntoView();
@@ -2786,15 +2784,15 @@ V.content.misc.showCursor = function(data, sender) {
     next: D.ce("a").add(D.ct("next")),
     prev: D.ce("a").add(D.ct("prev"))
   };
-  var curl = U.getURL();
+  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
   if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
-    cur.prev.href = U.ROOT + curl.path +
-      U.Q + "cursor=" + data.previous_cursor_str;
+    qrys["cursor"] = data.previous_cursor_str;
+    cur.prev.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
     cur.sor.add(D.ce("li").add(cur.prev));
   }
   if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
-    cur.next.href = U.ROOT + curl.path +
-      U.Q + "cursor=" + data.next_cursor_str;
+    qrys["cursor"] = data.next_cursor_str;
+    cur.next.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
     cur.sor.add(D.ce("li").add(cur.next));
   }
   var onClick = function(e, newcur) {
@@ -2806,10 +2804,9 @@ V.content.misc.showCursor = function(data, sender) {
       url = state.lists_url, my = state.lists_my;
     }
     var urlpts = T.normalizeURL(url);
-    var qrys = urlpts.query;
-    qrys["cursor"] = data[newcur];
+    var qrys = urlpts.query; qrys["cursor"] = data[newcur];
     var url = urlpts.base + "?" + T.strQuery(qrys);
-    history.pushState("", undefined, e.target.href);
+    history.pushState("", "", e.target.href);
     D.empty(D.id("cursor"));
     D.empty(D.id("main"));
     D.q("body").scrollIntoView();
@@ -2975,18 +2972,18 @@ V.content.rendTL = function rendTL(timeline, my) {
   var curl = U.getURL();
   var last_id = timeline[timeline.length - 1].id_str;
   var max_id = T.decrement(last_id);
-  var href = U.ROOT + curl.path + U.Q + "max_id=" + max_id;
+  var qrys = T.parseQuery(curl.query); qrys["max_id"] = max_id;
+  var href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
   var past = D.ce("a").sa("href", href).add(D.ct("past"));
   past.className = "cursor_next";
   D.id("cursor").add(D.ce("li").add(past));
   // change url + show next page
   past.addEventListener("click", function(e) {
     var url = LS.state.load()["timeline_url"];
-    var pasturl = T.normalizeURL(url);
-    pasturl.query["max_id"] = max_id;
+    var pasturl = T.normalizeURL(url); pasturl.query["max_id"] = max_id;
     pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
     // change url + show next page
-    history.pushState("", undefined, href);
+    history.pushState("", "", e.target.href);
     V.content.showTL(pasturl, my);
     D.empty(D.id("cursor"));
     D.rm(D.id("timeline"));
