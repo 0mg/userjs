@@ -4098,10 +4098,22 @@ V.outline.showListOutline = function(hash, my, mode) {
     mode & 1 && that.changeDesign(list.user);
     mode & 2 && that.showListProfile(list);
     mode & 4 && V.panel.showListFollowPanel(list);
+    if (xhr instanceof XMLHttpRequest) {
+      LS.state.save("lists_show", list);
+      LS.state.save("lists_show_modified", Date.now());
+    }
   };
   var onErr = function(xhr) {
     D.id("side").add(O.htmlify(JSON.parse(xhr.responseText)))
   };
+  // use cache (history.state) if exist
+  var state = LS.state.load();
+  var time = state.lists_show_modified || 0;
+  var expired = Date.now() - time > 1000 * 60 * 15;
+  if (!expired) {
+    return onScs({responseText:JSON.stringify(state.lists_show)});
+  }
+  // else use cache (localStorage) if exist
   var mylists = LS.load()["mylists"];
   for (var i = 0; i < mylists.length; ++i) {
     var list = mylists[i];
