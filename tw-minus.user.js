@@ -870,8 +870,8 @@ X.getX = function get(url, f, b) {
   var script = D.ce("script");
   for (var fn; window[fn = "f" + String(Math.random()).slice(2)];);
   script.src = url + "&callback=" + fn;
-  window[fn] = function(str) {
-    f({responseText:JSON.stringify(str)});
+  window[fn] = function(data) {
+    f({responseText:JSON.stringify(data)});
     delete window[fn];
     D.rm(script);
   };
@@ -2934,8 +2934,8 @@ V.content.showTL = function(url, my) {
   LS.state.save("timeline_url", url);
   LS.state.save("my", my);
   if (url.indexOf(API(1.0).urls.search.tweets()) === 0) {
-    var onScsX = function() {
-      timeline = timeline.results;
+    var onScsX = function(xhr) {
+      var timeline = JSON.parse(xhr.responseText).results;
       timeline.forEach(function(t) {
         t.in_reply_to_screen_name = t.to_user;
         t.in_reply_to_user_id_str = t.to_user_id_str;
