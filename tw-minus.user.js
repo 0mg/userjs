@@ -1169,12 +1169,14 @@ API.V = 1.1;
 API.cc = {};
 // memory data after callback(xhr)
 API.cc.reuseData = function(method, url, q) {
-  try { var data = JSON.parse(this.responseText); } catch(e) { return; }
+  var xhr = this;
+  try { var data = JSON.parse(xhr.responseText); } catch(e) { return; }
   var ls = LS.load();
   var my = ls["credentials"];
   var urlpts = T.normalizeURL(url);
   var qobj = urlpts.query;
   if (method === "GET") switch (urlpts.base) {
+  // update mylists cache
   case API().urls.lists.list():
     var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
     if (!q_screen_name || q_screen_name === my.screen_name) {
@@ -1182,6 +1184,13 @@ API.cc.reuseData = function(method, url, q) {
       LS.save("mylists_modified", Date.now());
     }
     break;
+  }
+  // update credentials cache
+  if (data.screen_name === my.screen_name && data.id_str === my.id_str) {
+    API.cc.onGotMe(xhr);
+  } else if (data.user) {
+    if (data.user.screen_name === my.screen_name &&
+      data.user.id_str === my.id_str) API.cc.onGotMe(xhr);
   }
 };
 // ongot JSON contains my credentials
@@ -2191,7 +2200,6 @@ V.content.customizeDesign = function(my) {
   fm.update.add(D.ct("Update"));
   fm.update.addEventListener("click", function() {
     function onAPI(xhr) {
-      API.cc.onGotMe(xhr);
       alert(xhr.responseText);
     }
     API.updateProfileColors(
@@ -3290,14 +3298,12 @@ V.panel.makeTwAct = function(t, my) {
       API.untweet(t.id_str, function(xhr) {
         ab.rt.turn(false);
         D.rm(ab.node.parentNode);
-        API.cc.onGotMe(xhr);
       });
     } else if (isTweetRTedByMe) {
       // undo RT (button on owner tweet or others' RT)
       API.untweet(t.current_user_retweet.id_str, function(xhr) {
         isTweetRTedByMe = false;
         ab.rt.turn(false);
-        API.cc.onGotMe(xhr);
       });
     } else {
       // do RT
@@ -3306,7 +3312,6 @@ V.panel.makeTwAct = function(t, my) {
         t.current_user_retweet = data;
         isTweetRTedByMe = true;
         ab.rt.turn(true);
-        API.cc.onGotMe(xhr);
       });
     }
   }, false);
@@ -3323,7 +3328,6 @@ V.panel.makeTwAct = function(t, my) {
     ab.del.node.addEventListener("click", function() {
       API.untweet((rt || t).id_str, function(xhr) {
         D.rm(ab.node.parentNode);
-        API.cc.onGotMe(xhr);
       });
     }, false);
     ab.node.add(ab.del.node);
@@ -3798,11 +3802,9 @@ V.panel.showTweetBox = function() {
 
   t.update.addEventListener("click", function() {
     if (t.usemedia.checked && media_b64) {
-      API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "",
-      function(xhr) { API.cc.onGotMe(xhr); alert(xhr.responseText); });
+      API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "");
     } else {
-      API.tweet(t.status.value, t.id.value, "", "", "", "", "",
-      function(xhr) { API.cc.onGotMe(xhr); alert(xhr.responseText); });
+      API.tweet(t.status.value, t.id.value, "", "", "", "", "");
     }
   }, false);
 
@@ -4108,9 +4110,9 @@ V.outline.showListOutline = function(hash, my, mode) {
   };
   // use cache (history.state) if exist
   var state = LS.state.load();
-  var time = state.lists_show_modified || 0;
-  var expired = Date.now() - time > 1000 * 60 * 15;
-  if (!expired) {
+  var time = state.lists_show_modified;
+  var usecache = Date.now() - time < 1000 * 60 * 15;
+  if (usecache) {
     return onScs({responseText:JSON.stringify(state.lists_show)});
   }
   // else use cache (localStorage) if exist
@@ -4308,6 +4310,6 @@ V.outline.rendProfileOutline = function(user) {
   if (document.readyState === "complete") editDOM();
   else addEventListener("load", function() { editDOM(); });
   if (!API.cc.getCredentials()) {
-    X.get(API().urls.account.verify_credentials(), API.cc.onGotMe, null);
+    X.get(API().urls.account.verify_credentials(), null, null);
   }
 })();
