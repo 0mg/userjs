@@ -2646,7 +2646,7 @@ V.content.genCursors = function(data, url) {
 
 // Render View of list of users
 V.content.rendUsers = function(data, my, mode) {
-  data.users = data.users || data;
+  var users = data.users || data;
   var followerRequests = mode & 1;
   var idsCursor = mode & 2;
   var pageCursor = mode & 4;
@@ -2656,7 +2656,7 @@ V.content.rendUsers = function(data, my, mode) {
 
   var users_list = D.ce("ul").sa("id", "users");
 
-  data.users && data.users.forEach(function(user) {
+  users && users.forEach(function(user) {
     var lu = {
       root: D.ce("li").sa("class", "user"),
       screen_name: D.ce("a").sa("class", "screen_name"),
@@ -2702,7 +2702,7 @@ V.content.rendUsers = function(data, my, mode) {
   });
 
   D.empty(D.id("cursor"));
-  D.rm(D.id("users"));
+  D.empty(D.id("main"));
   D.id("main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
@@ -2771,7 +2771,6 @@ V.content.cursorIdsPopState = function(e) {
   V.content.rendUsers(state.ids_object, state.ids_my, state.ids_mode);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
-
 // Step to Render View of list of users (following/ers, lists members.,)
 V.content.showUsers = function(url, my, mode) {
   function onGetUsers(xhr) {
@@ -3123,17 +3122,21 @@ V.content.rendTL.tweet = function(tweet, my) {
   return ent.ry;
 };
 
+// users search cursor
 V.content.misc.showCursorPage = function(data) {
   var cur = {
-    sor: D.ce("ol"),
+    sor: D.cf(),
     next: D.ce("a").sa("class", "cursor_next"),
     prev: D.ce("a").sa("class", "cursor_prev")
   };
-  var curl = U.getURL();
-  cur.prev.href = U.ROOT + curl.path + U.Q + "page=" + data.prev_page;
-  cur.prev.add(D.ct("prev"));
-  cur.sor.add(D.ce("li").add(cur.prev));
-  cur.next.href = U.ROOT + curl.path + U.Q + "page=" + data.next_page;
+  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
+  var cpage = +[].concat(qrys["page"])[0] || 1;
+  if (cpage > 1) {
+    cur.prev.href = U.ROOT + curl.path + U.Q + "page=" + (cpage - 1);
+    cur.prev.add(D.ct("prev"));
+    cur.sor.add(D.ce("li").add(cur.prev));
+  }
+  cur.next.href = U.ROOT + curl.path + U.Q + "page=" + (cpage + 1);
   cur.next.add(D.ct("next"));
   cur.sor.add(D.ce("li").add(cur.next));
   D.id("cursor").add(cur.sor);
