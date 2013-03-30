@@ -2006,8 +2006,8 @@ V.content.showLoginUI = function(qs) {
     LS.save("request_token", tokens["oauth_token"]);
     LS.save("request_token_secret", tokens["oauth_token_secret"]);
     var url = API().urls.oauth.authorize();
-    var access_token = tokens["oauth_token"];
-    location.href = url + "?oauth_token=" + access_token;
+    var request_token = tokens["oauth_token"];
+    location.href = url + "?oauth_token=" + request_token;
   };
   var getAcsToken = function() {
     var tokens = T.parseQuery(qs);
