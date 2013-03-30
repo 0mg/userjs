@@ -3016,7 +3016,7 @@ V.content.onScroll = function() {
 // load [url's state]
 V.content.onPopState = function(e) {
   var state = LS.state.load();
-  V.content.prendTL(state["timeline_data"],
+  V.content.prendTL([].concat(state["timeline_data"]),
     state["my"], state["expanded_urls"]);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
