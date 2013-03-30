@@ -3148,6 +3148,7 @@ V.content.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
   D.q("body").ins(loading);
+  setTimeout(function() { D.rm(loading); }, 1000);
   return loading;
 };
 V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
@@ -3155,7 +3156,6 @@ V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
   if (!s) s = V.content.misc.onXHRStart(method, url, q);
   s.classList.remove("loading");
   s.classList.add("done");
-  setTimeout(function() { D.rm(s); }, 1000);
   if (success) {
     s.hidden = true;
     s.classList.add("success");
