@@ -700,7 +700,7 @@ A.expandUrls = function expandUrls(parent, expurls) {
   var urls = [].map.call(anchors, function(a) { return a.href; });
   if (urls.length) {
     if (expurls) expand(expurls);
-    else API.resolveURL(urls, onScs);
+    else API.resolveURL(urls, onScs, null);
   }
 };
 
@@ -833,7 +833,7 @@ X.post = function post(url, q, f, b, c) {
   var xhr = new XMLHttpRequest;
   var method = "POST";
   xhr.open(method, url, true);
-  if (q instanceof FormData) {
+  if (q.constructor === FormData) { // `q instanceof FormData` is error in GM
     data = q, oaq = {}, ctype = null;
   } else if (typeof q === "object") {
     oaq = T.parseQuery(data = T.strQuery(q));
@@ -3148,9 +3148,11 @@ V.content.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
   D.q("body").ins(loading);
+  return loading;
 };
 V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
   var s = D.q(".xhr-state.loading");
+  if (!s) s = V.content.misc.onXHRStart(method, url, q);
   s.classList.remove("loading");
   s.classList.add("done");
   setTimeout(function() { D.rm(s); }, 1000);
