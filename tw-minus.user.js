@@ -854,6 +854,9 @@ X.post = function post(url, q, f, b, c) {
 
 // GET Method XDomain for Twitter API
 X.getX = function get(url, f, b) {
+  if (typeof GM_xmlhttpRequest === "function") {
+    return GM_xmlhttpRequest({ method: "GET", url: url, onload: f });
+  }
   var script = D.ce("script");
   for (var fn; window[fn = "f" + String(Math.random()).slice(2)];);
   script.src = url + "&callback=" + fn;
