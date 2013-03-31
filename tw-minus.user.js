@@ -1795,7 +1795,8 @@ V.content.showPage.on1 = function(hash, q, my) {
     this.showSettings(my);
     break;
   case "lists":
-    this.showLists(API().urls.lists.list() + "?" + q + "&cursor=-1", my);
+    this.showLists(API().urls.lists.list() +
+      "?" + q + "&reverse=true&cursor=-1", my);
     V.panel.showListPanel(my);
     break;
   case "inbox":
@@ -1903,7 +1904,7 @@ V.content.showPage.on2 = function(hash, q, my) {
     break;
   case "lists":
     this.showLists(API().urls.lists.list() + "?" + q +
-                   "&screen_name=" + hash[0], my);
+                   "&screen_name=" + hash[0] + "&reverse=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   default:
