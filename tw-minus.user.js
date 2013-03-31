@@ -873,282 +873,282 @@ X.getX = function get(url, f, b) {
 
 API = function(ver) {
   if (ver === undefined) ver = API.V;
-  return {
-    urls: {
-      oauth: {
-        request: API.mkurl(ver, {
-          1: function() {
-            var url = new String("/oauth/request_token");
-            url.oauthPhase = "get_request_token";
-            return url;
-          },
-          1.1: function() {
-            var url = new String("/oauth/request_token");
-            url.oauthPhase = "get_request_token";
-            return url;
-          }
-        }, ""),
-        authorize: API.mkurl(ver, {
-          1: function() { return "/oauth/authorize"; },
-          1.1: function() { return "/oauth/authorize"; }
-        }, ""),
-        access: API.mkurl(ver, {
-          1: function() {
-            var url = new String("/oauth/access_token");
-            url.oauthPhase = "get_access_token";
-            return url;
-          },
-          1.1: function() {
-            var url = new String("/oauth/access_token");
-            url.oauthPhase = "get_access_token";
-            return url;
-          }
-        }, "")
+  var urls = {};
+  urls.oauth = {
+    request: API.mkurl(ver, {
+      1: function() {
+        var url = new String("/oauth/request_token");
+        url.oauthPhase = "get_request_token";
+        return url;
       },
-      urls: {
-        resolve: API.mkurl(ver, {
-          0: function() { return "/i/resolve"; },
-          1: function() { return "/1/urls/resolve"; }
-        })
-      },
-      blocking: {
-        list: API.mkurl(ver, {
-          1.1: function() { return "/1.1/blocks/list"; }
-        }),
-        ids: API.mkurl(ver, {
-          1: function() { return "/1/blocks/blocking_ids"; },
-          1.1: function() { return "/1.1/blocks/ids"; }
-        }),
-        add: API.mkurl(ver, {
-          1: function() { return "/1/blocks/create"; },
-          1.1: function() { return "/1.1/blocks/create"; }
-        }),
-        spam: API.mkurl(ver, {
-          1: function() { return "/1/report_spam"; },
-          1.1: function() { return "/1.1/users/report_spam"; }
-        }),
-        remove: API.mkurl(ver, {
-          1: function() { return "/1/blocks/destroy"; },
-          1.1: function() { return "/1.1/blocks/destroy"; }
-        })
-      },
-      account: {
-        rate_limit_status: API.mkurl(ver, {
-          1: function() { return "/1/account/rate_limit_status"; },
-          1.1: function() { return "/1.1/application/rate_limit_status"; }
-        }),
-        verify_credentials: API.mkurl(ver, {
-          1: function() { return "/1/account/verify_credentials"; },
-          1.1: function() { return "/1.1/account/verify_credentials"; }
-        }),
-        update_profile_colors: API.mkurl(ver, {
-          1: function() { return "/1/account/update_profile_colors"; },
-          1.1: function() { return "/1.1/account/update_profile_colors"; }
-        }),
-        update_background_image: API.mkurl(ver, {
-          1: function() {
-            return "/1/account/update_profile_background_image";
-          },
-          1.1: function() {
-            return "/1.1/account/update_profile_background_image";
-          }
-        })
-      },
-      users: {
-        followers_ids: API.mkurl(ver, {
-          1: function() { return "/1/followers/ids"; },
-          1.1: function() { return "/1.1/followers/ids"; }
-        }),
-        friends_ids: API.mkurl(ver, {
-          1: function() { return "/1/friends/ids"; },
-          1.1: function() { return "/1.1/friends/ids"; }
-        }),
-        lookup: API.mkurl(ver, {
-          1: function() { return "/1/users/lookup"; },
-          1.1: function() { return "/1.1/users/lookup"; }
-        }),
-        incoming: API.mkurl(ver, {
-          1: function() { return "/1/friendships/incoming"; },
-          1.1: function() { return "/1.1/friendships/incoming"; }
-        }),
-        outgoing: API.mkurl(ver, {
-          1: function() { return "/1/friendships/outgoing"; },
-          1.1: function() { return "/1.1/friendships/outgoing"; }
-        }),
-        deny: API.mkurl(ver, {
-          1: function() { return "/1/friendships/deny"; }
-        }),
-        accept: API.mkurl(ver, {
-          1: function() { return "/1/friendships/accept"; }
-        }),
-        cancel: API.mkurl(ver, {
-          1: function() { return "/1/friendships/cancel"; }
-        }),
-        friendship: API.mkurl(ver, {
-          1: function() { return "/1/friendships/show"; },
-          1.1: function() { return "/1.1/friendships/show"; }
-        }),
-        follow: API.mkurl(ver, {
-          1: function() { return "/1/friendships/create"; },
-          1.1: function() { return "/1.1/friendships/create"; }
-        }),
-        unfollow: API.mkurl(ver, {
-          1: function() { return "/1/friendships/destroy"; },
-          1.1: function() { return "/1.1/friendships/destroy"; }
-        }),
-        update: API.mkurl(ver, {
-          1: function() { return "/1/friendships/update"; },
-          1.1: function() { return "/1.1/friendships/update"; }
-        }),
-        show: API.mkurl(ver, {
-          1: function() { return "/1/users/show"; },
-          1.1: function() { return "/1.1/users/show"; }
-        })
-      },
-      d: {
-        inbox: API.mkurl(ver, {
-          1: function() { return "/1/direct_messages"; },
-          1.1: function() { return "/1.1/direct_messages"; }
-        }),
-        sent: API.mkurl(ver, {
-          1: function() { return "/1/direct_messages/sent"; },
-          1.1: function() { return "/1.1/direct_messages/sent"; }
-        }),
-        destroy: API.mkurl(ver, {
-          1: function(id) { return "/1/direct_messages/destroy/" + id; },
-          1.1: function(id) { return "/1.1/direct_messages/destroy"; }
-        })
-      },
-      search: {
-        tweets: API.mkurl(ver, {
-          1: function() {
-            return location.protocol + "//search.twitter.com/search";
-          },
-          1.1: function() {
-            return "/1.1/search/tweets";
-          }
-        }),
-        users: API.mkurl(ver, {
-          1: function() { return "/1/users/search"; },
-          1.1: function() { return "/1.1/users/search"; }
-        })
-      },
-      lists: {
-        list: API.mkurl(ver, {
-          1: function() { return "/1/lists/all"; },
-          1.1: function() { return "/1.1/lists/list"; }
-        }),
-        subscriptions: API.mkurl(ver, {
-          1: function() { return "/1/lists/subscriptions"; },
-          1.1: function() { return "/1.1/lists/subscriptions"; }
-        }),
-        listed: API.mkurl(ver, {
-          1: function() { return "/1/lists/memberships"; },
-          1.1: function() { return "/1.1/lists/memberships"; }
-        }),
-        show: API.mkurl(ver, {
-          1: function() { return "/1/lists/show"; },
-          1.1: function() { return "/1.1/lists/show"; }
-        }),
-        tweets: API.mkurl(ver, {
-          1: function() { return "/1/lists/statuses"; },
-          1.1: function() { return "/1.1/lists/statuses"; }
-        }),
-        create: API.mkurl(ver, {
-          1: function() { return "/1/lists/create"; },
-          1.1: function() { return "/1.1/lists/create"; }
-        }),
-        update: API.mkurl(ver, {
-          1: function() { return "/1/lists/update"; },
-          1.1: function() { return "/1.1/lists/update"; }
-        }),
-        destroy: API.mkurl(ver, {
-          1: function() { return "/1/lists/destroy"; },
-          1.1: function() { return "/1.1/lists/destroy"; }
-        }),
-        follow: API.mkurl(ver, {
-          1: function() { return "/1/lists/subscribers/create"; },
-          1.1: function() { return "/1.1/lists/subscribers/create"; }
-        }),
-        unfollow: API.mkurl(ver, {
-          1: function() { return "/1/lists/subscribers/destroy"; },
-          1.1: function() { return "/1.1/lists/subscribers/destroy"; }
-        }),
-        users: {
-          members: API.mkurl(ver, {
-            1: function() { return "/1/lists/members"; },
-            1.1: function() { return "/1.1/lists/members"; }
-          }),
-          add: API.mkurl(ver, {
-            1: function() { return "/1/lists/members/create_all"; },
-            1.1: function() { return "/1.1/lists/members/create_all"; }
-          }),
-          remove: API.mkurl(ver, {
-            1: function() { return "/1/lists/members/destroy"; },
-            1.1: function() { return "/1/lists/members/destroy_all"; }
-          }),
-          subscribers: API.mkurl(ver, {
-            1: function() { return "/1/lists/subscribers"; },
-            1.1: function() { return "/1.1/lists/subscribers"; }
-          })
-        }
-      },
-      timeline: {
-        home: API.mkurl(ver, {
-          1: function() { return "/1/statuses/home_timeline"; },
-          1.1: function() { return "/1.1/statuses/home_timeline"; }
-        }),
-        mentions: API.mkurl(ver, {
-          1: function() { return "/1/statuses/mentions"; },
-          1.1: function() { return "/1.1/statuses/mentions_timeline"; }
-        }),
-        user: API.mkurl(ver, {
-          1: function() { return "/1/statuses/user_timeline"; },
-          1.1: function() { return "/1.1/statuses/user_timeline"; }
-        })
-      },
-      favorites: {
-        list: API.mkurl(ver, {
-          1: function() { return "/1/favorites"; },
-          1.1: function() { return "/1.1/favorites/list"; }
-        }),
-        add: API.mkurl(ver, {
-          1: function(id) { return "/1/favorites/create/" + id; },
-          1.1: function(id) { return "/1.1/favorites/create"; }
-        }),
-        remove: API.mkurl(ver, {
-          1: function(id) { return "/1/favorites/destroy/" + id; },
-          1.1: function(id) { return "/1.1/favorites/destroy"; }
-        })
-      },
-      tweet: {
-        get: API.mkurl(ver, {
-          1: function(id) { return "/1/statuses/show/" + id; },
-          1.1: function(id) { return "/1.1/statuses/show/" + id; }
-        }),
-        post: API.mkurl(ver, {
-          1: function() { return "/1/statuses/update"; },
-          1.1: function() { return "/1.1/statuses/update"; }
-        }),
-        retweet: API.mkurl(ver, {
-          1: function(id) { return "/1/statuses/retweet/" + id; },
-          1.1: function(id) { return "/1.1/statuses/retweet/" + id; }
-        }),
-        upload: API.mkurl(ver, {
-          1: function() {
-            return location.protocol +
-              "//upload.twitter.com/1/statuses/update_with_media";
-          },
-          1.1: function() {
-            return "/1.1/statuses/update_with_media";
-          }
-        }),
-        destroy: API.mkurl(ver, {
-          1: function(id) { return "/1/statuses/destroy/" + id; },
-          1.1: function(id) { return "/1.1/statuses/destroy/" + id; }
-        })
+      1.1: function() {
+        var url = new String("/oauth/request_token");
+        url.oauthPhase = "get_request_token";
+        return url;
       }
-    }
+    }, ""),
+    authorize: API.mkurl(ver, {
+      1: function() { return "/oauth/authorize"; },
+      1.1: function() { return "/oauth/authorize"; }
+    }, ""),
+    access: API.mkurl(ver, {
+      1: function() {
+        var url = new String("/oauth/access_token");
+        url.oauthPhase = "get_access_token";
+        return url;
+      },
+      1.1: function() {
+        var url = new String("/oauth/access_token");
+        url.oauthPhase = "get_access_token";
+        return url;
+      }
+    }, "")
+  };
+  urls.urls = {
+    resolve: API.mkurl(ver, {
+      0: function() { return "/i/resolve"; },
+      1: function() { return "/1/urls/resolve"; }
+    })
+  };
+  urls.blocking = {
+    list: API.mkurl(ver, {
+      1.1: function() { return "/1.1/blocks/list"; }
+    }),
+    ids: API.mkurl(ver, {
+      1: function() { return "/1/blocks/blocking_ids"; },
+      1.1: function() { return "/1.1/blocks/ids"; }
+    }),
+    add: API.mkurl(ver, {
+      1: function() { return "/1/blocks/create"; },
+      1.1: function() { return "/1.1/blocks/create"; }
+    }),
+    spam: API.mkurl(ver, {
+      1: function() { return "/1/report_spam"; },
+      1.1: function() { return "/1.1/users/report_spam"; }
+    }),
+    remove: API.mkurl(ver, {
+      1: function() { return "/1/blocks/destroy"; },
+      1.1: function() { return "/1.1/blocks/destroy"; }
+    })
+  };
+  urls.account = {
+    rate_limit_status: API.mkurl(ver, {
+      1: function() { return "/1/account/rate_limit_status"; },
+      1.1: function() { return "/1.1/application/rate_limit_status"; }
+    }),
+    verify_credentials: API.mkurl(ver, {
+      1: function() { return "/1/account/verify_credentials"; },
+      1.1: function() { return "/1.1/account/verify_credentials"; }
+    }),
+    update_profile_colors: API.mkurl(ver, {
+      1: function() { return "/1/account/update_profile_colors"; },
+      1.1: function() { return "/1.1/account/update_profile_colors"; }
+    }),
+    update_background_image: API.mkurl(ver, {
+      1: function() {
+        return "/1/account/update_profile_background_image";
+      },
+      1.1: function() {
+        return "/1.1/account/update_profile_background_image";
+      }
+    })
+  };
+  urls.users = {
+    followers_ids: API.mkurl(ver, {
+      1: function() { return "/1/followers/ids"; },
+      1.1: function() { return "/1.1/followers/ids"; }
+    }),
+    friends_ids: API.mkurl(ver, {
+      1: function() { return "/1/friends/ids"; },
+      1.1: function() { return "/1.1/friends/ids"; }
+    }),
+    lookup: API.mkurl(ver, {
+      1: function() { return "/1/users/lookup"; },
+      1.1: function() { return "/1.1/users/lookup"; }
+    }),
+    incoming: API.mkurl(ver, {
+      1: function() { return "/1/friendships/incoming"; },
+      1.1: function() { return "/1.1/friendships/incoming"; }
+    }),
+    outgoing: API.mkurl(ver, {
+      1: function() { return "/1/friendships/outgoing"; },
+      1.1: function() { return "/1.1/friendships/outgoing"; }
+    }),
+    deny: API.mkurl(ver, {
+      1: function() { return "/1/friendships/deny"; }
+    }),
+    accept: API.mkurl(ver, {
+      1: function() { return "/1/friendships/accept"; }
+    }),
+    cancel: API.mkurl(ver, {
+      1: function() { return "/1/friendships/cancel"; }
+    }),
+    friendship: API.mkurl(ver, {
+      1: function() { return "/1/friendships/show"; },
+      1.1: function() { return "/1.1/friendships/show"; }
+    }),
+    follow: API.mkurl(ver, {
+      1: function() { return "/1/friendships/create"; },
+      1.1: function() { return "/1.1/friendships/create"; }
+    }),
+    unfollow: API.mkurl(ver, {
+      1: function() { return "/1/friendships/destroy"; },
+      1.1: function() { return "/1.1/friendships/destroy"; }
+    }),
+    update: API.mkurl(ver, {
+      1: function() { return "/1/friendships/update"; },
+      1.1: function() { return "/1.1/friendships/update"; }
+    }),
+    show: API.mkurl(ver, {
+      1: function() { return "/1/users/show"; },
+      1.1: function() { return "/1.1/users/show"; }
+    })
+  };
+  urls.d = {
+    inbox: API.mkurl(ver, {
+      1: function() { return "/1/direct_messages"; },
+      1.1: function() { return "/1.1/direct_messages"; }
+    }),
+    sent: API.mkurl(ver, {
+      1: function() { return "/1/direct_messages/sent"; },
+      1.1: function() { return "/1.1/direct_messages/sent"; }
+    }),
+    destroy: API.mkurl(ver, {
+      1: function(id) { return "/1/direct_messages/destroy/" + id; },
+      1.1: function(id) { return "/1.1/direct_messages/destroy"; }
+    })
+  };
+  urls.search = {
+    tweets: API.mkurl(ver, {
+      1: function() {
+        return location.protocol + "//search.twitter.com/search";
+      },
+      1.1: function() {
+        return "/1.1/search/tweets";
+      }
+    }),
+    users: API.mkurl(ver, {
+      1: function() { return "/1/users/search"; },
+      1.1: function() { return "/1.1/users/search"; }
+    })
+  };
+  urls.lists = {
+    list: API.mkurl(ver, {
+      1: function() { return "/1/lists/all"; },
+      1.1: function() { return "/1.1/lists/list"; }
+    }),
+    subscriptions: API.mkurl(ver, {
+      1: function() { return "/1/lists/subscriptions"; },
+      1.1: function() { return "/1.1/lists/subscriptions"; }
+    }),
+    listed: API.mkurl(ver, {
+      1: function() { return "/1/lists/memberships"; },
+      1.1: function() { return "/1.1/lists/memberships"; }
+    }),
+    show: API.mkurl(ver, {
+      1: function() { return "/1/lists/show"; },
+      1.1: function() { return "/1.1/lists/show"; }
+    }),
+    tweets: API.mkurl(ver, {
+      1: function() { return "/1/lists/statuses"; },
+      1.1: function() { return "/1.1/lists/statuses"; }
+    }),
+    create: API.mkurl(ver, {
+      1: function() { return "/1/lists/create"; },
+      1.1: function() { return "/1.1/lists/create"; }
+    }),
+    update: API.mkurl(ver, {
+      1: function() { return "/1/lists/update"; },
+      1.1: function() { return "/1.1/lists/update"; }
+    }),
+    destroy: API.mkurl(ver, {
+      1: function() { return "/1/lists/destroy"; },
+      1.1: function() { return "/1.1/lists/destroy"; }
+    }),
+    follow: API.mkurl(ver, {
+      1: function() { return "/1/lists/subscribers/create"; },
+      1.1: function() { return "/1.1/lists/subscribers/create"; }
+    }),
+    unfollow: API.mkurl(ver, {
+      1: function() { return "/1/lists/subscribers/destroy"; },
+      1.1: function() { return "/1.1/lists/subscribers/destroy"; }
+    })
+  };
+  urls.lists.users = {
+    members: API.mkurl(ver, {
+      1: function() { return "/1/lists/members"; },
+      1.1: function() { return "/1.1/lists/members"; }
+    }),
+    add: API.mkurl(ver, {
+      1: function() { return "/1/lists/members/create_all"; },
+      1.1: function() { return "/1.1/lists/members/create_all"; }
+    }),
+    remove: API.mkurl(ver, {
+      1: function() { return "/1/lists/members/destroy"; },
+      1.1: function() { return "/1/lists/members/destroy_all"; }
+    }),
+    subscribers: API.mkurl(ver, {
+      1: function() { return "/1/lists/subscribers"; },
+      1.1: function() { return "/1.1/lists/subscribers"; }
+    })
+  };
+  urls.timeline = {
+    home: API.mkurl(ver, {
+      1: function() { return "/1/statuses/home_timeline"; },
+      1.1: function() { return "/1.1/statuses/home_timeline"; }
+    }),
+    mentions: API.mkurl(ver, {
+      1: function() { return "/1/statuses/mentions"; },
+      1.1: function() { return "/1.1/statuses/mentions_timeline"; }
+    }),
+    user: API.mkurl(ver, {
+      1: function() { return "/1/statuses/user_timeline"; },
+      1.1: function() { return "/1.1/statuses/user_timeline"; }
+    })
+  };
+  urls.favorites = {
+    list: API.mkurl(ver, {
+      1: function() { return "/1/favorites"; },
+      1.1: function() { return "/1.1/favorites/list"; }
+    }),
+    add: API.mkurl(ver, {
+      1: function(id) { return "/1/favorites/create/" + id; },
+      1.1: function(id) { return "/1.1/favorites/create"; }
+    }),
+    remove: API.mkurl(ver, {
+      1: function(id) { return "/1/favorites/destroy/" + id; },
+      1.1: function(id) { return "/1.1/favorites/destroy"; }
+    })
+  };
+  urls.tweet = {
+    get: API.mkurl(ver, {
+      1: function(id) { return "/1/statuses/show/" + id; },
+      1.1: function(id) { return "/1.1/statuses/show/" + id; }
+    }),
+    post: API.mkurl(ver, {
+      1: function() { return "/1/statuses/update"; },
+      1.1: function() { return "/1.1/statuses/update"; }
+    }),
+    retweet: API.mkurl(ver, {
+      1: function(id) { return "/1/statuses/retweet/" + id; },
+      1.1: function(id) { return "/1.1/statuses/retweet/" + id; }
+    }),
+    upload: API.mkurl(ver, {
+      1: function() {
+        return location.protocol +
+          "//upload.twitter.com/1/statuses/update_with_media";
+      },
+      1.1: function() {
+        return "/1.1/statuses/update_with_media";
+      }
+    }),
+    destroy: API.mkurl(ver, {
+      1: function(id) { return "/1/statuses/destroy/" + id; },
+      1.1: function(id) { return "/1.1/statuses/destroy/" + id; }
+    })
+  };
+  return {
+    urls: urls
   };
 };
 API.mkurl = function(ver, urlgetters, ext) {
