@@ -2326,13 +2326,11 @@ V.content.testAPI = function(my) {
       send: D.ce("button").add(D.ct("HEAD"))
     },
     get: {
-      url: D.ce("input").sa("size", "60").
-        sa("value", "/1.1/statuses/user_timeline.json?x=@&&=&%23=&=3&%26&x=0"),
+      url: D.ce("input").sa("size", "60"),
       send: D.ce("button").add(D.ct("GET"))
     },
     post: {
-      url: D.ce("input").sa("size", "60").
-        sa("value", "/1.1/blocks/destroy.json?screen_name=%40"),
+      url: D.ce("input").sa("size", "60"),
       send: D.ce("button").add(D.ct("POST"))
     },
     dst: D.ce("div"),
