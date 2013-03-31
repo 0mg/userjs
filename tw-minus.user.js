@@ -2614,20 +2614,21 @@ V.content.genCursors = function(data, url) {
     index: url.match(/[?&]index=(\d+)/),
     size: url.match(/[?&]size=(\d+)/)
   };
-  var cursor = re.cursor ? re.cursor[1] : "-1"; // ids.json?<cursor>
-  var index = re.index ? +re.index[1] : 0; // ids.json[].slice(index,size)
+  var cursor = re.cursor ? re.cursor[1] : "-1";
+  var index = re.index ? +re.index[1] : 0;
   var size = re.size ? +re.size[1] : 20;
   /*
-    append cursors data to object.
-    the data for nxt/prv ids API.
+    [next_cursor_str, previous_cursor_str] ?query for ids API
+    [next_index, prev_index, size]
+      range of extraction [IDs] from {[ids.json]} for lookup API
   */
   var object = {};
   object.cursor = cursor;
   object.index = index;
   object.size = size;
-  // set next/prev common size
+  // set next/prev page's users length
   object["size"] = size;
-  // set next page's ids.json?<cursor x>
+  // set next page's parameters
   if (index + size < data.ids.length) {
     object["next_cursor_str"] = cursor;
     object["next_index"] = index + size;
@@ -2635,7 +2636,7 @@ V.content.genCursors = function(data, url) {
     object["next_cursor_str"] = data["next_cursor_str"];
     object["next_index"] = 0;
   }
-  // set prev page's ids.json cursor
+  // set prev page's parameters
   if (index - size >= 0) {
     object["previous_cursor_str"] = cursor;
     object["prev_index"] = index - size;
