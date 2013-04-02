@@ -1212,12 +1212,16 @@ API.cc.reuseData = function(method, url, q) {
   var dataType = API.getType(data);
   // update cache: mylists
   if (method === "GET") switch (urlpts.base) {
-  case API().urls.lists.all():
+  case API().urls.lists.all(): case API().urls.lists.list():
     var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
     var q_id = String(/\d*/.exec(qobj["id"] || ""));
     if ((!q_screen_name && !q_id) || q_id === my.id_str ||
       q_screen_name === my.screen_name) {
-      LS.save("mylists", data);
+      LS.save("mylists", (data.lists || data).filter(function(a, i, lists) {
+        return a.user.id_str === my.id_str && lists.every(function(b, j) {
+          return j >= i || a.id_str !== b.id_str;
+        });
+      }));
       LS.save("mylists_modified", Date.now());
     }
     break;
@@ -3611,10 +3615,11 @@ V.panel.showFollowPanel = function(user) {
 V.panel.showAddListPanel = function(user, my) {
   var that = this;
   var onScs = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
     var expander = D.ce("button").add(D.ct("Lists"));
     expander.addEventListener("click", function() {
       D.rm(expander);
-      that.lifeListButtons(xhr, user, my);
+      that.lifeListButtons(data.lists || data, user, my);
     });
     D.id("subaction-inner-1").add(expander);
   };
@@ -3622,23 +3627,15 @@ V.panel.showAddListPanel = function(user, my) {
   if (mylists) {
     onScs({responseText:JSON.stringify(mylists)});
   } else {
-    X.get(API().urls.lists.all(), onScs, null);
+    X.get(API().urls.lists.list(), onScs, null);
   }
 };
-V.panel.lifeListButtons = function(xhr, user, my) {
+V.panel.lifeListButtons = function(lists, user, my) {
   var Button = V.panel.Button;
   var al = {
     node: D.ce("div")
   };
-  var data = JSON.parse(xhr.responseText);
-  var lists = data.lists || data;
   var list_btns = {};
-  lists = lists.filter(function(l) { return l.user.id_str === my.id_str; });
-  lists = lists.filter(function(a, i) {
-    return lists.every(function(b, j) {
-      return j >= i || a.slug !== b.slug;
-    });
-  });
   lists.forEach(function(l) {
     var lb_label = (l.mode === "private" ? "-": "+") + l.slug;
     var lb = new Button("listing", lb_label, lb_label);
