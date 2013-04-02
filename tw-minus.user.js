@@ -55,8 +55,7 @@ LS.put = function(data) {
   for (var i in data) LS.save(i, data[i]);
 };
 LS.load = function() {
-  var text = localStorage[LS.NS];
-  var data;
+  var text = localStorage[LS.NS], data, i;
   if (!(LS.NS in localStorage)) return LS.reset();
   try {
     data = JSON.parse(text);
@@ -65,10 +64,10 @@ LS.load = function() {
     if (prompt(msg, text)) return LS.reset();
     else return text;
   }
-  for (var i in LS.STRUCT) {
+  for (i in LS.STRUCT) {
     if (!(i in data)) data[i] = LS.STRUCT[i];
   }
-  for (var i in data) {
+  for (i in data) {
     var invalid = [];
     if (!(i in LS.STRUCT)) {
       invalid.push(i + ":" + data[i]);
@@ -281,11 +280,11 @@ P.oauth.genSig = (function() {
     return enc(secret1) + "&" + enc(secret2);
   }
   function genShaText(method, url, oadata, qobj) {
-    var s = [];
-    for (var i in oadata) {
+    var s = [], i;
+    for (i in oadata) {
       s.push([enc(i), enc(oadata[i])]);
     }
-    for (var i in qobj) {
+    for (i in qobj) {
       [].concat(qobj[i]).forEach(function(val) {
         s.push([enc(i), enc(val)]);
       });
@@ -295,7 +294,7 @@ P.oauth.genSig = (function() {
     var search = urlParts[2];
     if (search) {
       var qrys = T.parseQuery(search);
-      for (var i in qrys) {
+      for (i in qrys) {
         [].concat(qrys[i]).forEach(function(val) {
           s.push([enc(i), enc(val)]);
         });
