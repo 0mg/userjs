@@ -1032,9 +1032,13 @@ API = function(ver) {
     })
   };
   urls.lists = {
-    list: API.mkurl(ver, {
+    all: API.mkurl(ver, {
       1: function() { return "/1/lists/all"; },
       1.1: function() { return "/1.1/lists/list"; }
+    }),
+    list: API.mkurl(ver, {
+      1: function() { return "/1/lists"; },
+      1.1: function() { return "/1.1/lists/ownerships"; }
     }),
     subscriptions: API.mkurl(ver, {
       1: function() { return "/1/lists/subscriptions"; },
@@ -1208,7 +1212,7 @@ API.cc.reuseData = function(method, url, q) {
   var dataType = API.getType(data);
   // update cache: mylists
   if (method === "GET") switch (urlpts.base) {
-  case API().urls.lists.list():
+  case API().urls.lists.all():
     var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
     var q_id = String(/\d*/.exec(qobj["id"] || ""));
     if ((!q_screen_name && !q_id) || q_id === my.id_str ||
@@ -1857,7 +1861,7 @@ V.content.showPage.on1 = function(hash, q, my) {
     this.showSettings(my);
     break;
   case "lists":
-    this.showLists(API().urls.lists.list() +
+    this.showLists(API().urls.lists.all() +
       "?" + q + "&reverse=true&cursor=-1", my);
     V.panel.showListPanel(my);
     break;
@@ -1965,7 +1969,7 @@ V.content.showPage.on2 = function(hash, q, my) {
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
-    this.showLists(API().urls.lists.list() + "?" + q +
+    this.showLists(API().urls.lists.all() + "?" + q +
                    "&screen_name=" + hash[0] + "&reverse=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
@@ -3618,7 +3622,7 @@ V.panel.showAddListPanel = function(user, my) {
   if (mylists) {
     onScs({responseText:JSON.stringify(mylists)});
   } else {
-    X.get(API().urls.lists.list(), onScs, null);
+    X.get(API().urls.lists.all(), onScs, null);
   }
 };
 V.panel.lifeListButtons = function(xhr, user, my) {
