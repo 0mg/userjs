@@ -1205,32 +1205,73 @@ API.cc.reuseData = function(method, url, q) {
   var my = ls["credentials"];
   var urlpts = T.normalizeURL(url);
   var qobj = urlpts.query;
+  var dataType = API.getType(data);
+  // update cache: mylists
   if (method === "GET") switch (urlpts.base) {
-  // update mylists cache
   case API().urls.lists.list():
     var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
-    if (!q_screen_name || q_screen_name === my.screen_name) {
+    var q_id = String(/\d*/.exec(qobj["id"] || ""));
+    if ((!q_screen_name && !q_id) || q_id === my.id_str ||
+      q_screen_name === my.screen_name) {
       LS.save("mylists", data);
       LS.save("mylists_modified", Date.now());
     }
     break;
   }
-  // update credentials cache
-  if (data.screen_name === my.screen_name && data.id_str === my.id_str) {
-    API.cc.onGotMe(xhr);
-  } else if (data.user) {
-    if (data.user.screen_name === my.screen_name &&
-      data.user.id_str === my.id_str) API.cc.onGotMe(xhr);
+  // update cache: my list, my credentials
+  var me = null;
+  switch (dataType.split(" ")[0]) {
+  case "list":
+    if (urlpts.base === API().urls.lists.destroy()) {
+      API.cc.onGotMyList(data, true);
+      break;
+    }
+    (data.lists || [].concat(data)).forEach(function(list) {
+      if (list.user.id_str === my.id_str) {
+        API.cc.onGotMyList(list);
+        me = list.user;
+      }
+    });
+    break;
+  case "user":
+    (data.users || [].concat(data)).some(function(user) {
+      if (user.id_str === my.id_str) return me = user;
+    });
+    break;
+  case "directmessage":
+    [].concat(data).some(function(d) {
+      if (d.sender.id_str === my.id_str) return me = d.sender;
+      if (d.recipient.id_str === my.id_str) return me = d.recipient;
+    });
+    break;
+  case "tweet":
+    [].concat(data).some(function(tweet) {
+      if (tweet.user.id_str === my.id_str) return me = tweet.user;
+    });
+    break;
   }
+  if (me) API.cc.onGotMe(me);
 };
-// ongot JSON contains my credentials
-API.cc.onGotMe = function(xhr) {
-  var ls = LS.load();
-  var data = JSON.parse(xhr.responseText);
-  var my = data.user || data;
-  LS.save("credentials", my);
+// ongot JSON my list
+API.cc.onGotMyList = function(data, del) {
+  var mylists = LS.load()["mylists"];
+  if (del) {
+    mylists.some(function(list, i) {
+      if (list.id_str === data.id_str) return mylists.splice(i, 1);
+    });
+  } else {
+    for (var i = 0; i < mylists.length; ++i) {
+      if (mylists[i].id_str === data.id_str) { mylists[i] = data; break; }
+    }
+    if (i >= mylists.length) mylists.push(data);
+  }
+  return LS.save("mylists", mylists);
+};
+// ongot JSON my credentials
+API.cc.onGotMe = function(data) {
+  LS.save("credentials", data);
   LS.save("credentials_modified", Date.now());
-  V.panel.updMyStats(my);
+  V.panel.updMyStats(data);
 };
 API.cc.getMyLists = function() {
   var ls = LS.load();
@@ -4006,9 +4047,8 @@ V.panel.showListPanel = function(my) {
   list.create.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      var mylists = LS.load()["mylists"].concat(data);
-      LS.save("mylists", mylists);
-      V.content.rendLists(mylists, my.screen_name);
+      var ls = API.cc.onGotMyList(data);
+      V.content.rendLists(ls["mylists"], my.screen_name);
     };
     API.createList(list.name.value, list.privat.checked ? "private": "public",
                    list.description.value, onScs);
@@ -4017,12 +4057,8 @@ V.panel.showListPanel = function(my) {
   list.update.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      var mylists = LS.load()["mylists"];
-      mylists.some(function(myli, i) {
-        if (myli.id_str === data.id_str) return mylists[i] = data;
-      });
-      LS.save("mylists", mylists);
-      V.content.rendLists(mylists, my.screen_name);
+      var ls = API.cc.onGotMyList(data);
+      V.content.rendLists(ls["mylists"], my.screen_name);
     };
     API.updateList(my.screen_name, list.name.value, list.rename.value,
                    list.privat.checked ? "private" : "public",
@@ -4032,12 +4068,8 @@ V.panel.showListPanel = function(my) {
   list.del.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      var mylists = LS.load()["mylists"];
-      mylists.some(function(myli, i) {
-        if (myli.id_str === data.id_str) return mylists.splice(i, 1);
-      });
-      LS.save("mylists", mylists);
-      V.content.rendLists(mylists, my.screen_name);
+      var ls = API.cc.onGotMyList(data, true);
+      V.content.rendLists(ls["mylists"], my.screen_name);
     };
     API.deleteList(my.screen_name, list.name.value, onScs);
   }, false);
@@ -4147,8 +4179,8 @@ V.outline.showListOutline = function(hash, my, mode) {
     return onScs({responseText:JSON.stringify(state.lists_show)});
   }
   // else use cache (localStorage) if exist
-  var mylists = LS.load()["mylists"];
-  for (var i = 0; i < mylists.length; ++i) {
+  var mylists = API.cc.getMyLists();
+  if (mylists) for (var i = 0; i < mylists.length; ++i) {
     var list = mylists[i];
     if (list.user.screen_name === hash[0] && list.slug === hash[1]) {
       return onScs({responseText:JSON.stringify(list)});
