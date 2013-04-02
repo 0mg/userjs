@@ -1173,6 +1173,28 @@ API.mkurl = function(ver, urlgetters, ext) {
 };
 // default API version
 API.V = 1.1;
+// get type of *.json
+API.getType = function getType(data) {
+  if (!data) return "empty";
+  if (typeof data !== "object") {
+    return "unknown";
+  }
+  if (Array.isArray(data)) return getType(data[0]) + " array";
+  if ("next_cursor" in data) {
+    if ("lists" in data) return "list pack";
+    if ("users" in data) return "user pack";
+    if ("ids" in data) return "id pack";
+    return "unknown pack";
+  }
+  if (data.screen_name) return "user";
+  if (data.slug) return "list";
+  if ("text" in data) {
+    if ("retweeted" in data) return "tweet";
+    if (data.sender) return "directmessage";
+  }
+  if (data.errors) return "error";
+  return "unknown object";
+};
 // API cache
 API.cc = {};
 // memory data after callback(xhr)
