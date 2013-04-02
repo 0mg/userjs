@@ -1225,6 +1225,9 @@ API.cc.reuseData = function(method, url, q) {
       LS.save("mylists_modified", Date.now());
     }
     break;
+  // update cache: my credentials
+  case API().urls.account.verify_credentials():
+    return API.cc.onGotMe(data);
   }
   // update cache: my list, my credentials
   var me = null;
