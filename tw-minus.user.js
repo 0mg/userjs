@@ -4030,18 +4030,22 @@ V.panel.showListPanel = function(my) {
     name: D.ce("input"),
     rename: D.ce("input"),
     description: D.ce("textarea"),
-    privat: D.ce("input"),
-    create: D.ce("button"),
-    update: D.ce("button"),
-    del: D.ce("button")
+    privat: D.ce("input").sa("type", "checkbox"),
+    create: D.ce("button").add(D.ct("Create")),
+    update: D.ce("button").add(D.ct("Update")),
+    del: D.ce("button").add(D.ct("Delete"))
   };
-  list.privat.type = "checkbox";
   list.privat.checked = true;
-
-  list.create.add(D.ct("Create"));
-  list.update.add(D.ct("Update"));
-  list.del.add(D.ct("Delete"));
-
+  addEventListener("click", function(e) {
+    var node = e.target, mylists = D.q(".listslist.own"), name, desc;
+    if (!mylists) return;
+    if (mylists.contains(node) && node.classList.contains("list")) {
+      name = node.querySelector(".full_name").textContent.split("/")[1];
+      desc = node.querySelector(".description").textContent;
+      list.name.value = name;
+      list.description.value = desc;
+    }
+  }, true);
   list.create.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -4050,8 +4054,7 @@ V.panel.showListPanel = function(my) {
     };
     API.createList(list.name.value, list.privat.checked ? "private": "public",
                    list.description.value, onScs);
-  }, false);
-
+  });
   list.update.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -4061,8 +4064,7 @@ V.panel.showListPanel = function(my) {
     API.updateList(my.screen_name, list.name.value, list.rename.value,
                    list.privat.checked ? "private" : "public",
                    list.description.value, onScs);
-  }, false);
-
+  });
   list.del.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
@@ -4070,8 +4072,7 @@ V.panel.showListPanel = function(my) {
       V.content.rendLists(ls["mylists"], my.screen_name);
     };
     API.deleteList(my.screen_name, list.name.value, onScs);
-  }, false);
-
+  });
   list.panel.add(
     D.ce("dt").add(D.ct("name")),
     D.ce("dd").add(list.name),
@@ -4079,7 +4080,7 @@ V.panel.showListPanel = function(my) {
     D.ce("dd").add(list.rename),
     D.ce("dt").add(D.ct("description")),
     D.ce("dd").add(list.description),
-    D.ce("dt").add(D.ct("private")),
+    D.ce("dt").add(D.ct("mode")),
     D.ce("dd").add(
       D.ce("label").add(list.privat, D.ct("private"))
     ),
@@ -4090,7 +4091,6 @@ V.panel.showListPanel = function(my) {
       list.del
     )
   );
-
   D.id("side").add(list.panel);
 };
 
