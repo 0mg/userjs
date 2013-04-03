@@ -1513,7 +1513,7 @@ V = {};
 V.init = {};
 
 V.init.CSS = '\
-  *:not(button) {\
+  html, body, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, p {\
     margin: 0;\
     padding: 0;\
   }\
@@ -1805,15 +1805,15 @@ V.init.initNode = function() {
 // Set DOM struct of tw-
 V.init.structPage = function() {
   var fw = {
-    header: D.ce("div"),
-    content: D.ce("div"),
+    header: D.ce("header"),
+    content: D.ce("section"),
     subtitle: D.ce("h2"),
     subaction: D.ce("div"),
     subfw: D.ce("div"),
     subli: D.ce("div"),
-    submain: D.ce("div"),
+    submain: D.ce("article"),
     subcursor: D.ce("ul"),
-    side: D.ce("div")
+    side: D.ce("aside")
   };
   fw.header.id    = "header";
   fw.content.id   = "content";
@@ -2990,7 +2990,7 @@ V.content.rendLists.one = function(list) {
     desc: D.ce("p").add(D.tweetize(list.description)).
       sa("class", "description"),
     meta: D.ce("div").sa("class", "meta"),
-    date: D.ce("span").sa("class", "created_at").
+    date: D.ce("time").sa("class", "created_at").
       add(D.ct(T.gapTime(new Date(list.created_at))))
   };
   if (list.mode === "private") nd.root.classList.add("private");
@@ -3945,7 +3945,7 @@ V.panel.showTweetBox = function() {
 // Panel for manage list members, following, followers.,
 V.panel.showUserManager = function(my) {
   var um = {
-    node: D.ce("div"),
+    node: D.ce("dl"),
     dir: D.ce("input"),
     target: D.ce("input"),
     add: D.ce("button").add(D.ct("Add")),
@@ -4011,11 +4011,7 @@ V.panel.showUserManager = function(my) {
     D.ce("dt").add(D.ct("location")),
     D.ce("dd").add(um.dir),
     D.ce("dt").add(D.ct("target")),
-    D.ce("dd").add(
-      um.target,
-      um.add,
-      um.del
-    )
+    D.ce("dd").add(um.target, D.ce("br"), um.add, um.del)
   );
   D.id("side").add(um.node);
 };
