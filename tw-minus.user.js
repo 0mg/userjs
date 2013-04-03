@@ -3955,48 +3955,41 @@ V.panel.showUserManager = function(my) {
     del: D.ce("button").add(D.ct("Delete"))
   };
   var curl = U.getURL();
-  function onBtn(event) {
-    var isAdd = event.target === um.add;
-    var isDel = event.target === um.del;
+  var onBtn = function(event) {
+    var isAdd = event.target === um.add, isDel = event.target === um.del;
     if (!isAdd && !isDel) return;
 
-    var dir = um.dir.value;
-    var target = um.target.value;
+    var dir = um.dir.value, target = um.target.value;
     if (!dir || !target) return;
 
-    function onAPI(xhr) { if (xhr) alert(xhr.responseText); }
-
-    var dir_is_list = dir.indexOf("/") >= 0 ? 1 : 0;
-    var target_is_list = target.indexOf("/") >= 0 ? 2 : 0;
-    var mode = dir_is_list | target_is_list;
+    var dir_is_list = dir.indexOf("/") >= 0;
+    var target_is_list = target.indexOf("/") >= 0;
+    var mode = dir_is_list | (target_is_list << 1);
 
     switch (mode) {
     case 0:
       switch (dir) {
       case "following":
-        API[isAdd ? "follow" : "unfollow"](target, onAPI);
+        API[isAdd ? "follow" : "unfollow"](target, null);
         break;
       case "followers":
-        API[isAdd ? "unblock" : "block"](target, onAPI);
+        API[isAdd ? "unblock" : "block"](target, null);
         break;
       case "blocking":
-        API[isAdd ? "block" : "unblock"](target, onAPI);
+        API[isAdd ? "block" : "unblock"](target, null);
         break;
       }
-
       break;
     case 1:
       switch (dir) {
       case "following/requests":
-        API[isAdd ? "requestFollow" : "unrequestFollow"](target, onAPI);
+        API[isAdd ? "requestFollow" : "unrequestFollow"](target, null);
         break;
       default: // add user to list
         var myname_slug = dir.split("/");
         var myname = myname_slug[0];
         var slug = myname_slug[1];
-        API[isAdd ? "listing" : "unlisting"](
-          myname, slug, target, onAPI
-        );
+        API[isAdd ? "listing" : "unlisting"](myname, slug, target, null);
         break;
       }
       break;
@@ -4008,20 +4001,15 @@ V.panel.showUserManager = function(my) {
         var uname_slug = target.split("/");
         var uname = uname_slug[0];
         var slug = uname_slug[1];
-        API[isAdd ? "followList" : "unfollowList"](
-          uname, slug, onAPI
-        );
+        API[isAdd ? "followList" : "unfollowList"](uname, slug, null);
         break;
       }
       break;
     }
-  }
-
+  };
   um.dir.value = curl.path.match(/[^/]+(?:[/][^/]+)?/);
-
-  um.add.addEventListener("click", onBtn, false);
-  um.del.addEventListener("click", onBtn, false);
-
+  um.add.addEventListener("click", onBtn);
+  um.del.addEventListener("click", onBtn);
   um.node.add(
     D.ce("dt").add(D.ct("location")),
     D.ce("dd").add(um.dir),
@@ -4032,7 +4020,6 @@ V.panel.showUserManager = function(my) {
       um.del
     )
   );
-
   D.id("side").add(um.node);
 };
 
