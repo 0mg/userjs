@@ -1205,32 +1205,39 @@ API.cc = {};
 API.cc.reuseData = function(method, url, q) {
   var xhr = this;
   try { var data = JSON.parse(xhr.responseText); } catch(e) { return; }
-  var ls = LS.load();
-  var my = ls["credentials"];
-  var urlpts = T.normalizeURL(url);
-  var qobj = urlpts.query;
   var dataType = API.getType(data);
-  // update cache: mylists
+  var ls = LS.load(), my = ls["credentials"], me = null;
+  var urlpts = T.normalizeURL(url), qobj = urlpts.query;
+  // update cache: mylists, my credentials
+  var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
+  var q_id = String(/\d*/.exec(qobj["id"] || ""));
   if (method === "GET") switch (urlpts.base) {
-  case API().urls.lists.all(): case API().urls.lists.list():
-    var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
-    var q_id = String(/\d*/.exec(qobj["id"] || ""));
+  case API().urls.lists.list():
+    if (!q_screen_name && !q_id) {
+      LS.save("mylists", data.lists);
+      LS.save("mylists_modified", Date.now());
+      if (data.lists.length) API.cc.onGotMe(data.lists[0].user);
+      return;
+    }
+    //break;
+  case API().urls.lists.all():
     if ((!q_screen_name && !q_id) || q_id === my.id_str ||
       q_screen_name === my.screen_name) {
       LS.save("mylists", (data.lists || data).filter(function(a, i, lists) {
-        return a.user.id_str === my.id_str && lists.every(function(b, j) {
-          return j >= i || a.id_str !== b.id_str;
-        });
+        if (a.user.id_str === my.id_str) { me = a.user;
+          return lists.every(function(b, j) {
+            return j >= i || a.id_str !== b.id_str;
+          });
+        }
       }));
       LS.save("mylists_modified", Date.now());
+      if (me) API.cc.onGotMe(me);
     }
-    break;
-  // update cache: my credentials
+    return;
   case API().urls.account.verify_credentials():
     return API.cc.onGotMe(data);
   }
   // update cache: my list, my credentials
-  var me = null;
   switch (dataType.split(" ")[0]) {
   case "list":
     if (urlpts.base === API().urls.lists.destroy()) {
