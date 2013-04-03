@@ -3251,51 +3251,48 @@ V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
 
 V.panel = {};
 // ON/OFF Button Constructor
-V.panel.Button = (function() {
-  var Button = function(name, labelDefault, labelOn) {
-    this.name = name;
-    this.labelDefault = labelDefault;
-    this.labelOn = labelOn;
-    this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", name);
-  };
-  Button.prototype = {
-    on: false,
-    turn: function(flag) {
-      if (flag !== null) {
-        flag = !!flag;
-        this.on = flag;
-        this.node.classList.remove(String(null));
-        this.node.classList.remove(String(!flag));
-        this.node.classList.add(String(flag));
-        this.node.textContent = flag ? this.labelOn: this.labelDefault;
-      } else {
-        this.on = null;
-        this.node.classList.remove(String(true));
-        this.node.classList.remove(String(false));
-        this.node.classList.add(String(null));
-        this.node.textContent = this.labelDefault;
-      }
-      return this;
-    },
-    enable: function() {
-      this.node.disabled = false;
-      return this;
-    },
-    disable: function() {
-      this.node.disabled = true;
-      return this;
-    },
-    show: function() {
-      this.node.hidden = false;
-      return this;
-    },
-    hide: function() {
-      this.node.hidden = true;
-      return this;
+V.panel.Button = function(name, labelDefault, labelOn) {
+  this.name = name;
+  this.labelDefault = labelDefault;
+  this.labelOn = labelOn;
+  this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", name);
+};
+V.panel.Button.prototype = {
+  on: false,
+  turn: function(flag) {
+    if (flag !== null) {
+      flag = !!flag;
+      this.on = flag;
+      this.node.classList.remove(String(null));
+      this.node.classList.remove(String(!flag));
+      this.node.classList.add(String(flag));
+      this.node.textContent = flag ? this.labelOn: this.labelDefault;
+    } else {
+      this.on = null;
+      this.node.classList.remove(String(true));
+      this.node.classList.remove(String(false));
+      this.node.classList.add(String(null));
+      this.node.textContent = this.labelDefault;
     }
-  };
-  return Button;
-})();
+    return this;
+  },
+  enable: function() {
+    this.node.disabled = false;
+    return this;
+  },
+  disable: function() {
+    this.node.disabled = true;
+    return this;
+  },
+  show: function() {
+    this.node.hidden = false;
+    return this;
+  },
+  hide: function() {
+    this.node.hidden = true;
+    return this;
+  }
+};
 
 // Buttons to do Follow Request Accept/Deny
 V.panel.makeReqDecider = function(user) {
