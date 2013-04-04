@@ -1991,7 +1991,7 @@ V.content.showPage.on2 = function(hash, q, my) {
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
-      this.showTL(API().urls.tweet.get(hash[1]) + q +
+      this.showTL(API().urls.tweet.get(hash[1]) + "?" + q +
                   "&include_entities=true", my);
     } else {
       this.showTL(API().urls.lists.tweets() + "?" + q +
