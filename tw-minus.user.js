@@ -1920,7 +1920,29 @@ V.content.showPage.on1 = function(hash, q, my) {
 };
 
 V.content.showPage.on2 = function(hash, q, my) {
-  if (hash[0] === "settings") switch (hash[1]) {
+  if (hash[0] === "following") switch (hash[1]) {
+  case "requests":
+    this.showUsersByIds(API().urls.users.outgoing() + "?" + q +
+      "&cursor=-1", my);
+    break;
+  } else if (hash[0] === "followers") switch (hash[1]) {
+  case "requests":
+    this.showUsersByIds(API().urls.users.incoming() + "?" + q +
+      "&cursor=-1", my, 1);
+    break;
+  } else if (hash[0] === "lists") switch (hash[1]) {
+  case "ownerships":
+    this.showLists(API().urls.lists.list() + "?" + q, my);
+    V.panel.showListPanel(my);
+    break;
+  case "memberships":
+    this.showLists(API().urls.lists.listed() + "?" + q, my);
+    break;
+  case "subscriptions":
+    this.showLists(API().urls.lists.subscriptions() + "?" + q, my);
+    V.panel.showUserManager(my);
+    break;
+  } else if (hash[0] === "settings") switch (hash[1]) {
   case "options":
     this.settingOptions();
     break;
@@ -1940,26 +1962,6 @@ V.content.showPage.on2 = function(hash, q, my) {
     this.showTL(API().urls.search.tweets() + "?q=" + hash[1] + "&" + q +
                 "&rpp=20&include_entities=true", my);
   } else switch (hash[1]) {
-  case "requests":
-    if (hash[0] === "following") {
-      this.showUsersByIds(API().urls.users.outgoing() + "?" + q +
-        "&cursor=-1", my);
-    } else if (hash[0] === "followers") {
-      this.showUsersByIds(API().urls.users.incoming() + "?" + q +
-        "&cursor=-1", my, 1);
-    }
-    break;
-  case "memberships":
-    if (hash[0] === "lists") {
-      this.showLists(API().urls.lists.listed() + "?" + q, my);
-    }
-    break;
-  case "subscriptions":
-    if (hash[0] === "lists") {
-      this.showLists(API().urls.lists.subscriptions() + "?" + q, my);
-      V.panel.showUserManager(my);
-    }
-    break;
   case "status":
   case "statuses":
     this.showTL(API().urls.timeline.user() + "?" + q +
@@ -1992,12 +1994,11 @@ V.content.showPage.on2 = function(hash, q, my) {
       this.showTL(API().urls.tweet.get(hash[1]) + q +
                   "&include_entities=true", my);
     } else {
-      var url = API().urls.lists.tweets() + "?" + q +
-                "&owner_screen_name=" + hash[0] +
-                "&slug=" + hash[1] +
-                "&include_rts=false" +
-                "&include_entities=true";
-      this.showTL(url, my);
+      this.showTL(API().urls.lists.tweets() + "?" + q +
+        "&owner_screen_name=" + hash[0] +
+        "&slug=" + hash[1] +
+        "&include_rts=false" +
+        "&include_entities=true", my);
       V.outline.showListOutline(hash, my);
     }
   }
