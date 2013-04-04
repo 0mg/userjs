@@ -1485,26 +1485,6 @@ API.unlisting = function(myname, slug, uname, callback, onErr) {
          callback, onErr);
 };
 
-API.search = function(q, opt, callback, onErr) {
-  X.get(API().urls.search.tweets() + "?q=" + q + "&" + opt +
-        "&rpp=20&include_entities=true", callback, onErr);
-};
-
-API.getRateLimitStatus = function(callback, onErr) {
-  X.get(API().urls.account.rate_limit_status(), callback, onErr);
-};
-
-API.logout = function(callback, onErr) {
-  var lsdata = LS.load();
-  var keep = ["consumer_secret"];
-  if (confirm("DELETE authentication cache sure?")) {
-    LS.reset();
-    keep.forEach(function(i) {
-      LS.save(i, lsdata[i]);
-    });
-    location.href = U.ROOT + "login";
-  }
-};
 
 // Objects for View
 V = {};
@@ -1875,8 +1855,8 @@ V.content.showPage.on1 = function(hash, q, my) {
     this.showSettings(my);
     break;
   case "lists":
-    this.showLists(API().urls.lists.all() +
-      "?" + q + "&reverse=true&cursor=-1", my);
+    this.showLists(API().urls.lists.all() + "?" + q +
+      "&reverse=true&cursor=-1", my);
     V.panel.showListPanel(my);
     break;
   case "inbox":
@@ -1925,11 +1905,13 @@ V.content.showPage.on2 = function(hash, q, my) {
     this.showUsersByIds(API().urls.users.outgoing() + "?" + q +
       "&cursor=-1", my);
     break;
+
   } else if (hash[0] === "followers") switch (hash[1]) {
   case "requests":
     this.showUsersByIds(API().urls.users.incoming() + "?" + q +
       "&cursor=-1", my, 1);
     break;
+
   } else if (hash[0] === "lists") switch (hash[1]) {
   case "ownerships":
     this.showLists(API().urls.lists.list() + "?" + q, my);
@@ -1942,36 +1924,27 @@ V.content.showPage.on2 = function(hash, q, my) {
     this.showLists(API().urls.lists.subscriptions() + "?" + q, my);
     V.panel.showUserManager(my);
     break;
+
   } else if (hash[0] === "settings") switch (hash[1]) {
-  case "options":
-    this.settingOptions();
-    break;
-  case "follow":
-    this.settingFollow(my);
-    break;
-  case "design":
-    this.customizeDesign(my);
-    break;
-  case "account":
-    this.settingAccount(my);
-    break;
-  case "api":
-    this.testAPI(my);
-    break;
+  case "options": this.settingOptions(); break;
+  case "follow": this.settingFollow(my); break;
+  case "design": this.customizeDesign(my); break;
+  case "account": this.settingAccount(my); break;
+  case "api": this.testAPI(my); break;
+
   } else if (hash[0] === "search") {
-    this.showTL(API().urls.search.tweets() + "?q=" + hash[1] + "&" + q +
-                "&rpp=20&include_entities=true", my);
+    this.showTL(API().urls.search.tweets() + "?" + q +
+      "&q=" + hash[1] + "&rpp=20&include_entities=true", my);
+
   } else switch (hash[1]) {
-  case "status":
-  case "statuses":
+  case "status": case "statuses":
     this.showTL(API().urls.timeline.user() + "?" + q +
-                "&include_entities=true&include_rts=true" +
-                "&screen_name=" + hash[0], my);
+      "&include_entities=true&include_rts=true" +
+      "&screen_name=" + hash[0], my);
     break;
   case "favorites":
     this.showTL(API().urls.favorites.list() + "?" + q +
-                "&include_entities=true" +
-                "&screen_name=" + hash[0], my);
+      "&include_entities=true&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
@@ -1986,13 +1959,13 @@ V.content.showPage.on2 = function(hash, q, my) {
     break;
   case "lists":
     this.showLists(API().urls.lists.all() + "?" + q +
-                   "&screen_name=" + hash[0] + "&reverse=true", my);
+      "&screen_name=" + hash[0] + "&reverse=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
       this.showTL(API().urls.tweet.get(hash[1]) + "?" + q +
-                  "&include_entities=true", my);
+        "&include_entities=true", my);
     } else {
       this.showTL(API().urls.lists.tweets() + "?" + q +
         "&owner_screen_name=" + hash[0] +
@@ -2005,23 +1978,32 @@ V.content.showPage.on2 = function(hash, q, my) {
 };
 
 V.content.showPage.on3 = function(hash, q, my) {
-  if (hash[0] === "search" && hash[1] === "users") {
-    this.showUsers(API().urls.search.users() + "?q=" + hash[2] + "&" + q +
-      "&include_entities=true", my, 4);
+  if (hash[1] === "lists") switch (hash[2]) {
+  case "memberships":
+    this.showLists(API().urls.lists.listed() + "?" + q +
+      "&screen_name=" + hash[0], my);
+    V.outline.showProfileOutline(hash[0], my, 3);
+    break;
+  case "subscriptions":
+    this.showLists(API().urls.lists.subscriptions() + "?" + q +
+      "&screen_name=" + hash[0], my);
+    V.outline.showProfileOutline(hash[0], my, 3);
+    break;
+
+  } else if (hash[0] === "search" && hash[1] === "users") {
+    this.showUsers(API().urls.search.users() + "?" + q +
+      "&q=" + hash[2] + "&include_entities=true", my, 4);
+
   } else switch (hash[2]) {
-  case "timeline":
-  case "tweets":
+  case "tweets": case "timeline":
     if (hash[1] === "following") {
       this.showTL("/1/statuses/following_timeline.json?" + q +
-                  "&include_entities=true" +
-                  "&screen_name=" + hash[0], my);
+        "&include_entities=true&screen_name=" + hash[0], my);
       V.outline.showProfileOutline(hash[0], my, 3);
     } else {
-      var url = API().urls.lists.tweets() + "?" + q +
-                "&owner_screen_name=" + hash[0] +
-                "&slug=" + hash[1] +
-                "&include_entities=true";
-      this.showTL(url, my);
+      this.showTL(API().urls.lists.tweets() + "?" + q +
+        "&owner_screen_name=" + hash[0] +
+        "&slug=" + hash[1] + "&include_entities=true", my);
     }
     break;
   case "members":
@@ -2034,24 +2016,10 @@ V.content.showPage.on3 = function(hash, q, my) {
       "&owner_screen_name=" + hash[0] + "&slug=" + hash[1], my);
     V.outline.showListOutline(hash, my, 3);
     break;
-  case "memberships":
-    if (hash[1] === "lists") {
-      this.showLists(API().urls.lists.listed() + "?" + q +
-                     "&screen_name=" + hash[0], my);
-      V.outline.showProfileOutline(hash[0], my, 3);
-    }
-    break;
-  case "subscriptions":
-    if (hash[1] === "lists") {
-      this.showLists(API().urls.lists.subscriptions() + "?" + q +
-                     "&screen_name=" + hash[0], my);
-      V.outline.showProfileOutline(hash[0], my, 3);
-    }
-    break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
       this.showTL(API().urls.tweet.get(hash[2]) + "?" + q +
-                  "&include_entities=true", my);
+        "&include_entities=true", my);
       V.outline.showProfileOutline(hash[0], my, 1);
     }
   }
@@ -3789,16 +3757,22 @@ V.panel.showGlobalBar = function(my) {
 
   g.api.add(D.ct("API rest"));
   g.api.addEventListener("click", function() {
-    API.getRateLimitStatus(function(xhr) {
+    X.get(API().urls.account.rate_limit_status(), function(xhr) {
       var data = JSON.parse(xhr.responseText);
       alert(O.stringify(data));
     });
-  }, false);
+  });
 
   g.logout.add(D.ct("logout"));
   g.logout.addEventListener("click", function() {
-    API.logout(function(xhr) { location.reload(); });
-  }, false);
+    var lsdata = LS.load();
+    var keep = ["consumer_secret"];
+    if (confirm("DELETE authentication cache sure?")) {
+      LS.reset();
+      keep.forEach(function(i) { LS.save(i, lsdata[i]); });
+      location.href = U.ROOT + "login";
+    }
+  });
 
   g.bar.add(
     D.ce("li").add(g.home),
@@ -4231,7 +4205,7 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
 
   if (mode === undefined) mode = 15;
 
-  function onGet(xhr) {
+  var onScs = function(xhr) {
     var user = JSON.parse(xhr.responseText);
 
     if (user.id_str === my.id_str) mode &= ~4;
@@ -4240,23 +4214,23 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     mode & 2 && that.rendProfileOutline(user);
     mode & 4 && V.panel.showFollowPanel(user);
     mode & 8 && V.panel.showAddListPanel(user, my);
-  }
+  };
 
-  function onErr(xhr) { // hacking(using API bug) function
+  var onErr = function(xhr) { // hacking(using API bug) function
     // bug: /blocks/destroy.json returns suspended user's profile
     mode &= ~4;
     mode &= ~8;
     var hack = D.ce("button").add(D.ct("unblock"));
     hack.addEventListener("click", function() {
-      API.unblock(screen_name, onGet, function(x) {
+      API.unblock(screen_name, onScs, function(x) {
         D.id("side").add(O.htmlify(JSON.parse(x.responseText)));
         D.rm(hack);
       });
     });
     D.id("side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
-  }
+  };
 
-  X.get(API().urls.users.show() + "?screen_name=" + screen_name, onGet, onErr);
+  X.get(API().urls.users.show() + "?screen_name=" + screen_name, onScs, onErr);
 };
 
 // Render outline of User Profile
