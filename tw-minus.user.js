@@ -467,7 +467,7 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
 
   } else if (eMed && eMed.indices[0] === i) {
     str = ctx.substring(0, eMed.indices[1] - i);
-    url = eMed.media_url + ":large";
+    url = eMed.media_url_https + ":large";
     fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
     entities.media.shift();
 
