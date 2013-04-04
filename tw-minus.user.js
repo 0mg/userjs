@@ -2312,6 +2312,7 @@ V.content.settingAccount = function(my) {
   var autoResult = D.ce("div");
   var xhrpool = [];
   var autoSearching = false;
+  var api = "/i/users/username_available.json?username=";
   function autoStart() {
     autoBtn.textContent = "Cancel";
     checkUnameAuto(+auto.value);
@@ -2328,8 +2329,7 @@ V.content.settingAccount = function(my) {
       var s = "";
       for (var j = len; j-- > 0;) s += src[Math.random() * 37 | 0];
       (function(s, i, max) {
-        var url = "/users/username_available?username=" + s;
-        var xhrobj = X.get(url, function(xhr) {
+        var xhrobj = X.get(api + s, function(xhr) {
           var data = JSON.parse(xhr.responseText);
           autoResult.add(D.ct(s + ":" + (data.valid && "#true#") + " "));
           if (i === max) autoFinish();
@@ -2339,7 +2339,7 @@ V.content.settingAccount = function(my) {
     }
   };
   function checkUname(unameValue) {
-    X.get("/users/username_available?username=" + unameValue, function(xhr) {
+    X.get(api + unameValue, function(xhr) {
       var main = D.id("main");
       while (main.hasChildNodes()) D.rm(main.lastChild);
       main.add(O.htmlify(JSON.parse(xhr.responseText)));
