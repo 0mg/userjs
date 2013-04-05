@@ -697,7 +697,7 @@ A.expandUrls = function expandUrls(parent, expurls) {
       }
     });
   };
-  var anchors = parent.querySelectorAll("a.maybe_shorten_url");
+  var anchors = D.qs.call(parent, "a.maybe_shorten_url");
   var urls = [].map.call(anchors, function(a) { return a.href; });
   if (urls.length) {
     if (expurls) expand(expurls);
@@ -3785,7 +3785,7 @@ V.panel.showTweetBox = function() {
       str = /\bid-(\d+)/.exec(tweet.className);
       var id = str && str[1];
       str = null;
-      var repbtn = tweet.querySelector(".reply");
+      var repbtn = D.q.call(tweet, ".reply");
       if (id && uname && t.id.value === id &&
         t.status.value.match("@" + uname + "\\b")) {
         tweet.classList.add("reply_target");
@@ -3959,8 +3959,8 @@ V.panel.showListPanel = function(my) {
     var node = e.target, mylists = D.q(".listslist.own"), name, desc;
     if (!mylists) return;
     if (mylists.contains(node) && node.classList.contains("list")) {
-      name = node.querySelector(".full_name").textContent.split("/")[1];
-      desc = node.querySelector(".description").textContent;
+      name = D.q.call(node, ".full_name").textContent.split("/")[1];
+      desc = D.q.call(node, ".description").textContent;
       list.name.value = name;
       list.description.value = desc;
     }
