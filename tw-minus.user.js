@@ -2995,25 +2995,6 @@ V.content.showTL = function(url, my) {
   }
   LS.state.save("timeline_url", url);
   LS.state.save("my", my);
-  if (url.indexOf(API(1.0).urls.search.tweets()) === 0) {
-    var onScsX = function(xhr) {
-      var timeline = JSON.parse(xhr.responseText).results;
-      timeline.forEach(function(t) {
-        t.in_reply_to_screen_name = t.to_user;
-        t.in_reply_to_user_id_str = t.to_user_id_str;
-        t.source = T.decodeHTML(t.source);
-        t.user = {
-          screen_name: t.from_user,
-          name: t.from_user_name,
-          id_str: t.from_user_id_str,
-          profile_image_url: t.profile_image_url
-        };
-      });
-      onScs({responseText:JSON.stringify(timeline)});
-    };
-    X.getX(url, onScsX, onErr);
-    return;
-  }
   X.get(url, onScs, onErr);
 };
 V.content.prendTL = function(timeline, my, expurls) {
