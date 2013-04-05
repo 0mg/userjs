@@ -870,311 +870,296 @@ X.getX = function get(url, f, b) {
 
 
 // Twitter API Functions
-
-API = function(ver) {
-  if (ver === undefined) ver = API.V;
-  var urls = {};
+API = {};
+API.urls = {};
+API.urls.init = function(ver) {
+  var urls = API.urls, uv = API.urlvers;
   urls.oauth = {
-    request: API.mkurl(ver, {
-      1: function() {
-        var url = new String("/oauth/request_token");
-        url.oauthPhase = "get_request_token";
-        return url;
-      },
-      1.1: function() {
-        var url = new String("/oauth/request_token");
-        url.oauthPhase = "get_request_token";
-        return url;
-      }
-    }, ""),
-    authorize: API.mkurl(ver, {
-      1: function() { return "/oauth/authorize"; },
-      1.1: function() { return "/oauth/authorize"; }
-    }, ""),
-    access: API.mkurl(ver, {
-      1: function() {
-        var url = new String("/oauth/access_token");
-        url.oauthPhase = "get_access_token";
-        return url;
-      },
-      1.1: function() {
-        var url = new String("/oauth/access_token");
-        url.oauthPhase = "get_access_token";
-        return url;
-      }
-    }, "")
+    request: uv({
+      1: [O(function() { return "/oauth/request_token"; }).
+        sa("oauthPhase", "get_request_token"), ""]
+    }),
+    authorize: uv({
+      1: ["/oauth/authorize", ""]
+    }),
+    access: uv({
+      1: [O(function() { return "/oauth/access_token"; }).
+        sa("oauthPhase", "get_access_token"), ""]
+    })
   };
   urls.urls = {
-    resolve: API.mkurl(ver, {
-      0: function() { return "/i/resolve"; },
-      1: function() { return "/1/urls/resolve"; }
+    resolve: uv({
+      0: "/i/resolve"
     })
   };
   urls.blocking = {
-    list: API.mkurl(ver, {
-      1.1: function() { return "/1.1/blocks/list"; }
+    list: uv({
+      1.1: "/1.1/blocks/list"
     }),
-    ids: API.mkurl(ver, {
-      1: function() { return "/1/blocks/blocking_ids"; },
-      1.1: function() { return "/1.1/blocks/ids"; }
+    ids: uv({
+      1: "/1/blocks/blocking_ids",
+      1.1: "/1.1/blocks/ids"
     }),
-    add: API.mkurl(ver, {
-      1: function() { return "/1/blocks/create"; },
-      1.1: function() { return "/1.1/blocks/create"; }
+    add: uv({
+      1: "/1/blocks/create",
+      1.1: "/1.1/blocks/create"
     }),
-    spam: API.mkurl(ver, {
-      1: function() { return "/1/report_spam"; },
-      1.1: function() { return "/1.1/users/report_spam"; }
+    spam: uv({
+      1: "/1/report_spam",
+      1.1: "/1.1/users/report_spam"
     }),
-    remove: API.mkurl(ver, {
-      1: function() { return "/1/blocks/destroy"; },
-      1.1: function() { return "/1.1/blocks/destroy"; }
+    remove: uv({
+      1: "/1/blocks/destroy",
+      1.1: "/1.1/blocks/destroy"
     })
   };
   urls.account = {
-    rate_limit_status: API.mkurl(ver, {
-      1: function() { return "/1/account/rate_limit_status"; },
-      1.1: function() { return "/1.1/application/rate_limit_status"; }
+    rate_limit_status: uv({
+      1: "/1/account/rate_limit_status",
+      1.1: "/1.1/application/rate_limit_status"
     }),
-    verify_credentials: API.mkurl(ver, {
-      1: function() { return "/1/account/verify_credentials"; },
-      1.1: function() { return "/1.1/account/verify_credentials"; }
+    verify_credentials: uv({
+      1: "/1/account/verify_credentials",
+      1.1: "/1.1/account/verify_credentials"
     }),
-    update_profile_colors: API.mkurl(ver, {
-      1: function() { return "/1/account/update_profile_colors"; },
-      1.1: function() { return "/1.1/account/update_profile_colors"; }
+    update_profile_colors: uv({
+      1: "/1/account/update_profile_colors",
+      1.1: "/1.1/account/update_profile_colors"
     }),
-    update_background_image: API.mkurl(ver, {
-      1: function() {
-        return "/1/account/update_profile_background_image";
-      },
-      1.1: function() {
-        return "/1.1/account/update_profile_background_image";
-      }
+    update_background_image: uv({
+      1: "/1/account/update_profile_background_image",
+      1.1: "/1.1/account/update_profile_background_image"
     })
   };
   urls.users = {
-    followers_ids: API.mkurl(ver, {
-      1: function() { return "/1/followers/ids"; },
-      1.1: function() { return "/1.1/followers/ids"; }
+    followers_ids: uv({
+      1: "/1/followers/ids",
+      1.1: "/1.1/followers/ids"
     }),
-    friends_ids: API.mkurl(ver, {
-      1: function() { return "/1/friends/ids"; },
-      1.1: function() { return "/1.1/friends/ids"; }
+    friends_ids: uv({
+      1: "/1/friends/ids",
+      1.1: "/1.1/friends/ids"
     }),
-    lookup: API.mkurl(ver, {
-      1: function() { return "/1/users/lookup"; },
-      1.1: function() { return "/1.1/users/lookup"; }
+    lookup: uv({
+      1: "/1/users/lookup",
+      1.1: "/1.1/users/lookup"
     }),
-    incoming: API.mkurl(ver, {
-      1: function() { return "/1/friendships/incoming"; },
-      1.1: function() { return "/1.1/friendships/incoming"; }
+    incoming: uv({
+      1: "/1/friendships/incoming",
+      1.1: "/1.1/friendships/incoming"
     }),
-    outgoing: API.mkurl(ver, {
-      1: function() { return "/1/friendships/outgoing"; },
-      1.1: function() { return "/1.1/friendships/outgoing"; }
+    outgoing: uv({
+      1: "/1/friendships/outgoing",
+      1.1: "/1.1/friendships/outgoing"
     }),
-    deny: API.mkurl(ver, {
-      1: function() { return "/1/friendships/deny"; }
+    deny: uv({
+      1: "/1/friendships/deny"
     }),
-    accept: API.mkurl(ver, {
-      1: function() { return "/1/friendships/accept"; }
+    accept: uv({
+      1: "/1/friendships/accept"
     }),
-    cancel: API.mkurl(ver, {
-      1: function() { return "/1/friendships/cancel"; }
+    cancel: uv({
+      1: "/1/friendships/cancel"
     }),
-    friendship: API.mkurl(ver, {
-      1: function() { return "/1/friendships/show"; },
-      1.1: function() { return "/1.1/friendships/show"; }
+    friendship: uv({
+      1: "/1/friendships/show",
+      1.1: "/1.1/friendships/show"
     }),
-    follow: API.mkurl(ver, {
-      1: function() { return "/1/friendships/create"; },
-      1.1: function() { return "/1.1/friendships/create"; }
+    follow: uv({
+      1: "/1/friendships/create",
+      1.1: "/1.1/friendships/create"
     }),
-    unfollow: API.mkurl(ver, {
-      1: function() { return "/1/friendships/destroy"; },
-      1.1: function() { return "/1.1/friendships/destroy"; }
+    unfollow: uv({
+      1: "/1/friendships/destroy",
+      1.1: "/1.1/friendships/destroy"
     }),
-    update: API.mkurl(ver, {
-      1: function() { return "/1/friendships/update"; },
-      1.1: function() { return "/1.1/friendships/update"; }
+    update: uv({
+      1: "/1/friendships/update",
+      1.1: "/1.1/friendships/update"
     }),
-    show: API.mkurl(ver, {
-      1: function() { return "/1/users/show"; },
-      1.1: function() { return "/1.1/users/show"; }
+    show: uv({
+      1: "/1/users/show",
+      1.1: "/1.1/users/show"
     })
   };
   urls.d = {
-    inbox: API.mkurl(ver, {
-      1: function() { return "/1/direct_messages"; },
-      1.1: function() { return "/1.1/direct_messages"; }
+    inbox: uv({
+      1: "/1/direct_messages",
+      1.1: "/1.1/direct_messages"
     }),
-    sent: API.mkurl(ver, {
-      1: function() { return "/1/direct_messages/sent"; },
-      1.1: function() { return "/1.1/direct_messages/sent"; }
+    sent: uv({
+      1: "/1/direct_messages/sent",
+      1.1: "/1.1/direct_messages/sent"
     }),
-    destroy: API.mkurl(ver, {
+    destroy: uv({
       1: function(id) { return "/1/direct_messages/destroy/" + id; },
-      1.1: function(id) { return "/1.1/direct_messages/destroy"; }
+      1.1: "/1.1/direct_messages/destroy"
     })
   };
   urls.search = {
-    tweets: API.mkurl(ver, {
-      1: function() {
-        return location.protocol + "//search.twitter.com/search";
-      },
-      1.1: function() {
-        return "/1.1/search/tweets";
-      }
+    tweets: uv({
+      1.1: "/1.1/search/tweets"
     }),
-    users: API.mkurl(ver, {
-      1: function() { return "/1/users/search"; },
-      1.1: function() { return "/1.1/users/search"; }
+    users: uv({
+      1: "/1/users/search",
+      1.1: "/1.1/users/search"
     })
   };
   urls.lists = {
-    all: API.mkurl(ver, {
-      1: function() { return "/1/lists/all"; },
-      1.1: function() { return "/1.1/lists/list"; }
+    all: uv({
+      1: "/1/lists/all",
+      1.1: "/1.1/lists/list"
     }),
-    list: API.mkurl(ver, {
-      1: function() { return "/1/lists"; },
-      1.1: function() { return "/1.1/lists/ownerships"; }
+    list: uv({
+      1: "/1/lists",
+      1.1: "/1.1/lists/ownerships"
     }),
-    subscriptions: API.mkurl(ver, {
-      1: function() { return "/1/lists/subscriptions"; },
-      1.1: function() { return "/1.1/lists/subscriptions"; }
+    subscriptions: uv({
+      1: "/1/lists/subscriptions",
+      1.1: "/1.1/lists/subscriptions"
     }),
-    listed: API.mkurl(ver, {
-      1: function() { return "/1/lists/memberships"; },
-      1.1: function() { return "/1.1/lists/memberships"; }
+    listed: uv({
+      1: "/1/lists/memberships",
+      1.1: "/1.1/lists/memberships"
     }),
-    show: API.mkurl(ver, {
-      1: function() { return "/1/lists/show"; },
-      1.1: function() { return "/1.1/lists/show"; }
+    show: uv({
+      1: "/1/lists/show",
+      1.1: "/1.1/lists/show"
     }),
-    tweets: API.mkurl(ver, {
-      1: function() { return "/1/lists/statuses"; },
-      1.1: function() { return "/1.1/lists/statuses"; }
+    tweets: uv({
+      1: "/1/lists/statuses",
+      1.1: "/1.1/lists/statuses"
     }),
-    create: API.mkurl(ver, {
-      1: function() { return "/1/lists/create"; },
-      1.1: function() { return "/1.1/lists/create"; }
+    create: uv({
+      1: "/1/lists/create",
+      1.1: "/1.1/lists/create"
     }),
-    update: API.mkurl(ver, {
-      1: function() { return "/1/lists/update"; },
-      1.1: function() { return "/1.1/lists/update"; }
+    update: uv({
+      1: "/1/lists/update",
+      1.1: "/1.1/lists/update"
     }),
-    destroy: API.mkurl(ver, {
-      1: function() { return "/1/lists/destroy"; },
-      1.1: function() { return "/1.1/lists/destroy"; }
+    destroy: uv({
+      1: "/1/lists/destroy",
+      1.1: "/1.1/lists/destroy"
     }),
-    follow: API.mkurl(ver, {
-      1: function() { return "/1/lists/subscribers/create"; },
-      1.1: function() { return "/1.1/lists/subscribers/create"; }
+    follow: uv({
+      1: "/1/lists/subscribers/create",
+      1.1: "/1.1/lists/subscribers/create"
     }),
-    unfollow: API.mkurl(ver, {
-      1: function() { return "/1/lists/subscribers/destroy"; },
-      1.1: function() { return "/1.1/lists/subscribers/destroy"; }
+    unfollow: uv({
+      1: "/1/lists/subscribers/destroy",
+      1.1: "/1.1/lists/subscribers/destroy"
     })
   };
   urls.lists.users = {
-    members: API.mkurl(ver, {
-      1: function() { return "/1/lists/members"; },
-      1.1: function() { return "/1.1/lists/members"; }
+    members: uv({
+      1: "/1/lists/members",
+      1.1: "/1.1/lists/members"
     }),
-    add: API.mkurl(ver, {
-      1: function() { return "/1/lists/members/create_all"; },
-      1.1: function() { return "/1.1/lists/members/create_all"; }
+    add: uv({
+      1: "/1/lists/members/create_all",
+      1.1: "/1.1/lists/members/create_all"
     }),
-    remove: API.mkurl(ver, {
-      1: function() { return "/1/lists/members/destroy"; },
-      1.1: function() { return "/1/lists/members/destroy_all"; }
+    remove: uv({
+      1: "/1/lists/members/destroy",
+      1.1: "/1/lists/members/destroy_all"
     }),
-    subscribers: API.mkurl(ver, {
-      1: function() { return "/1/lists/subscribers"; },
-      1.1: function() { return "/1.1/lists/subscribers"; }
+    subscribers: uv({
+      1: "/1/lists/subscribers",
+      1.1: "/1.1/lists/subscribers"
     })
   };
   urls.timeline = {
-    home: API.mkurl(ver, {
-      1: function() { return "/1/statuses/home_timeline"; },
-      1.1: function() { return "/1.1/statuses/home_timeline"; }
+    home: uv({
+      1: "/1/statuses/home_timeline",
+      1.1: "/1.1/statuses/home_timeline"
     }),
-    mentions: API.mkurl(ver, {
-      1: function() { return "/1/statuses/mentions"; },
-      1.1: function() { return "/1.1/statuses/mentions_timeline"; }
+    mentions: uv({
+      1: "/1/statuses/mentions",
+      1.1: "/1.1/statuses/mentions_timeline"
     }),
-    user: API.mkurl(ver, {
-      1: function() { return "/1/statuses/user_timeline"; },
-      1.1: function() { return "/1.1/statuses/user_timeline"; }
+    user: uv({
+      1: "/1/statuses/user_timeline",
+      1.1: "/1.1/statuses/user_timeline"
     })
   };
   urls.favorites = {
-    list: API.mkurl(ver, {
-      1: function() { return "/1/favorites"; },
-      1.1: function() { return "/1.1/favorites/list"; }
+    list: uv({
+      1: "/1/favorites",
+      1.1: "/1.1/favorites/list"
     }),
-    add: API.mkurl(ver, {
+    add: uv({
       1: function(id) { return "/1/favorites/create/" + id; },
-      1.1: function(id) { return "/1.1/favorites/create"; }
+      1.1: "/1.1/favorites/create"
     }),
-    remove: API.mkurl(ver, {
+    remove: uv({
       1: function(id) { return "/1/favorites/destroy/" + id; },
-      1.1: function(id) { return "/1.1/favorites/destroy"; }
+      1.1: "/1.1/favorites/destroy"
     })
   };
   urls.tweet = {
-    get: API.mkurl(ver, {
+    get: uv({
       1: function(id) { return "/1/statuses/show/" + id; },
       1.1: function(id) { return "/1.1/statuses/show/" + id; }
     }),
-    post: API.mkurl(ver, {
-      1: function() { return "/1/statuses/update"; },
-      1.1: function() { return "/1.1/statuses/update"; }
+    post: uv({
+      1: "/1/statuses/update",
+      1.1: "/1.1/statuses/update"
     }),
-    retweet: API.mkurl(ver, {
+    retweet: uv({
       1: function(id) { return "/1/statuses/retweet/" + id; },
       1.1: function(id) { return "/1.1/statuses/retweet/" + id; }
     }),
-    upload: API.mkurl(ver, {
-      1: function() {
-        return location.protocol +
-          "//upload.twitter.com/1/statuses/update_with_media";
-      },
-      1.1: function() {
-        return "/1.1/statuses/update_with_media";
-      }
+    upload: uv({
+      1.1: "/1.1/statuses/update_with_media"
     }),
-    destroy: API.mkurl(ver, {
+    destroy: uv({
       1: function(id) { return "/1/statuses/destroy/" + id; },
       1.1: function(id) { return "/1.1/statuses/destroy/" + id; }
     })
   };
-  return {
-    urls: urls
-  };
+  API.urls.init = null;
+  return urls;
 };
-API.mkurl = function(ver, urlgetters, ext) {
-  return function() {
-    var getURL = urlgetters[ver];
-    var args = [].slice.call(arguments);
-    if (arguments.length > getURL.length) {
-      ext = args[getURL.length];
-    } else if (ext === undefined) {
-      ext = ".json";
+API.urlvers = function fn(uv) {
+  var nuv = function nuv(ver) {
+    if (ver === undefined) {
+      return nuv[API.V] || nuv[Object.keys(nuv)[0]];
     }
-    var ret = getURL.apply(null, args);
-    var url = String(ret);
-    if (typeof ret === "object" && ret instanceof String) {
-      ret.toString = function() {
-        return url + ext;
-      };
-    } else {
-      ret = url + ext;
-    }
-    return ret;
+    return nuv[ver];
   };
+  for (var i in uv) switch (typeof uv[i]) {
+  case "string":
+    nuv[i] = fn.txurl.bind(uv[i]); break;
+  case "function":
+    nuv[i] = fn.fnurl.bind(uv[i]); break;
+  case "object":
+    if (Array.isArray(uv[i])) nuv[i] = fn.oburl.bind(uv[i]);
+    break;
+  }
+  return nuv;
+};
+API.urlvers.txurl = function(ext) {
+  return this + (ext !== undefined ? ext: ".json");
+};
+API.urlvers.fnurl = function() {
+  var ext = arguments.length > this.length ? arguments[this.length]: ".json";
+  var i, url;
+  if (Object.keys(this).length) {
+    url = new String(this.apply(null, arguments) + ext);
+    for (i in this) url[i] = this[i];
+  } else {
+    url = this.apply(null, arguments) + ext;
+  }
+  return url;
+};
+API.urlvers.oburl = function() {
+  var url = this[0], args = this.slice(1);
+  [].forEach.call(arguments, function(arg, i) { args[i] = arg; });
+  switch (typeof url) {
+  case "string": return API.urlvers.txurl.apply(url, args);
+  case "function": return API.urlvers.fnurl.apply(url, args);
+  }
 };
 // default API version
 API.V = 1.1;
@@ -1213,7 +1198,7 @@ API.cc.reuseData = function(method, url, q) {
   var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
   var q_id = String(/\d*/.exec(qobj["id"] || ""));
   if (method === "GET") switch (urlpts.base) {
-  case API().urls.lists.list():
+  case API.urls.lists.list()():
     if (!q_screen_name && !q_id) {
       LS.save("mylists", data.lists);
       LS.save("mylists_modified", Date.now());
@@ -1221,7 +1206,7 @@ API.cc.reuseData = function(method, url, q) {
       return;
     }
     //break;
-  case API().urls.lists.all():
+  case API.urls.lists.all()():
     if ((!q_screen_name && !q_id) || q_id === my.id_str ||
       q_screen_name === my.screen_name) {
       LS.save("mylists", (data.lists || data).filter(function(a, i, lists) {
@@ -1235,13 +1220,13 @@ API.cc.reuseData = function(method, url, q) {
       if (me) API.cc.onGotMe(me);
     }
     return;
-  case API().urls.account.verify_credentials():
+  case API.urls.account.verify_credentials()():
     return API.cc.onGotMe(data);
   }
   // update cache: my list, my credentials
   switch (dataType.split(" ")[0]) {
   case "list":
-    if (urlpts.base === API().urls.lists.destroy()) {
+    if (urlpts.base === API.urls.lists.destroy()()) {
       API.cc.onGotMyList(data, true);
       break;
     }
@@ -1308,7 +1293,7 @@ API.cc.getCredentials = function() {
 };
 
 API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
-  var url = API().urls.account.update_background_image();
+  var url = API.urls.account.update_background_image()();
   var data = {
     "image": image,
     "use": use,
@@ -1320,7 +1305,7 @@ API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
 API.updateProfileColors = function(background_color, text_color, link_color,
                               sidebar_fill_color, sidebar_border_color,
                               callback, onErr) {
-  X.post(API().urls.account.update_profile_colors(),
+  X.post(API.urls.account.update_profile_colors()(),
          "profile_background_color=" + background_color +
          "&profile_text_color=" + text_color +
          "&profile_link_color=" + link_color +
@@ -1330,14 +1315,14 @@ API.updateProfileColors = function(background_color, text_color, link_color,
 };
 
 API.resolveURL = function(links, callback, onErr) {
-  X.get(API(0).urls.urls.resolve() + "?" + [""].concat(links.map(function(url) {
+  X.get(API.urls.urls.resolve()() + "?" + [""].concat(links.map(function(url) {
           return P.oauth.enc(url);
         })).join("&urls[]=").substring(1), callback, onErr);
 };
 
 API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
                 source, callback, onErr) {
-  X.post(API().urls.tweet.post(),
+  X.post(API.urls.tweet.post()(),
          "status=" + (P.oauth.enc(status) || "") +
          "&in_reply_to_status_id=" + (id || "") +
          "&lat=" + (lat || "") +
@@ -1350,7 +1335,7 @@ API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
 API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
                           callback, onErr) {
-  var url = API().urls.tweet.upload();
+  var url = API.urls.tweet.upload()();
   X.post(url, X.formData({
     "media_data[]": media,
     "status": status || "",
@@ -1364,42 +1349,42 @@ API.tweetMedia = function(media, status, id,
 };
 
 API.untweet = function(id, callback, onErr) {
-  X.post(API().urls.tweet.destroy(id), "", callback, onErr);
+  X.post(API.urls.tweet.destroy()(id), "", callback, onErr);
 };
 
 API.retweet = function(id, callback, onErr) {
-  X.post(API().urls.tweet.retweet(id), "", callback, onErr);
+  X.post(API.urls.tweet.retweet()(id), "", callback, onErr);
 };
 
 API.deleteMessage = function(id, callback, onErr) {
-  X.post(API().urls.d.destroy(id), "id=" + id, callback, onErr);
+  X.post(API.urls.d.destroy()(id), "id=" + id, callback, onErr);
 };
 
 API.fav = function(id, callback, onErr) {
-  X.post(API().urls.favorites.add(id), "id=" + id, callback, onErr);
+  X.post(API.urls.favorites.add()(id), "id=" + id, callback, onErr);
 };
 
 API.unfav = function(id, callback, onErr) {
-  X.post(API().urls.favorites.remove(id), "id=" + id, callback, onErr);
+  X.post(API.urls.favorites.remove()(id), "id=" + id, callback, onErr);
 };
 
 API.follow = function(uname, callback, onErr) {
-  X.post(API().urls.users.follow(),
+  X.post(API.urls.users.follow()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.unfollow = function(uname, callback, onErr) {
-  X.post(API().urls.users.unfollow(),
+  X.post(API.urls.users.unfollow()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.wantRT = function(uname, callback, onErr) {
-  X.post(API().urls.users.update(),
+  X.post(API.urls.users.update()(),
          "screen_name=" + uname + "&retweets=true", callback, onErr);
 };
 
 API.unwantRT = function(uname, callback, onErr) {
-  X.post(API().urls.users.update(),
+  X.post(API.urls.users.update()(),
          "screen_name=" + uname + "&retweets=false", callback, onErr);
 };
 
@@ -1408,56 +1393,56 @@ API.requestFollow = function(uname, callback, onErr) {
 };
 
 API.unrequestFollow = function(uname, callback, onErr) {
-  X.post(API().urls.users.cancel(),
+  X.post(API.urls.users.cancel()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.acceptFollow = function(uname, callback, onErr) {
-  X.post(API().urls.users.accept(),
+  X.post(API.urls.users.accept()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.denyFollow = function(uname, callback, onErr) {
-  X.post(API().urls.users.deny(),
+  X.post(API.urls.users.deny()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.block = function(uname, callback, onErr) {
-  X.post(API().urls.blocking.add(),
+  X.post(API.urls.blocking.add()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.unblock = function(uname, callback, onErr) {
-  X.post(API().urls.blocking.remove(),
+  X.post(API.urls.blocking.remove()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.spam = function(uname, callback, onErr) {
-  X.post(API().urls.blocking.spam(),
+  X.post(API.urls.blocking.spam()(),
          "screen_name=" + uname, callback, onErr);
 };
 
 API.followList = function(uname, slug, callback, onErr) {
-  X.post(API().urls.lists.follow(),
+  X.post(API.urls.lists.follow()(),
          "owner_screen_name=" + uname + "&slug=" + slug,
          callback, onErr);
 };
 
 API.unfollowList = function(uname, slug, callback, onErr) {
-  X.post(API().urls.lists.unfollow(),
+  X.post(API.urls.lists.unfollow()(),
          "owner_screen_name=" + uname + "&slug=" + slug,
          callback, onErr);
 };
 
 API.createList = function(lname, mode, description, callback, onErr) {
-  X.post(API().urls.lists.create(),
+  X.post(API.urls.lists.create()(),
          "name=" + lname + "&mode=" + mode + "&description=" + description,
          callback, onErr);
 };
 
 API.updateList = function(myname, slug, lname, mode, description,
                      callback, onErr) {
-  X.post(API().urls.lists.update(),
+  X.post(API.urls.lists.update()(),
          "owner_screen_name=" + myname +
          "&slug=" + slug +
          (lname ? "&name=" + lname : "") +
@@ -1467,20 +1452,20 @@ API.updateList = function(myname, slug, lname, mode, description,
 };
 
 API.deleteList = function(myname, slug, callback, onErr) {
-  X.post(API().urls.lists.destroy(),
+  X.post(API.urls.lists.destroy()(),
          "owner_screen_name=" + myname + "&slug=" + slug,
          callback, onErr);
 };
 
 API.listing = function(myname, slug, uname, callback, onErr) {
-  X.post(API().urls.lists.users.add(),
+  X.post(API.urls.lists.users.add()(),
          "owner_screen_name=" + myname + "&slug=" + slug +
          "&screen_name=" + uname,
          callback, onErr);
 };
 
 API.unlisting = function(myname, slug, uname, callback, onErr) {
-  X.post(API().urls.lists.users.remove(),
+  X.post(API.urls.lists.users.remove()(),
          "owner_screen_name=" + myname + "&slug=" + slug +
          "&screen_name=" + uname,
          callback, onErr);
@@ -1856,44 +1841,44 @@ V.content.showPage.on1 = function(hash, q, my) {
     this.showSettings(my);
     break;
   case "lists":
-    this.showLists(API().urls.lists.all() + "?" + q +
+    this.showLists(API.urls.lists.all()() + "?" + q +
       "&reverse=true&cursor=-1", my);
     V.panel.showListPanel(my);
     break;
   case "inbox":
-    this.showTL(API().urls.d.inbox() + "?" + q +
+    this.showTL(API.urls.d.inbox()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "sent":
-    this.showTL(API().urls.d.sent() + "?" + q +
+    this.showTL(API.urls.d.sent()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "favorites":
-    this.showTL(API().urls.favorites.list() + "?" + q +
+    this.showTL(API.urls.favorites.list()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "following":
-    this.showUsersByIds(API().urls.users.friends_ids() + "?" + q +
+    this.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "followers":
-    this.showUsersByIds(API().urls.users.followers_ids() + "?" + q +
+    this.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "mentions":
-    this.showTL(API().urls.timeline.mentions() + "?" + q +
+    this.showTL(API.urls.timeline.mentions()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "blocking":
-    this.showUsersByIds(API().urls.blocking.ids() + "?" + q +
+    this.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "":
-    this.showTL(API().urls.timeline.home() + "?" + q +
+    this.showTL(API.urls.timeline.home()() + "?" + q +
                 "&include_entities=true", my);
     break;
   default:
-    this.showTL(API().urls.timeline.user() + "?" + q +
+    this.showTL(API.urls.timeline.user()() + "?" + q +
                 "&include_entities=true&include_rts=true" +
                 "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my);
@@ -1903,26 +1888,26 @@ V.content.showPage.on1 = function(hash, q, my) {
 V.content.showPage.on2 = function(hash, q, my) {
   if (hash[0] === "following") switch (hash[1]) {
   case "requests":
-    this.showUsersByIds(API().urls.users.outgoing() + "?" + q +
+    this.showUsersByIds(API.urls.users.outgoing()() + "?" + q +
       "&cursor=-1", my);
     break;
 
   } else if (hash[0] === "followers") switch (hash[1]) {
   case "requests":
-    this.showUsersByIds(API().urls.users.incoming() + "?" + q +
+    this.showUsersByIds(API.urls.users.incoming()() + "?" + q +
       "&cursor=-1", my, 1);
     break;
 
   } else if (hash[0] === "lists") switch (hash[1]) {
   case "ownerships":
-    this.showLists(API().urls.lists.list() + "?" + q, my);
+    this.showLists(API.urls.lists.list()() + "?" + q, my);
     V.panel.showListPanel(my);
     break;
   case "memberships":
-    this.showLists(API().urls.lists.listed() + "?" + q, my);
+    this.showLists(API.urls.lists.listed()() + "?" + q, my);
     break;
   case "subscriptions":
-    this.showLists(API().urls.lists.subscriptions() + "?" + q, my);
+    this.showLists(API.urls.lists.subscriptions()() + "?" + q, my);
     V.panel.showUserManager(my);
     break;
 
@@ -1934,41 +1919,41 @@ V.content.showPage.on2 = function(hash, q, my) {
   case "api": this.testAPI(my); break;
 
   } else if (hash[0] === "search") {
-    this.showTL(API().urls.search.tweets() + "?" + q +
+    this.showTL(API.urls.search.tweets()() + "?" + q +
       "&q=" + hash[1] + "&rpp=20&include_entities=true", my);
 
   } else switch (hash[1]) {
   case "status": case "statuses":
-    this.showTL(API().urls.timeline.user() + "?" + q +
+    this.showTL(API.urls.timeline.user()() + "?" + q +
       "&include_entities=true&include_rts=true" +
       "&screen_name=" + hash[0], my);
     break;
   case "favorites":
-    this.showTL(API().urls.favorites.list() + "?" + q +
+    this.showTL(API.urls.favorites.list()() + "?" + q +
       "&include_entities=true&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
-    this.showUsersByIds(API().urls.users.friends_ids() + "?" + q +
+    this.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
       "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "followers":
-    this.showUsersByIds(API().urls.users.followers_ids() + "?" + q +
+    this.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
       "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
-    this.showLists(API().urls.lists.all() + "?" + q +
+    this.showLists(API.urls.lists.all()() + "?" + q +
       "&screen_name=" + hash[0] + "&reverse=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
-      this.showTL(API().urls.tweet.get(hash[1]) + "?" + q +
+      this.showTL(API.urls.tweet.get()(hash[1]) + "?" + q +
         "&include_entities=true", my);
     } else {
-      this.showTL(API().urls.lists.tweets() + "?" + q +
+      this.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
         "&slug=" + hash[1] +
         "&include_rts=false" +
@@ -1981,18 +1966,18 @@ V.content.showPage.on2 = function(hash, q, my) {
 V.content.showPage.on3 = function(hash, q, my) {
   if (hash[1] === "lists") switch (hash[2]) {
   case "memberships":
-    this.showLists(API().urls.lists.listed() + "?" + q +
+    this.showLists(API.urls.lists.listed()() + "?" + q +
       "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "subscriptions":
-    this.showLists(API().urls.lists.subscriptions() + "?" + q +
+    this.showLists(API.urls.lists.subscriptions()() + "?" + q +
       "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
 
   } else if (hash[0] === "search" && hash[1] === "users") {
-    this.showUsers(API().urls.search.users() + "?" + q +
+    this.showUsers(API.urls.search.users()() + "?" + q +
       "&q=" + hash[2] + "&include_entities=true", my, 4);
 
   } else switch (hash[2]) {
@@ -2002,24 +1987,24 @@ V.content.showPage.on3 = function(hash, q, my) {
         "&include_entities=true&screen_name=" + hash[0], my);
       V.outline.showProfileOutline(hash[0], my, 3);
     } else {
-      this.showTL(API().urls.lists.tweets() + "?" + q +
+      this.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
         "&slug=" + hash[1] + "&include_entities=true", my);
     }
     break;
   case "members":
-    this.showUsers(API().urls.lists.users.members() + "?" + q +
+    this.showUsers(API.urls.lists.users.members()() + "?" + q +
       "&owner_screen_name=" + hash[0] + "&slug=" + hash[1], my);
     V.outline.showListOutline(hash, my, 3);
     break;
   case "subscribers":
-    this.showUsers(API().urls.lists.users.subscribers() + "?" + q +
+    this.showUsers(API.urls.lists.users.subscribers()() + "?" + q +
       "&owner_screen_name=" + hash[0] + "&slug=" + hash[1], my);
     V.outline.showListOutline(hash, my, 3);
     break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
-      this.showTL(API().urls.tweet.get(hash[2]) + "?" + q +
+      this.showTL(API.urls.tweet.get()(hash[2]) + "?" + q +
         "&include_entities=true", my);
       V.outline.showProfileOutline(hash[0], my, 1);
     }
@@ -2048,7 +2033,7 @@ V.content.showSettings = function(my) {
 // Login UI
 V.content.showLoginUI = function(qs) {
   var getReqToken = function() {
-    var url = API().urls.oauth.request();
+    var url = API.urls.oauth.request()();
     X.post(url, "", ongetReqToken, onErr);
     nd.errvw.textContent = "";
   };
@@ -2056,7 +2041,7 @@ V.content.showLoginUI = function(qs) {
     var tokens = T.parseQuery(xhr.responseText);
     LS.save("request_token", tokens["oauth_token"]);
     LS.save("request_token_secret", tokens["oauth_token_secret"]);
-    var url = API().urls.oauth.authorize();
+    var url = API.urls.oauth.authorize()();
     var request_token = tokens["oauth_token"];
     location.href = url + "?oauth_token=" + request_token;
   };
@@ -2064,7 +2049,7 @@ V.content.showLoginUI = function(qs) {
     var tokens = T.parseQuery(qs);
     var verifier = tokens["oauth_verifier"];
     var q = "oauth_verifier=" + verifier;
-    var url = API().urls.oauth.access();
+    var url = API.urls.oauth.access()();
     X.post(url, q, ongetAcsToken, onErr);
     nd.errvw.textContent = "";
   };
@@ -2579,26 +2564,26 @@ V.content.settingFollow = function(my) {
       node.unfollowCnt.textContent = ++unfollowCnt;
     }
     list.follow.forEach(function(follower_id, i) {
-      X.post(API().urls.users.follow(), "user_id=" + follower_id,
+      X.post(API.urls.users.follow()(), "user_id=" + follower_id,
         function() {
           finishFollow(follower_id);
         }, null, true
       );
     });
     list.unfollow.forEach(function(following_id, i) {
-      X.post(API().urls.users.unfollow(), "user_id=" + following_id,
+      X.post(API.urls.users.unfollow()(), "user_id=" + following_id,
         function() {
           finishUnfollow(following_id);
         }, null, true
       );
     });
   }
-  X.get(API().urls.users.friends_ids() + "?user_id=" + my.id_str,
+  X.get(API.urls.users.friends_ids()() + "?user_id=" + my.id_str,
   function(xhr) {
     var data = JSON.parse(xhr.responseText);
     ids.following = data.ids;
   });
-  X.get(API().urls.users.followers_ids() + "?user_id=" + my.id_str,
+  X.get(API.urls.users.followers_ids()() + "?user_id=" + my.id_str,
   function(xhr) {
     var data = JSON.parse(xhr.responseText);
     ids.followers = data.ids;
@@ -2650,7 +2635,7 @@ V.content.showUsersByLookup = function(data, url, my, mode) {
     LS.state.save("ids_object", object);
     that.rendUsers(object, my, mode);
   };
-  X.get(API().urls.users.lookup() + "?user_id=" + sliced_ids.join(","), onScs);
+  X.get(API.urls.users.lookup()() + "?user_id=" + sliced_ids.join(","), onScs);
   LS.state.save("ids_data", data);
   LS.state.save("ids_url", url);
   LS.state.save("ids_my", my);
@@ -3566,7 +3551,7 @@ V.panel.showFollowPanel = function(user) {
     ab.want_rt.turn(null);
     ab.dm.turn(null).show().enable();
   };
-  X.get(API().urls.users.friendship() + "?target_id=" + user.id_str,
+  X.get(API.urls.users.friendship()() + "?target_id=" + user.id_str,
         onScs, onErr);
 };
 // Action buttons panel for add user to list
@@ -3585,7 +3570,7 @@ V.panel.showAddListPanel = function(user, my) {
   if (mylists) {
     onScs({responseText:JSON.stringify(mylists)});
   } else {
-    X.get(API().urls.lists.list(), onScs, null);
+    X.get(API.urls.lists.list()(), onScs, null);
   }
 };
 V.panel.lifeListButtons = function(lists, user, my) {
@@ -3620,7 +3605,7 @@ V.panel.lifeListButtons = function(lists, user, my) {
     }
   };
   D.id("subaction-inner-2").add(al.node);
-  X.get(API().urls.lists.listed() + "?filter_to_owned_lists=true&" +
+  X.get(API.urls.lists.listed()() + "?filter_to_owned_lists=true&" +
         "screen_name=" + user.screen_name, onScs, onErr);
 };
 
@@ -3739,7 +3724,7 @@ V.panel.showGlobalBar = function(my) {
 
   g.api.add(D.ct("API rest"));
   g.api.addEventListener("click", function() {
-    X.get(API().urls.account.rate_limit_status(), function(xhr) {
+    X.get(API.urls.account.rate_limit_status()(), function(xhr) {
       var data = JSON.parse(xhr.responseText);
       alert(O.stringify(data));
     });
@@ -4085,7 +4070,7 @@ V.outline.changeDesign = function(user) {
 // Step to Render list outline and color
 V.outline.showListOutline = function(hash, my, mode) {
   var that = this;
-  var url = API().urls.lists.show() + "?" +
+  var url = API.urls.lists.show()() + "?" +
             "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
   var onScs = function(xhr) {
     var list = JSON.parse(xhr.responseText);
@@ -4195,7 +4180,7 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     D.id("side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
   };
 
-  X.get(API().urls.users.show() + "?screen_name=" + screen_name, onScs, onErr);
+  X.get(API.urls.users.show()() + "?screen_name=" + screen_name, onScs, onErr);
 };
 
 // Render outline of User Profile
@@ -4301,9 +4286,10 @@ V.outline.rendProfileOutline = function(user) {
     V.init.structPage();
     V.content.showPage(my);
   };
+  API.urls.init();
   if (document.readyState === "complete") editDOM();
   else addEventListener("load", function() { editDOM(); });
   if (!API.cc.getCredentials()) {
-    X.get(API().urls.account.verify_credentials(), null, null);
+    X.get(API.urls.account.verify_credentials()(), null, null);
   }
 })();
