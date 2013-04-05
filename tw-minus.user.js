@@ -531,7 +531,8 @@ D.tweetize.mention = function(username) {
 
 // Object Functions
 
-O = {};
+O = function(o) { o.sa = O.sa; return o; };
+O.sa = function(n, v) { this[n] = v; return this; };
 O.stringify = function stringify(arg) {
   if (typeof arg === "string") {
     return arg.match(
