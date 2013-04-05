@@ -902,15 +902,12 @@ API.urls.init = function(ver) {
       1.1: "/1.1/blocks/ids"
     }),
     add: uv({
-      1: "/1/blocks/create",
       1.1: "/1.1/blocks/create"
     }),
     spam: uv({
-      1: "/1/report_spam",
       1.1: "/1.1/users/report_spam"
     }),
     remove: uv({
-      1: "/1/blocks/destroy",
       1.1: "/1.1/blocks/destroy"
     })
   };
@@ -924,11 +921,9 @@ API.urls.init = function(ver) {
       1.1: "/1.1/account/verify_credentials"
     }),
     update_profile_colors: uv({
-      1: "/1/account/update_profile_colors",
       1.1: "/1.1/account/update_profile_colors"
     }),
     update_background_image: uv({
-      1: "/1/account/update_profile_background_image",
       1.1: "/1.1/account/update_profile_background_image"
     })
   };
@@ -967,15 +962,12 @@ API.urls.init = function(ver) {
       1.1: "/1.1/friendships/show"
     }),
     follow: uv({
-      1: "/1/friendships/create",
       1.1: "/1.1/friendships/create"
     }),
     unfollow: uv({
-      1: "/1/friendships/destroy",
       1.1: "/1.1/friendships/destroy"
     }),
     update: uv({
-      1: "/1/friendships/update",
       1.1: "/1.1/friendships/update"
     }),
     show: uv({
@@ -993,7 +985,6 @@ API.urls.init = function(ver) {
       1.1: "/1.1/direct_messages/sent"
     }),
     destroy: uv({
-      1: function(id) { return "/1/direct_messages/destroy/" + id; },
       1.1: "/1.1/direct_messages/destroy"
     })
   };
@@ -1032,23 +1023,18 @@ API.urls.init = function(ver) {
       1.1: "/1.1/lists/statuses"
     }),
     create: uv({
-      1: "/1/lists/create",
       1.1: "/1.1/lists/create"
     }),
     update: uv({
-      1: "/1/lists/update",
       1.1: "/1.1/lists/update"
     }),
     destroy: uv({
-      1: "/1/lists/destroy",
       1.1: "/1.1/lists/destroy"
     }),
     follow: uv({
-      1: "/1/lists/subscribers/create",
       1.1: "/1.1/lists/subscribers/create"
     }),
     unfollow: uv({
-      1: "/1/lists/subscribers/destroy",
       1.1: "/1.1/lists/subscribers/destroy"
     })
   };
@@ -1058,11 +1044,9 @@ API.urls.init = function(ver) {
       1.1: "/1.1/lists/members"
     }),
     add: uv({
-      1: "/1/lists/members/create_all",
       1.1: "/1.1/lists/members/create_all"
     }),
     remove: uv({
-      1: "/1/lists/members/destroy",
       1.1: "/1/lists/members/destroy_all"
     }),
     subscribers: uv({
@@ -1090,11 +1074,9 @@ API.urls.init = function(ver) {
       1.1: "/1.1/favorites/list"
     }),
     add: uv({
-      1: function(id) { return "/1/favorites/create/" + id; },
       1.1: "/1.1/favorites/create"
     }),
     remove: uv({
-      1: function(id) { return "/1/favorites/destroy/" + id; },
       1.1: "/1.1/favorites/destroy"
     })
   };
@@ -1104,18 +1086,15 @@ API.urls.init = function(ver) {
       1.1: function(id) { return "/1.1/statuses/show/" + id; }
     }),
     post: uv({
-      1: "/1/statuses/update",
       1.1: "/1.1/statuses/update"
     }),
     retweet: uv({
-      1: function(id) { return "/1/statuses/retweet/" + id; },
       1.1: function(id) { return "/1.1/statuses/retweet/" + id; }
     }),
     upload: uv({
       1.1: "/1.1/statuses/update_with_media"
     }),
     destroy: uv({
-      1: function(id) { return "/1/statuses/destroy/" + id; },
       1.1: function(id) { return "/1.1/statuses/destroy/" + id; }
     })
   };
@@ -1358,11 +1337,11 @@ API.retweet = function(id, callback, onErr) {
 };
 
 API.deleteMessage = function(id, callback, onErr) {
-  X.post(API.urls.d.destroy()(id), "id=" + id, callback, onErr);
+  X.post(API.urls.d.destroy()(), "id=" + id, callback, onErr);
 };
 
 API.fav = function(id, callback, onErr) {
-  X.post(API.urls.favorites.add()(id), "id=" + id, callback, onErr);
+  X.post(API.urls.favorites.add()(), "id=" + id, callback, onErr);
 };
 
 API.unfav = function(id, callback, onErr) {
