@@ -532,8 +532,8 @@ D.tweetize.mention = function(username) {
 
 // Object Functions
 
-O = function(o) { o.sa = O.sa; return o; };
-O.sa = function(n, v) { this[n] = v; return this; };
+O = {};
+O.sa = function(o, iv) { for (var i in iv) o[i] = iv[i]; return o; };
 O.stringify = function stringify(arg) {
   if (typeof arg === "string") {
     return arg.match(
@@ -877,15 +877,15 @@ API.urls.init = function(ver) {
   var urls = API.urls, uv = API.urlvers;
   urls.oauth = {
     request: uv({
-      1: [O(function() { return "/oauth/request_token"; }).
-        sa("oauthPhase", "get_request_token"), ""]
+      1: [O.sa(function() { return "/oauth/request_token"; },
+        { oauthPhase: "get_request_token" }), ""]
     }),
     authorize: uv({
       1: ["/oauth/authorize", ""]
     }),
     access: uv({
-      1: [O(function() { return "/oauth/access_token"; }).
-        sa("oauthPhase", "get_access_token"), ""]
+      1: [O.sa(function() { return "/oauth/access_token"; },
+        { oauthPhase: "get_access_token" }), ""]
     })
   };
   urls.urls = {
