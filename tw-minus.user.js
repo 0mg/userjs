@@ -2097,6 +2097,7 @@ V.content.showLoginUI = function(qs) {
 V.content.customizeDesign = function(my) {
   if (my.status) {
     var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
+    delete tweet.retweeted_status;
     this.rendTL([tweet], my);
   }
   V.outline.rendProfileOutline(my, my, 2);
