@@ -339,33 +339,34 @@ U = {
 
 // DOM Functions
 
-D = (function() {
-  function add() {
-    for (var i = 0; i < arguments.length; ++i) this.appendChild(arguments[i]);
-    return this;
+D = function D(e) {
+  if (e) e.add = D.add, e.ins = D.ins, e.sa = D.sa, e.q = D.q, e.qs = D.qs;
+  return e;
+};
+D.add = function add() {
+  for (var i = 0; i < arguments.length; ++i) this.appendChild(arguments[i]);
+  return this;
+};
+D.ins = function ins() {
+  for (var i = 0; i < arguments.length; ++i) {
+    this.insertBefore(arguments[i], this.firstChild);
   }
-  function ins() {
-    for (var i = 0; i < arguments.length; ++i) {
-      this.insertBefore(arguments[i], this.firstChild);
-    }
-  }
-  function sa() { this.setAttribute.apply(this, arguments); return this; }
-  function x(e) { if (e) e.add = add, e.ins = ins, e.sa = sa; return e; }
-  return {
-    ce: function(s) {
-      return x(document.createElementNS("http://www.w3.org/1999/xhtml", s));
-    },
-    ct: function(s) { return document.createTextNode(s); },
-    id: function(s) { return x(document.getElementById(s)); },
-    q: function(s) { return x(document.querySelector(s)); },
-    qs: function(s) { return document.querySelectorAll(s); },
-    cf: function() { return x(document.createDocumentFragment()); },
-    rm: function(e) { return e && e.parentNode.removeChild(e); },
-    empty: function(e) {
-      while (e.hasChildNodes()) e.removeChild(e.lastChild); return e;
-    }
-  };
-})();
+  return this;
+};
+D.sa = function sa() { this.setAttribute.apply(this, arguments); return this; };
+D.q = function(s) { return D((this === D ? document: this).querySelector(s)); };
+D.qs = function(s) {
+  return (this === D ? document: this).querySelectorAll(s);
+};
+D.ce = function(s) {
+  return D(document.createElementNS("http://www.w3.org/1999/xhtml", s));
+};
+D.ct = function(s) { return document.createTextNode(s); };
+D.cf = function() { return D(document.createDocumentFragment()); };
+D.rm = function(e) { return e && e.parentNode.removeChild(e); };
+D.empty = function(e) {
+  while (e.hasChildNodes()) e.removeChild(e.lastChild); return e;
+};
 D.HTML_ENTITIES = {
   nbsp: 160, iexcl: 161, cent: 162, pound: 163, curren: 164, yen: 165,
   brvbar: 166, sect: 167, uml: 168, copy: 169, ordf: 170, laquo: 171, not: 172,
@@ -2021,7 +2022,7 @@ V.content.showSettings = function(my) {
     fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow")),
     opt: D.ce("a").sa("href", root + "options").add(D.ct("options"))
   };
-  D.id("main").add(
+  D.q("#main").add(
     D.ce("li").add(nd.api),
     D.ce("li").add(nd.aco),
     D.ce("li").add(nd.dez),
@@ -2065,7 +2066,7 @@ V.content.showLoginUI = function(qs) {
     };
     LS.save("credentials", my);
     V.panel.updMyStats(my);
-    D.id("main").add(O.htmlify(tokens));
+    D.q("#main").add(O.htmlify(tokens));
   };
   var onErr = function(xhr) {
     if (!xhr) return;
@@ -2091,14 +2092,14 @@ V.content.showLoginUI = function(qs) {
   nd.csbox.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) saveCS();
   });
-  if (qs) D.id("main").add(
+  if (qs) D.q("#main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 2 of 2)")),
       D.ce("dd").add(nd.verify),
       nd.errvw
     )
   );
-  else D.id("main").add(
+  else D.q("#main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 1 of 2)")),
       D.ce("dd").add(nd.login),
@@ -2159,12 +2160,12 @@ V.content.customizeDesign = function(my) {
       });
       break;
     case fm.sidebar.fillColor:
-      D.id("subtitle").style.backgroundColor =
-      D.id("side").style.backgroundColor = "#" + input.value;
+      D.q("#subtitle").style.backgroundColor =
+      D.q("#side").style.backgroundColor = "#" + input.value;
       break;
     case fm.sidebar.borderColor:
-      D.id("subtitle").style.borderColor =
-      D.id("side").style.borderColor = "#" + input.value;
+      D.q("#subtitle").style.borderColor =
+      D.q("#side").style.borderColor = "#" + input.value;
       break;
     }
   }, true);
@@ -2286,7 +2287,7 @@ V.content.customizeDesign = function(my) {
     D.ce("dd").add(fm.update)
   );
 
-  D.id("subaction").add(fm.form);
+  D.q("#subaction").add(fm.form);
 };
 
 // Render UI of account settings
@@ -2326,7 +2327,7 @@ V.content.settingAccount = function(my) {
   };
   function checkUname(unameValue) {
     X.get(api + unameValue, function(xhr) {
-      var main = D.id("main");
+      var main = D.q("#main");
       while (main.hasChildNodes()) D.rm(main.lastChild);
       main.add(O.htmlify(JSON.parse(xhr.responseText)));
     }, null);
@@ -2344,8 +2345,8 @@ V.content.settingAccount = function(my) {
   autoBtn.addEventListener("click", function(e) {
     xhrpool.length ? autoFinish() : autoStart();
   }, false);
-  D.id("subaction").add(uname, unameBtn);
-  D.id("side").add(
+  D.q("#subaction").add(uname, unameBtn);
+  D.q("#side").add(
     D.ce("h3").add(D.ct("screen_name")),
     D.ct("length:"), auto, autoBtn, autoResult
   );
@@ -2354,8 +2355,8 @@ V.content.settingAccount = function(my) {
 // Render UI for API testing
 V.content.testAPI = function(my) {
   var nd = {
-    main: D.id("main"),
-    side: D.id("side"),
+    main: D.q("#main"),
+    side: D.q("#side"),
     head: {
       url: D.ce("input").sa("size", "60"),
       send: D.ce("button").add(D.ct("HEAD"))
@@ -2481,7 +2482,7 @@ V.content.settingOptions = function() {
       nd.rmLS.root.add(D.ct("DELETED"));
     }
   });
-  D.id("main").add(
+  D.q("#main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct(lsn)),
       D.ce("dd").add(D.ct(C.APP_NAME + "'s settings data")),
@@ -2504,7 +2505,7 @@ V.content.settingFollow = function(my) {
     unfollow: null
   };
   var node = {
-    main: D.id("main"),
+    main: D.q("#main"),
     mirrorDebug: D.ce("textarea").sa("class", "debugbox"),
     mirrorAna: D.ce("button").add(D.ct("Analize")),
     mirrorBtn: D.ce("button").add(D.ct("Mirror")),
@@ -2599,11 +2600,11 @@ V.content.showUsersByIds = function(url, my, mode) {
   };
   var onErr = function(xhr) {
     if (xhr.status === 401) {
-      D.id("main").add(
+      D.q("#main").add(
         D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
       );
     }
-    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText || xhr.status)));
+    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText || xhr.status)));
   };
   // set ?count=<max>
   var urlpts = T.normalizeURL(url);
@@ -2622,7 +2623,7 @@ V.content.showUsersByLookup = function(data, url, my, mode) {
   var index = object.index, size = object.size;
   var sliced_ids = data.ids.slice(index, index + size);  // ids:[1, 23, 77]
   if (!sliced_ids.length) {
-    D.id("main").add(O.htmlify({"Empty": "No users found"}));
+    D.q("#main").add(O.htmlify({"Empty": "No users found"}));
     return;
   }
   // get users data with ids
@@ -2739,9 +2740,9 @@ V.content.rendUsers = function(data, my, mode) {
     users_list.add(lu.root);
   });
 
-  D.empty(D.id("cursor"));
-  D.empty(D.id("main"));
-  D.id("main").add(users_list.hasChildNodes() ?
+  D.empty(D.q("#cursor"));
+  D.empty(D.q("#main"));
+  D.q("#main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
   basicCursor ? that.misc.showCursor(data, V.content.showUsers):
@@ -2789,8 +2790,8 @@ V.content.misc.showCursorIds = function(data) {
     qrys["size"] = data["size"];
     var url = urlpts.base + "?" + T.strQuery(qrys);
     history.pushState("", "", e.target.href);
-    D.empty(D.id("cursor"));
-    D.rm(D.id("users"));
+    D.empty(D.q("#cursor"));
+    D.rm(D.q("#users"));
     D.q("body").scrollIntoView();
     V.content.showUsersByLookup(
       state.ids_data, url, state.ids_my, state.ids_mode);
@@ -2802,7 +2803,7 @@ V.content.misc.showCursorIds = function(data) {
   cur.prev.addEventListener("click", function(e) {
     onClick(e, "previous_cursor_str", "prev_index");
   });
-  D.id("cursor").add(cur.sor);
+  D.q("#cursor").add(cur.sor);
 };
 V.content.cursorIdsPopState = function(e) {
   var state = LS.state.load();
@@ -2818,11 +2819,11 @@ V.content.showUsers = function(url, my, mode) {
   }
   var onErr = function(xhr) {
     if (xhr.status === 401) {
-      D.id("main").add(
+      D.q("#main").add(
         D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
       );
     }
-    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGetUsers, onErr);
   if (!(mode & 8)) { mode |= 8; V.panel.showUserManager(my); }
@@ -2859,8 +2860,8 @@ V.content.misc.showCursor = function(data, sender) {
     var qrys = urlpts.query; qrys["cursor"] = data[newcur];
     var url = urlpts.base + "?" + T.strQuery(qrys);
     history.pushState("", "", e.target.href);
-    D.empty(D.id("cursor"));
-    D.empty(D.id("main"));
+    D.empty(D.q("#cursor"));
+    D.empty(D.q("#main"));
     D.q("body").scrollIntoView();
     sender(url, my, mode);
     e.preventDefault();
@@ -2871,7 +2872,7 @@ V.content.misc.showCursor = function(data, sender) {
   cur.prev.addEventListener("click", function(e) {
     onClick(e, "previous_cursor_str");
   });
-  D.id("cursor").add(cur.sor);
+  D.q("#cursor").add(cur.sor);
 };
 V.content.cursorPopState = function(e) {
   var state = LS.state.load();
@@ -2891,11 +2892,11 @@ V.content.showLists = function(url, my) {
   };
   var onErr = function(xhr) {
     if (xhr.status === 401) {
-      D.id("main").add(
+      D.q("#main").add(
         D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
       );
     }
-    D.id("main").add(O.htmlify(JSON.parse(xhr.responseText)));
+    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
   X.get(url, onGet, onErr);
   addEventListener("scroll", V.content.onScroll);
@@ -2915,13 +2916,13 @@ V.content.rendLists = function rendLists(data, oname) {
     var target = l.user.screen_name === oname ? lists: subs;
     target.add(rendLists.one(l));
   });
-  D.empty(D.id("cursor"));
-  D.empty(D.id("main"));
+  D.empty(D.q("#cursor"));
+  D.empty(D.q("#main"));
   root.add(
     lists.hasChildNodes() ? lists : D.cf(),
     subs.hasChildNodes() ? subs : D.cf()
   );
-  D.id("main").add(
+  D.q("#main").add(
     data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
   V.content.misc.showCursor(data, V.content.showLists);
@@ -2971,11 +2972,11 @@ V.content.showTL = function(url, my) {
       data = JSON.parse(xhr.responseText);
     }
     if (xhr.status === 401) {
-      D.id("main").add(
+      D.q("#main").add(
         D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
       );
     }
-    D.id("main").add(O.htmlify(data));
+    D.q("#main").add(O.htmlify(data));
     LS.state.save("timeline_data", []);
   }
   LS.state.save("timeline_url", url);
@@ -2984,7 +2985,7 @@ V.content.showTL = function(url, my) {
 };
 V.content.prendTL = function(timeline, my, expurls) {
   this.rendTL(timeline, my);
-  A.expandUrls(D.id("timeline"), expurls);
+  A.expandUrls(D.q("#timeline"), expurls);
 };
 // Render View of Timeline (of home, mentions, messages, lists.,)
 V.content.rendTL = function rendTL(timeline, my) {
@@ -2993,9 +2994,9 @@ V.content.rendTL = function rendTL(timeline, my) {
   timeline.forEach(function(tweet) {
     tl_element.add(that.rendTL.tweet(tweet, my));
   });
-  D.empty(D.id("cursor"));
-  D.rm(D.id("timeline"));
-  D.id("main").add(tl_element);
+  D.empty(D.q("#cursor"));
+  D.rm(D.q("#timeline"));
+  D.q("#main").add(tl_element);
   addEventListener("popstate", V.content.onPopState);
   addEventListener("scroll", V.content.onScroll);
   if (!timeline.length) {
@@ -3009,7 +3010,7 @@ V.content.rendTL = function rendTL(timeline, my) {
   var href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
   var past = D.ce("a").sa("href", href).add(D.ct("past"));
   past.className = "cursor_next";
-  D.id("cursor").add(D.ce("li").add(past));
+  D.q("#cursor").add(D.ce("li").add(past));
   // change url + show next page
   past.addEventListener("click", function(e) {
     var url = LS.state.load()["timeline_url"];
@@ -3018,8 +3019,8 @@ V.content.rendTL = function rendTL(timeline, my) {
     // change url + show next page
     history.pushState("", "", e.target.href);
     V.content.showTL(pasturl, my);
-    D.empty(D.id("cursor"));
-    D.rm(D.id("timeline"));
+    D.empty(D.q("#cursor"));
+    D.rm(D.q("#timeline"));
     D.q("body").scrollIntoView();
     // cancel <a> navigation
     e.preventDefault();
@@ -3158,7 +3159,7 @@ V.content.misc.showCursorPage = function(data) {
   cur.next.href = U.ROOT + curl.path + U.Q + "page=" + (cpage + 1);
   cur.next.add(D.ct("next"));
   cur.sor.add(D.ce("li").add(cur.next));
-  D.id("cursor").add(cur.sor);
+  D.q("#cursor").add(cur.sor);
 };
 V.content.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
@@ -3295,14 +3296,14 @@ V.panel.makeTwAct = function(t, my) {
   ab.rep.add(D.ct("Reply"));
   if (isDM) {
     ab.rep.addEventListener("click", function() {
-      var status = D.id("status");
+      var status = D.q("#status");
       status.value = "d " + t.user.screen_name + " " + status.value;
       status.focus();
     }, false)
   } else {
     ab.rep.addEventListener("click", function() {
-      var status = D.id("status");
-      var repid = D.id("in_reply_to_status_id");
+      var status = D.q("#status");
+      var repid = D.q("#in_reply_to_status_id");
       status.value = "@" + (rt || t).user.screen_name + " " + status.value;
       repid.value = (rt || t).id_str;
       var e = document.createEvent("Event");
@@ -3526,7 +3527,7 @@ V.panel.showFollowPanel = function(user) {
       API.wantRT(user.screen_name, onWantRT, update);
   });
   ab.dm.node.addEventListener("click", function() {
-    var status = D.id("status");
+    var status = D.q("#status");
     status.value = "d " + user.screen_name + " " + status.value;
     status.focus();
   });
@@ -3539,7 +3540,7 @@ V.panel.showFollowPanel = function(user) {
     ab.dm.node
   );
   update(null);
-  D.id("subaction-inner-1").add(ab.node);
+  D.q("#subaction-inner-1").add(ab.node);
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     ship = data.relationship.source;
@@ -3564,7 +3565,7 @@ V.panel.showAddListPanel = function(user, my) {
       D.rm(expander);
       that.lifeListButtons(data.lists || data, user, my);
     });
-    D.id("subaction-inner-1").add(expander);
+    D.q("#subaction-inner-1").add(expander);
   };
   var mylists = API.cc.getMyLists();
   if (mylists) {
@@ -3604,7 +3605,7 @@ V.panel.lifeListButtons = function(lists, user, my) {
       list_btns[i].turn(null);
     }
   };
-  D.id("subaction-inner-2").add(al.node);
+  D.q("#subaction-inner-2").add(al.node);
   X.get(API.urls.lists.listed()() + "?filter_to_owned_lists=true&" +
         "screen_name=" + user.screen_name, onScs, onErr);
 };
@@ -3626,7 +3627,7 @@ V.panel.showListFollowPanel = function(list) {
                                   list.slug, onFollow);
   }, false);
   ab.node.add(ab.follow.node);
-  D.id("subaction").add(ab.node);
+  D.q("#subaction").add(ab.node);
 };
 
 // update my stats in header
@@ -3756,7 +3757,7 @@ V.panel.showGlobalBar = function(my) {
     D.ce("li").add(g.api),
     D.ce("li").add(g.logout)
   );
-  D.id("header").add(g.bar);
+  D.q("#header").add(g.bar);
 };
 
 // Global Tweet box
@@ -3777,7 +3778,7 @@ V.panel.showTweetBox = function() {
   var switchReplyTarget = function() {
     if (!t.id.value) return;
     var replying = false;
-    var replink = D.id("reply_target_link");
+    var replink = D.q("#reply_target_link");
     [].forEach.call(D.qs(".tweet"), function(tweet) {
       var str = /\bscreen_name-(\w+)/.exec(tweet.className);
       var uname = str && str[1];
@@ -3864,7 +3865,7 @@ V.panel.showTweetBox = function() {
   t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
   t.btns.add(t.id, t.update, t.replink);
 
-  D.id("header").add(t.box);
+  D.q("#header").add(t.box);
 };
 
 // Panel for manage list members, following, followers.,
@@ -3938,7 +3939,7 @@ V.panel.showUserManager = function(my) {
     D.ce("dt").add(D.ct("target")),
     D.ce("dd").add(um.target, D.ce("br"), um.add, um.del)
   );
-  D.id("side").add(um.node);
+  D.q("#side").add(um.node);
 };
 
 // Panel for Manage list
@@ -4009,7 +4010,7 @@ V.panel.showListPanel = function(my) {
       list.del
     )
   );
-  D.id("side").add(list.panel);
+  D.q("#side").add(list.panel);
 };
 
 
@@ -4027,7 +4028,7 @@ V.outline.showSubTitle = function(hash) {
     sub.add(dir);
   });
 
-  D.id("subtitle").add(sub);
+  D.q("#subtitle").add(sub);
 };
 
 // Change CSS(text color, background-image) by user settings
@@ -4055,12 +4056,12 @@ V.outline.changeDesign = function(user) {
     background.style.backgroundImage = "none";
   }
 
-  D.id("header").style.backgroundColor =
-  D.id("content").style.backgroundColor =
-  D.id("side").style.backgroundColor = colorSideFill;
+  D.q("#header").style.backgroundColor =
+  D.q("#content").style.backgroundColor =
+  D.q("#side").style.backgroundColor = colorSideFill;
 
-  D.id("subtitle").style.borderColor =
-  D.id("side").style.borderColor = colorSideBorder;
+  D.q("#subtitle").style.borderColor =
+  D.q("#side").style.borderColor = colorSideBorder;
 
   D.q("body").style.color = colorText;
 
@@ -4085,7 +4086,7 @@ V.outline.showListOutline = function(hash, my, mode) {
     }
   };
   var onErr = function(xhr) {
-    D.id("side").add(O.htmlify(JSON.parse(xhr.responseText)))
+    D.q("#side").add(O.htmlify(JSON.parse(xhr.responseText)))
   };
   // use cache (history.state) if exist
   var state = LS.state.load();
@@ -4146,7 +4147,7 @@ V.outline.showListProfile = function(list) {
     )
   );
 
-  D.id("side").add(li.st);
+  D.q("#side").add(li.st);
 };
 
 // Step to Render user profile outline and color
@@ -4173,11 +4174,11 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     var hack = D.ce("button").add(D.ct("unblock"));
     hack.addEventListener("click", function() {
       API.unblock(screen_name, onScs, function(x) {
-        D.id("side").add(O.htmlify(JSON.parse(x.responseText)));
+        D.q("#side").add(O.htmlify(JSON.parse(x.responseText)));
         D.rm(hack);
       });
     });
-    D.id("side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
+    D.q("#side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
   };
 
   X.get(API.urls.users.show()() + "?screen_name=" + screen_name, onScs, onErr);
@@ -4273,7 +4274,7 @@ V.outline.rendProfileOutline = function(user) {
     D.ce("dd").add(D.ct(new Date(user.created_at).toLocaleString()))
   );
 
-  D.id("side").add(p.box);
+  D.q("#side").add(p.box);
 };
 
 
