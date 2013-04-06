@@ -1272,36 +1272,36 @@ API.cc.getCredentials = function() {
   return Date.now() - time < interval ? data: null;
 };
 
-API.updateProfileBgImage = function(image, use, tile, callback, onErr) {
+API.updateProfileBgImage = function(image, use, tile, onScs, onErr) {
   var url = API.urls.account.update_background_image()();
   var data = {
     "image": image,
     "use": use,
     "tile": tile
   };
-  X.post(url, data, callback, onErr);
+  X.post(url, data, onScs, onErr);
 };
 
 API.updateProfileColors = function(background_color, text_color, link_color,
                               sidebar_fill_color, sidebar_border_color,
-                              callback, onErr) {
+                              onScs, onErr) {
   X.post(API.urls.account.update_profile_colors()(),
          "profile_background_color=" + background_color +
          "&profile_text_color=" + text_color +
          "&profile_link_color=" + link_color +
          "&profile_sidebar_fill_color=" + sidebar_fill_color +
          "&profile_sidebar_border_color=" + sidebar_border_color,
-         callback, onErr);
+         onScs, onErr);
 };
 
-API.resolveURL = function(links, callback, onErr) {
+API.resolveURL = function(links, onScs, onErr) {
   X.get(API.urls.urls.resolve()() + "?" + [""].concat(links.map(function(url) {
           return P.oauth.enc(url);
-        })).join("&urls[]=").substring(1), callback, onErr);
+        })).join("&urls[]=").substring(1), onScs, onErr);
 };
 
 API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
-                source, callback, onErr) {
+                source, onScs, onErr) {
   X.post(API.urls.tweet.post()(),
          "status=" + (P.oauth.enc(status) || "") +
          "&in_reply_to_status_id=" + (id || "") +
@@ -1309,12 +1309,12 @@ API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
          "&long=" + (lon || "") +
          "&place_id=" + (place_id || "") +
          "&display_coordinates=" + (display_coordinates || "") +
-         "&source=" + (source || ""), callback, onErr);
+         "&source=" + (source || ""), onScs, onErr);
 };
 
 API.tweetMedia = function(media, status, id,
                           lat, lon, place_id, display_coordinates,
-                          callback, onErr) {
+                          onScs, onErr) {
   var url = API.urls.tweet.upload()();
   X.post(url, X.formData({
     "media_data[]": media,
@@ -1325,130 +1325,130 @@ API.tweetMedia = function(media, status, id,
     "place_id": place_id || "",
     "display_coordinates": display_coordinates || ""
   }),
-  callback, onErr);
+  onScs, onErr);
 };
 
-API.untweet = function(id, callback, onErr) {
-  X.post(API.urls.tweet.destroy()(id), "", callback, onErr);
+API.untweet = function(id, onScs, onErr) {
+  X.post(API.urls.tweet.destroy()(id), "", onScs, onErr);
 };
 
-API.retweet = function(id, callback, onErr) {
-  X.post(API.urls.tweet.retweet()(id), "", callback, onErr);
+API.retweet = function(id, onScs, onErr) {
+  X.post(API.urls.tweet.retweet()(id), "", onScs, onErr);
 };
 
-API.deleteMessage = function(id, callback, onErr) {
-  X.post(API.urls.d.destroy()(), "id=" + id, callback, onErr);
+API.deleteMessage = function(id, onScs, onErr) {
+  X.post(API.urls.d.destroy()(), "id=" + id, onScs, onErr);
 };
 
-API.fav = function(id, callback, onErr) {
-  X.post(API.urls.favorites.add()(), "id=" + id, callback, onErr);
+API.fav = function(id, onScs, onErr) {
+  X.post(API.urls.favorites.add()(), "id=" + id, onScs, onErr);
 };
 
-API.unfav = function(id, callback, onErr) {
-  X.post(API.urls.favorites.remove()(id), "id=" + id, callback, onErr);
+API.unfav = function(id, onScs, onErr) {
+  X.post(API.urls.favorites.remove()(id), "id=" + id, onScs, onErr);
 };
 
-API.follow = function(uname, callback, onErr) {
+API.follow = function(uname, onScs, onErr) {
   X.post(API.urls.users.follow()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.unfollow = function(uname, callback, onErr) {
+API.unfollow = function(uname, onScs, onErr) {
   X.post(API.urls.users.unfollow()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.wantRT = function(uname, callback, onErr) {
+API.wantRT = function(uname, onScs, onErr) {
   X.post(API.urls.users.update()(),
-         "screen_name=" + uname + "&retweets=true", callback, onErr);
+         "screen_name=" + uname + "&retweets=true", onScs, onErr);
 };
 
-API.unwantRT = function(uname, callback, onErr) {
+API.unwantRT = function(uname, onScs, onErr) {
   X.post(API.urls.users.update()(),
-         "screen_name=" + uname + "&retweets=false", callback, onErr);
+         "screen_name=" + uname + "&retweets=false", onScs, onErr);
 };
 
-API.requestFollow = function(uname, callback, onErr) {
-  this.follow(uname, callback, onErr);
+API.requestFollow = function(uname, onScs, onErr) {
+  this.follow(uname, onScs, onErr);
 };
 
-API.unrequestFollow = function(uname, callback, onErr) {
+API.unrequestFollow = function(uname, onScs, onErr) {
   X.post(API.urls.users.cancel()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.acceptFollow = function(uname, callback, onErr) {
+API.acceptFollow = function(uname, onScs, onErr) {
   X.post(API.urls.users.accept()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.denyFollow = function(uname, callback, onErr) {
+API.denyFollow = function(uname, onScs, onErr) {
   X.post(API.urls.users.deny()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.block = function(uname, callback, onErr) {
+API.block = function(uname, onScs, onErr) {
   X.post(API.urls.blocking.add()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.unblock = function(uname, callback, onErr) {
+API.unblock = function(uname, onScs, onErr) {
   X.post(API.urls.blocking.remove()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.spam = function(uname, callback, onErr) {
+API.spam = function(uname, onScs, onErr) {
   X.post(API.urls.blocking.spam()(),
-         "screen_name=" + uname, callback, onErr);
+         "screen_name=" + uname, onScs, onErr);
 };
 
-API.followList = function(uname, slug, callback, onErr) {
+API.followList = function(uname, slug, onScs, onErr) {
   X.post(API.urls.lists.follow()(),
          "owner_screen_name=" + uname + "&slug=" + slug,
-         callback, onErr);
+         onScs, onErr);
 };
 
-API.unfollowList = function(uname, slug, callback, onErr) {
+API.unfollowList = function(uname, slug, onScs, onErr) {
   X.post(API.urls.lists.unfollow()(),
          "owner_screen_name=" + uname + "&slug=" + slug,
-         callback, onErr);
+         onScs, onErr);
 };
 
-API.createList = function(lname, mode, description, callback, onErr) {
+API.createList = function(lname, mode, description, onScs, onErr) {
   X.post(API.urls.lists.create()(),
          "name=" + lname + "&mode=" + mode + "&description=" + description,
-         callback, onErr);
+         onScs, onErr);
 };
 
 API.updateList = function(myname, slug, lname, mode, description,
-                     callback, onErr) {
+                     onScs, onErr) {
   X.post(API.urls.lists.update()(),
          "owner_screen_name=" + myname +
          "&slug=" + slug +
          (lname ? "&name=" + lname : "") +
          "&mode=" + mode +
          "&description=" + description,
-          callback, onErr);
+          onScs, onErr);
 };
 
-API.deleteList = function(myname, slug, callback, onErr) {
+API.deleteList = function(myname, slug, onScs, onErr) {
   X.post(API.urls.lists.destroy()(),
          "owner_screen_name=" + myname + "&slug=" + slug,
-         callback, onErr);
+         onScs, onErr);
 };
 
-API.listing = function(myname, slug, uname, callback, onErr) {
+API.listing = function(myname, slug, uname, onScs, onErr) {
   X.post(API.urls.lists.users.add()(),
          "owner_screen_name=" + myname + "&slug=" + slug +
          "&screen_name=" + uname,
-         callback, onErr);
+         onScs, onErr);
 };
 
-API.unlisting = function(myname, slug, uname, callback, onErr) {
+API.unlisting = function(myname, slug, uname, onScs, onErr) {
   X.post(API.urls.lists.users.remove()(),
          "owner_screen_name=" + myname + "&slug=" + slug +
          "&screen_name=" + uname,
-         callback, onErr);
+         onScs, onErr);
 };
 
 
