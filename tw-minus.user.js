@@ -2470,8 +2470,10 @@ V.content.settingProfile = function(my) {
   };
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    D.empty(D.q("#side")); D.empty(D.q("#main"));
-    V.content.settingProfile(API.getType(data) === "user" ? data: my);
+    if (API.getType(data) === "user") {
+      D.empty(D.q("#side")); D.empty(D.q("#main"));
+      V.content.settingProfile(data);
+    }
   };
   nd.save.addEventListener("click", function() {
     API.updateProfile(
