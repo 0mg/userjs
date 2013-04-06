@@ -920,6 +920,9 @@ API.urls.init = function(ver) {
       1: "/1/account/verify_credentials",
       1.1: "/1.1/account/verify_credentials"
     }),
+    update_profile: uv({
+      1.1: "/1.1/account/update_profile"
+    }),
     update_profile_colors: uv({
       1.1: "/1.1/account/update_profile_colors"
     }),
@@ -1284,6 +1287,15 @@ API.updateProfileColors = function(background_color, text_color, link_color,
          "&profile_sidebar_fill_color=" + sidebar_fill_color +
          "&profile_sidebar_border_color=" + sidebar_border_color,
          onScs, onErr);
+};
+
+API.updateProfile = function(name, url, locate, description, onScs, onErr) {
+  var q = {};
+  if (name !== undefined) q.name = name;
+  if (url !== undefined) q.url = url;
+  if (locate !== undefined) q.location = locate;
+  if (description !== undefined) q.description = description;
+  X.post(API.urls.account.update_profile()(), q, onScs, onErr);
 };
 
 API.resolveURL = function(links, onScs, onErr) {
@@ -1884,6 +1896,7 @@ V.content.showPage.on2 = function(hash, q, my) {
     break;
 
   } else if (hash[0] === "settings") switch (hash[1]) {
+  case "profile": this.settingProfile(my); break;
   case "options": this.settingOptions(); break;
   case "follow": this.settingFollow(my); break;
   case "design": this.customizeDesign(my); break;
@@ -1989,6 +2002,7 @@ V.content.showSettings = function(my) {
   var nd = {
     api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
     aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
+    pro: D.ce("a").sa("href", root + "profile").add(D.ct("profile")),
     dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
     fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow")),
     opt: D.ce("a").sa("href", root + "options").add(D.ct("options"))
@@ -1996,6 +2010,7 @@ V.content.showSettings = function(my) {
   D.q("#main").add(
     D.ce("li").add(nd.api),
     D.ce("li").add(nd.aco),
+    D.ce("li").add(nd.pro),
     D.ce("li").add(nd.dez),
     D.ce("li").add(nd.fw),
     D.ce("li").add(nd.opt)
@@ -2417,6 +2432,38 @@ V.content.testAPI = function(my) {
     nd.dst
   );
   nd.side.add(nd.header);
+};
+
+// Settings view to updating user profile
+V.content.settingProfile = function(my) {
+  var nd = {
+    name: D.ce("input").sa("size", 60).sa("value", my.name || ""),
+    url: D.ce("input").sa("size", 60).sa("value", my.url || ""),
+    loc: D.ce("input").sa("size", 60).sa("value", my.location || ""),
+    desc: D.ce("textarea").sa("cols", 60).sa("rows", 6).
+      add(D.ct(my.description || "")),
+    save: D.ce("button").add(D.ct("Update"))
+  };
+  var onScs = function(xhr) {
+    var me = JSON.parse(xhr.responseText);
+    D.empty(D.q("#side")); D.empty(D.q("#main"));
+    V.content.settingProfile(me);
+  };
+  nd.save.addEventListener("click", function() {
+    API.updateProfile(
+      nd.name.value, nd.url.value, nd.loc.value, nd.desc.value, onScs);
+  });
+  V.outline.changeDesign(my);
+  V.outline.rendProfileOutline(my);
+  D.q("#main").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("name")), D.ce("dd").add(nd.name),
+      D.ce("dt").add(D.ct("url")), D.ce("dd").add(nd.url),
+      D.ce("dt").add(D.ct("location")), D.ce("dd").add(nd.loc),
+      D.ce("dt").add(D.ct("description")), D.ce("dd").add(nd.desc),
+      D.ce("dt").add(D.ct("apply")), D.ce("dd").add(nd.save)
+    )
+  );
 };
 
 // Settings of this application
