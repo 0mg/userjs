@@ -1376,7 +1376,7 @@ API.fav = function(id, onScs, onErr) {
 };
 
 API.unfav = function(id, onScs, onErr) {
-  X.post(API.urls.favorites.remove()(id), "id=" + id, onScs, onErr);
+  X.post(API.urls.favorites.remove()(), "id=" + id, onScs, onErr);
 };
 
 API.follow = function(uname, onScs, onErr) {
