@@ -1102,22 +1102,14 @@ API.urls.init = function(ver) {
   return urls;
 };
 API.urlvers = function fn(uv) {
-  var nuv = function nuv(ver) {
-    if (ver === undefined) {
-      return nuv[API.V] || nuv[Object.keys(nuv)[0]];
+  return function(ver) {
+    var url = ver === undefined ? uv[API.V] || uv[Object.keys(uv)[0]]: uv[ver];
+    switch (typeof url) {
+    case "string": return fn.txurl.bind(url);
+    case "function": return fn.fnurl.bind(url);
+    case "object": if (Array.isArray(url)) return fn.oburl.bind(url); return;
     }
-    return nuv[ver];
   };
-  for (var i in uv) switch (typeof uv[i]) {
-  case "string":
-    nuv[i] = fn.txurl.bind(uv[i]); break;
-  case "function":
-    nuv[i] = fn.fnurl.bind(uv[i]); break;
-  case "object":
-    if (Array.isArray(uv[i])) nuv[i] = fn.oburl.bind(uv[i]);
-    break;
-  }
-  return nuv;
 };
 API.urlvers.txurl = function(ext) {
   return this + (ext !== undefined ? ext: ".json");
