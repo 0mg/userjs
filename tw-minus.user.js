@@ -928,7 +928,18 @@ API.urls.init = function(ver) {
     }),
     update_background_image: uv({
       1.1: "/1.1/account/update_profile_background_image"
-    })
+    }),
+    upload_icon: uv({
+      1.1: "/1.1/account/update_profile_image"
+    }),
+    banner: {
+      upload: uv({
+        1.1: "/1.1/account/update_profile_banner"
+      }),
+      remove: uv({
+        1.1: "/1.1/account/remove_profile_banner"
+      })
+    }
   };
   urls.users = {
     followers_ids: uv({
@@ -1287,6 +1298,22 @@ API.updateProfileColors = function(background_color, text_color, link_color,
          "&profile_sidebar_fill_color=" + sidebar_fill_color +
          "&profile_sidebar_border_color=" + sidebar_border_color,
          onScs, onErr);
+};
+
+API.uploadIcon = function(icon, onScs, onErr) {
+  X.post(API.urls.account.upload_icon()(), X.formData({
+    image: icon
+  }), onScs, onErr);
+};
+
+API.uploadBanner = function(banner, onScs, onErr) {
+  X.post(API.urls.account.banner.upload()(), X.formData({
+    banner: banner
+  }), onScs, onErr);
+};
+
+API.removeBanner = function(onScs, onErr) {
+  X.post(API.urls.account.banner.remove()(), "", onScs, onErr);
 };
 
 API.updateProfile = function(name, url, locate, description, onScs, onErr) {
@@ -2437,6 +2464,8 @@ V.content.testAPI = function(my) {
 // Settings view to updating user profile
 V.content.settingProfile = function(my) {
   var nd = {
+    icon: D.ce("input").sa("type", "file"),
+    upload: D.ce("button").add(D.ct("Upload")),
     name: D.ce("input").sa("size", 60).sa("value", my.name || ""),
     url: D.ce("input").sa("size", 60).sa("value", my.url || ""),
     loc: D.ce("input").sa("size", 60).sa("value", my.location || ""),
@@ -2445,17 +2474,30 @@ V.content.settingProfile = function(my) {
     save: D.ce("button").add(D.ct("Update"))
   };
   var onScs = function(xhr) {
-    var me = JSON.parse(xhr.responseText);
+    var data = JSON.parse(xhr.responseText);
     D.empty(D.q("#side")); D.empty(D.q("#main"));
-    V.content.settingProfile(me);
+    V.content.settingProfile(API.getType(data) === "user" ? data: my);
   };
   nd.save.addEventListener("click", function() {
     API.updateProfile(
       nd.name.value, nd.url.value, nd.loc.value, nd.desc.value, onScs);
   });
+  nd.upload.addEventListener("click", function() {
+    var file = nd.icon.files[0]; if (!file) return;
+    var fr = new FileReader;
+    fr.addEventListener("load", function() {
+      var icon = btoa(fr.result);
+      API.uploadIcon(icon, onScs);
+    });
+    fr.readAsBinaryString(file);
+  });
   V.outline.changeDesign(my);
   V.outline.rendProfileOutline(my);
   D.q("#main").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("icon")), D.ce("dd").add(nd.icon),
+      D.ce("dt").add(D.ct("apply")), D.ce("dd").add(nd.upload)
+    ),
     D.ce("dl").add(
       D.ce("dt").add(D.ct("name")), D.ce("dd").add(nd.name),
       D.ce("dt").add(D.ct("url")), D.ce("dd").add(nd.url),
