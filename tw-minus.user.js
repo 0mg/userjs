@@ -2274,7 +2274,7 @@ V.content.customizeDesign = function(my) {
     D.ce("dd").add(fm.update)
   );
 
-  D.q("#subaction").add(fm.form);
+  D.q("#main").ins(fm.form);
 };
 
 // Render UI of account settings
