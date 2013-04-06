@@ -1279,25 +1279,20 @@ API.cc.getCredentials = function() {
 };
 
 API.updateProfileBgImage = function(image, use, tile, onScs, onErr) {
-  var url = API.urls.account.update_background_image()();
-  var data = {
-    "image": image,
-    "use": use,
-    "tile": tile
-  };
-  X.post(url, data, onScs, onErr);
+  X.post(API.urls.account.update_background_image()(), X.formData({
+    image: image, use: use, tile: tile
+  }), onScs, onErr);
 };
 
 API.updateProfileColors = function(background_color, text_color, link_color,
-                              sidebar_fill_color, sidebar_border_color,
-                              onScs, onErr) {
-  X.post(API.urls.account.update_profile_colors()(),
-         "profile_background_color=" + background_color +
-         "&profile_text_color=" + text_color +
-         "&profile_link_color=" + link_color +
-         "&profile_sidebar_fill_color=" + sidebar_fill_color +
-         "&profile_sidebar_border_color=" + sidebar_border_color,
-         onScs, onErr);
+  sidebar_fill_color, sidebar_border_color, onScs, onErr) {
+  X.post(API.urls.account.update_profile_colors()(), {
+    profile_background_color: background_color,
+    profile_text_color: text_color,
+    profile_link_color: link_color,
+    profile_sidebar_fill_color: sidebar_fill_color,
+    profile_sidebar_border_color: sidebar_border_color
+  }, onScs, onErr);
 };
 
 API.uploadIcon = function(icon, onScs, onErr) {
