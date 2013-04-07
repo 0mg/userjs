@@ -2164,7 +2164,7 @@ V.content.customizeDesign = function(my) {
       D.q("body").style.color = "#" + input.value;
       break;
     case fm.linkColor:
-      Array.prototype.forEach.call(D.qs("a"), function(a) {
+      [].forEach.call(D.qs("a"), function(a) {
         a.style.color = "#" + input.value;
       });
       break;
@@ -2181,9 +2181,7 @@ V.content.customizeDesign = function(my) {
 
   fm.bg.sel0.checked = true;
 
-  var selbg = "";
-  var selbg_raw = "";
-  var crrbg;
+  var selbg = "", selbg_raw = "", crrbg;
   function chgCrrBg() {
     crrbg = fm.bg.sel0.checked ? my.profile_background_image_url : selbg;
   }
@@ -4048,27 +4046,21 @@ V.outline.showSubTitle = function(hash) {
 
 // Change CSS(text color, background-image) by user settings
 V.outline.changeDesign = function(user) {
-  var colorBg = user.profile_background_color ?
-                "#" + user.profile_background_color : "";
-  var colorSideFill = user.profile_sidebar_fill_color ?
-                      "#" + user.profile_sidebar_fill_color : "";
-  var colorSideBorder = user.profile_sidebar_border_color ?
-                        "#" + user.profile_sidebar_border_color : "";
-  var colorText = user.profile_text_color ?
-                  "#" + user.profile_text_color : "";
-  var colorLink = user.profile_link_color ?
-                  "#" + user.profile_link_color : "";
-
-  var background = D.q("html");
-  background.style.backgroundColor = colorBg;
+  var rec = /^#[0-9a-f]{6}|/i;
+  var colorBg = rec.exec("#" + user.profile_background_color)[0];
+  var colorSideFill = rec.exec("#" + user.profile_sidebar_fill_color)[0];
+  var colorSideBorder = rec.exec("#" + user.profile_sidebar_border_color)[0];
+  var colorText = rec.exec("#" + user.profile_text_color)[0];
+  var colorLink = rec.exec("#" + user.profile_link_color)[0];
+  var root = D.q("html");
+  root.style.backgroundColor = colorBg;
   if (user.profile_use_background_image) {
     var bgImgUrl = "url(" + user.profile_background_image_url + ")";
-    var bgImgRepeat = user.profile_background_tile ?
-                      "repeat" : "no-repeat";
-    background.style.backgroundImage = bgImgUrl;
-    background.style.backgroundRepeat = bgImgRepeat;
+    var bgImgRepeat = user.profile_background_tile ? "repeat" : "no-repeat";
+    root.style.backgroundImage = bgImgUrl;
+    root.style.backgroundRepeat = bgImgRepeat;
   } else {
-    background.style.backgroundImage = "none";
+    root.style.backgroundImage = "none";
   }
 
   D.q("#header").style.backgroundColor =
