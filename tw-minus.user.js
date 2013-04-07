@@ -827,7 +827,7 @@ X.get = function get(url, f, b) {
 
 // POST Method for Twitter API
 X.post = function post(url, q, f, b, c) {
-  if (!(c || confirm("sure?\n" + url + "?" + O.stringify(q)))) {
+  if (!c && !confirm("sure?\n" + url + "?" + O.stringify(q))) {
     return b && b(false);
   }
   var data, oaq, ctype = "application/x-www-form-urlencoded";
@@ -2177,7 +2177,7 @@ V.content.customizeDesign = function(my) {
       D.q("#side").style.borderColor = "#" + input.value;
       break;
     }
-  }, true);
+  });
 
   fm.bg.sel0.checked = true;
 
@@ -2192,11 +2192,11 @@ V.content.customizeDesign = function(my) {
   fm.bg.sel0.addEventListener("change", function() {
     chgCrrBg();
     onChkUseImg();
-  }, false);
+  });
   fm.bg.sel1.addEventListener("change", function() {
     chgCrrBg();
     onChkUseImg();
-  }, false);
+  });
 
   fm.bg.image.type = "file";
   fm.bg.image.addEventListener("change", function() {
@@ -2211,7 +2211,7 @@ V.content.customizeDesign = function(my) {
       onChkTile();
     };
     fr.readAsBinaryString(file);
-  }, false);
+  });
 
   function onChkUseImg() {
     background.style.backgroundImage =
@@ -2223,27 +2223,23 @@ V.content.customizeDesign = function(my) {
   }
   fm.bg.useImage.type = "checkbox";
   fm.bg.useImage.checked = my.profile_use_background_image;
-  fm.bg.useImage.addEventListener("change", onChkUseImg, false);
+  fm.bg.useImage.addEventListener("change", onChkUseImg);
 
   fm.bg.tile.type = "checkbox";
   fm.bg.tile.checked = my.profile_background_tile;
-  fm.bg.tile.addEventListener("change", onChkTile, false);
+  fm.bg.tile.addEventListener("change", onChkTile);
   onChkTile();
 
   fm.bg.color.value = my.profile_background_color;
 
   fm.bg.update.add(D.ct("Update"));
   fm.bg.update.addEventListener("click", function() {
-    function onAPI(xhr) {
-      alert(xhr.responseText);
-    }
     API.updateProfileBgImage(
       fm.bg.sel1.checked && selbg_raw || "",
       fm.bg.useImage.checked,
-      fm.bg.tile.checked,
-      onAPI
+      fm.bg.tile.checked
     );
-  }, false);
+  });
 
   fm.textColor.value = my.profile_text_color;
 
@@ -2255,18 +2251,14 @@ V.content.customizeDesign = function(my) {
 
   fm.update.add(D.ct("Update"));
   fm.update.addEventListener("click", function() {
-    function onAPI(xhr) {
-      alert(xhr.responseText);
-    }
     API.updateProfileColors(
       fm.bg.color.value,
       fm.textColor.value,
       fm.linkColor.value,
       fm.sidebar.fillColor.value,
-      fm.sidebar.borderColor.value,
-      onAPI
+      fm.sidebar.borderColor.value
     );
-  }, false);
+  });
 
   fm.form.add(
     D.ce("dt").add(D.ct("background image")),
@@ -2333,7 +2325,7 @@ V.content.settingAccount = function(my) {
         xhrpool.push(xhrobj);
       })(s, i, max);
     }
-  };
+  }
   function checkUname(unameValue) {
     X.get(api + unameValue, function(xhr) {
       var main = D.q("#main");
@@ -2343,17 +2335,17 @@ V.content.settingAccount = function(my) {
   }
   unameBtn.addEventListener("click", function(e) {
     checkUname(uname.value);
-  }, false);
+  });
   uname.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       unameBtn.dispatchEvent(ev);
     }
-  }, false);
+  });
   autoBtn.addEventListener("click", function(e) {
     xhrpool.length ? autoFinish() : autoStart();
-  }, false);
+  });
   D.q("#subaction").add(uname, unameBtn);
   D.q("#side").add(
     D.ce("h3").add(D.ct("screen_name")),
@@ -2404,39 +2396,39 @@ V.content.testAPI = function(my) {
   nd.head.send.addEventListener("click", function() {
     printErase();
     X.head(nd.head.url.value, printData, printData);
-  }, false);
+  });
   nd.get.send.addEventListener("click", function() {
     printErase();
     X.get(nd.get.url.value, printData, printData);
-  }, false);
+  });
   nd.post.send.addEventListener("click", function() {
     var str = nd.post.url.value.split("?");
     var url = str[0];
     var q = str.slice(1).join("?");
     printErase();
     X.post(url, q, printData, printData, true);
-  }, false);
+  });
   nd.head.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.head.send.dispatchEvent(ev);
     }
-  }, false);
+  });
   nd.get.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.get.send.dispatchEvent(ev);
     }
-  }, false);
+  });
   nd.post.url.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
       ev.initEvent("click", true, false);
       nd.post.send.dispatchEvent(ev);
     }
-  }, false);
+  });
 
   nd.main.add(
     D.ce("h3").add(D.ct(location.host)),
@@ -2572,14 +2564,12 @@ V.content.settingFollow = function(my) {
     followTotal: D.ce("span").add(D.ct("?")),
     unfollowTotal: D.ce("span").add(D.ct("?"))
   };
-  node.mirrorAna.addEventListener("click", function() {
-    mirrorAnalize();
-  }, false);
+  node.mirrorAna.addEventListener("click", function() { mirrorAnalize(); });
   node.mirrorBtn.addEventListener("click", function() {
     var str = "!!DANGER!!\nMirroring following/followers.\n"
             + "It does auto follow and unfollow operations. Sure?";
     if (confirm(str)) mirrorAnalize(), mirror();
-  }, false);
+  });
   node.main.add(
     D.ce("h3").add(D.ct("Mirroring")),
     node.mirrorAna,
@@ -2624,29 +2614,23 @@ V.content.settingFollow = function(my) {
     }
     list.follow.forEach(function(follower_id, i) {
       X.post(API.urls.users.follow()(), "user_id=" + follower_id,
-        function() {
-          finishFollow(follower_id);
-        }, null, true
-      );
+        function() { finishFollow(follower_id); }, null, true);
     });
     list.unfollow.forEach(function(following_id, i) {
       X.post(API.urls.users.unfollow()(), "user_id=" + following_id,
-        function() {
-          finishUnfollow(following_id);
-        }, null, true
-      );
+        function() { finishUnfollow(following_id); }, null, true);
     });
   }
   X.get(API.urls.users.friends_ids()() + "?user_id=" + my.id_str,
-  function(xhr) {
-    var data = JSON.parse(xhr.responseText);
-    ids.following = data.ids;
-  });
+    function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      ids.following = data.ids;
+    });
   X.get(API.urls.users.followers_ids()() + "?user_id=" + my.id_str,
-  function(xhr) {
-    var data = JSON.parse(xhr.responseText);
-    ids.followers = data.ids;
-  });
+    function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      ids.followers = data.ids;
+    });
 };
 
 // step to render users list by ids
@@ -2870,11 +2854,11 @@ V.content.cursorIdsPopState = function(e) {
 };
 // Step to Render View of list of users (following/ers, lists members.,)
 V.content.showUsers = function(url, my, mode) {
-  function onGetUsers(xhr) {
+  var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     V.content.rendUsers(data, my, mode);
     LS.state.save("users_object", data);
-  }
+  };
   var onErr = function(xhr) {
     if (xhr.status === 401) {
       D.q("#main").add(
@@ -2883,7 +2867,7 @@ V.content.showUsers = function(url, my, mode) {
     }
     D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText)));
   };
-  X.get(url, onGetUsers, onErr);
+  X.get(url, onScs, onErr);
   if (!(mode & 8)) { mode |= 8; V.panel.showUserManager(my); }
   LS.state.save("users_url", url);
   LS.state.save("users_my", my);
@@ -3297,17 +3281,15 @@ V.panel.makeReqDecider = function(user) {
     accept: new Button("accept-follow", "Accept", "Accept"),
     deny: new Button("deny-follow", "Deny", "Deny")
   };
-  function onDecide() {
-    D.rm(ad.node.parentNode);
-  }
+  function onDecide() { D.rm(ad.node.parentNode); }
   var onAccept = onDecide;
   var onDeny = onDecide;
   ad.accept.node.addEventListener("click", function() {
     API.acceptFollow(user.screen_name, onAccept);
-  }, false);
+  });
   ad.deny.node.addEventListener("click", function() {
     API.denyFollow(user.screen_name, onDeny);
-  }, false);
+  });
   ad.node.add(ad.accept.node, ad.deny.node);
   return ad.node;
 };
@@ -3342,12 +3324,12 @@ V.panel.makeTwAct = function(t, my) {
     )
   );/**/
   (rt || t).favorited && ab.fav.turn(true);
-  function onFav(xhr) { ab.fav.turn(true); }
-  function onUnfav(xhr) { ab.fav.turn(false); }
+  function onFav() { ab.fav.turn(true); }
+  function onUnfav() { ab.fav.turn(false); }
   ab.fav.node.addEventListener("click", function() {
     ab.fav.on ? API.unfav((rt || t).id_str, onUnfav) :
                 API.fav((rt || t).id_str, onFav);
-  }, false);
+  });
   if (!isDM) ab.node.add(ab.fav.node);
   ab.rep.className = "reply";
   ab.rep.title = (rt || t).id_str;
@@ -3357,7 +3339,7 @@ V.panel.makeTwAct = function(t, my) {
       var status = D.q("#status");
       status.value = "d " + t.user.screen_name + " " + status.value;
       status.focus();
-    }, false)
+    });
   } else {
     ab.rep.addEventListener("click", function() {
       var status = D.q("#status");
@@ -3368,7 +3350,7 @@ V.panel.makeTwAct = function(t, my) {
       e.initEvent("input", true, false);
       status.dispatchEvent(e);
       status.focus();
-    }, false);
+    });
   }
   ab.node.add(ab.rep);
   (isMyRT || isTweetRTedByMe) && onRT();
@@ -3377,13 +3359,13 @@ V.panel.makeTwAct = function(t, my) {
   ab.rt.node.addEventListener("click", function() {
     if (isMyRT) {
       // undo RT (button on my RT)
-      API.untweet(t.id_str, function(xhr) {
+      API.untweet(t.id_str, function() {
         ab.rt.turn(false);
         D.rm(ab.node.parentNode);
       });
     } else if (isTweetRTedByMe) {
       // undo RT (button on owner tweet or others' RT)
-      API.untweet(t.current_user_retweet.id_str, function(xhr) {
+      API.untweet(t.current_user_retweet.id_str, function() {
         isTweetRTedByMe = false;
         ab.rt.turn(false);
       });
@@ -3396,22 +3378,18 @@ V.panel.makeTwAct = function(t, my) {
         ab.rt.turn(true);
       });
     }
-  }, false);
+  });
   if (isDM) {
     // Delete button for DM
     ab.del.node.addEventListener("click", function() {
-      API.deleteMessage(t.id_str, function(xhr) {
-        D.rm(ab.node.parentNode);
-      });
-    }, false);
+      API.deleteMessage(t.id_str, function() { D.rm(ab.node.parentNode); });
+    });
     ab.node.add(ab.del.node);
   } else if (isMyTweet || isRTtoMe) {
     // Delete button for my tweets
     ab.del.node.addEventListener("click", function() {
-      API.untweet((rt || t).id_str, function(xhr) {
-        D.rm(ab.node.parentNode);
-      });
-    }, false);
+      API.untweet((rt || t).id_str, function() { D.rm(ab.node.parentNode); });
+    });
     ab.node.add(ab.del.node);
   } else {
     // Show RT buttons on tweets without my tweets
@@ -3559,27 +3537,27 @@ V.panel.showFollowPanel = function(user) {
     ship.want_retweets = false;
     update(xhr);
   };
-  ab.follow.node.addEventListener("click", function(e) {
+  ab.follow.node.addEventListener("click", function() {
     ab.follow.on ?
       API.unfollow(user.screen_name, onUnfollow, update):
       API.follow(user.screen_name, onFollow, update);
   });
-  ab.req_follow.node.addEventListener("click", function(e) {
+  ab.req_follow.node.addEventListener("click", function() {
     ab.req_follow.on ?
       API.unrequestFollow(user.screen_name, onUnreq, update):
       API.requestFollow(user.screen_name, onReq, update);
   });
-  ab.block.node.addEventListener("click", function(e) {
+  ab.block.node.addEventListener("click", function() {
     ab.block.on ?
       API.unblock(user.screen_name, onUnblock, update):
       API.block(user.screen_name, onBlock, update);
   });
-  ab.spam.node.addEventListener("click", function(e) {
+  ab.spam.node.addEventListener("click", function() {
     ab.spam.on ?
       API.unblock(user.screen_name, onUnblock, update):
       API.spam(user.screen_name, onSpam, update);
   });
-  ab.want_rt.node.addEventListener("click", function(e) {
+  ab.want_rt.node.addEventListener("click", function() {
     ab.want_rt.on ?
       API.unwantRT(user.screen_name, onUnwantRT, update):
       API.wantRT(user.screen_name, onWantRT, update);
@@ -3620,8 +3598,7 @@ V.panel.showAddListPanel = function(user, my) {
     var data = JSON.parse(xhr.responseText);
     var expander = D.ce("button").add(D.ct("Lists"));
     expander.addEventListener("click", function() {
-      D.rm(expander);
-      that.lifeListButtons(data.lists || data, user, my);
+      D.rm(expander); that.lifeListButtons(data.lists || data, user, my);
     });
     D.q("#subaction-inner-1").add(expander);
   };
@@ -3659,9 +3636,7 @@ V.panel.lifeListButtons = function(lists, user, my) {
     });
   };
   var onErr = function() {
-    for (var i in list_btns) {
-      list_btns[i].turn(null);
-    }
+    for (var i in list_btns) list_btns[i].turn(null);
   };
   D.q("#subaction-inner-2").add(al.node);
   X.get(API.urls.lists.listed()() + "?filter_to_owned_lists=true&" +
@@ -3683,7 +3658,7 @@ V.panel.showListFollowPanel = function(list) {
                                     list.slug, onUnfollow) :
                    API.followList(list.user.screen_name,
                                   list.slug, onFollow);
-  }, false);
+  });
   ab.node.add(ab.follow.node);
   D.q("#subaction").add(ab.node);
 };
@@ -3885,10 +3860,10 @@ V.panel.showTweetBox = function() {
   t.usemedia.addEventListener("change", onCheck, false);
 
   t.media.type = "file";
-  t.media.addEventListener("change", function(e) {
+  t.media.addEventListener("change", function() {
     var file = t.media.files[0];
     var fr = new FileReader;
-    fr.onload = function() {
+    fr.addEventListener("load", function() {
       media_b64 = btoa(fr.result);
       var img = D.ce("img").sa("class", "media_image").sa("alt", file.name);
       img.src = "data:" + file.type + ";base64," + media_b64;
@@ -3896,18 +3871,18 @@ V.panel.showTweetBox = function() {
       t.update.disabled = false;
       t.usemedia.checked = true;
       onCheck();
-    };
-    fr.onerror = function() {
+    });
+    fr.addEventListener("error", function() {
       t.update.disabled = false;
       t.usemedia.checked = false;
       onCheck();
-    };
+    });
     t.update.disabled = true;
     fr.readAsBinaryString(file);
-  }, false);
+  });
 
   t.replink.addEventListener("click", function() {
-    var e = D.q(".tweet[class~=\"id-" + t.id.value + "\"]");
+    var e = D.q(".tweet.id-" + t.id.value);
     if (e) {
       t.replink.disabled = true;
       e.scrollIntoView();
@@ -3917,7 +3892,7 @@ V.panel.showTweetBox = function() {
         t.replink.disabled = false;
       }, 500);
     }
-  }, false);
+  });
 
   t.box.add(t.status, t.btns);
   t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
@@ -4022,7 +3997,7 @@ V.panel.showListPanel = function(my) {
       list.name.value = name;
       list.description.value = desc;
     }
-  }, true);
+  });
   list.create.addEventListener("click", function() {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
