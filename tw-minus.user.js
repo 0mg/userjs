@@ -12,7 +12,7 @@ var props = function(arg) {
   proplist.unshift(arg);
   return proplist.join("\n");
 };
-var U, C, D, O, T, P, A, X, V, API, LS;
+var U, C, D, O, T, P, X, V, API, LS;
 
 // CONST VALUE
 C = {};
@@ -318,7 +318,6 @@ P.oauth.genSig = (function() {
   return genSig;
 })();
 
-
 // URL CONST VALUE and Functions
 
 U = {
@@ -336,9 +335,7 @@ U = {
   }
 };
 
-
 // DOM Functions
-
 D = function D(e) {
   if (e) e.add = D.add, e.ins = D.ins, e.sa = D.sa, e.q = D.q, e.qs = D.qs;
   return e;
@@ -529,9 +526,7 @@ D.tweetize.mention = function(username) {
   );
 };
 
-
 // Object Functions
-
 O = {};
 O.sa = function(o, iv) { for (var i in iv) o[i] = iv[i]; return o; };
 O.stringify = function stringify(arg) {
@@ -557,7 +552,6 @@ O.htmlify = function htmlify(arg) {
   }
   return list.hasChildNodes() ? list : D.ce("em").add(D.ct("{}"));
 };
-
 
 // Text Functions
 T = {};
@@ -673,41 +667,7 @@ T.decrement = function decrement(s) {
   return s.join("");
 };
 
-// Scripts after render page
-A = {};
-A.expandUrls = function expandUrls(parent, expurls) {
-  var onScs = function(xhr) {
-    var data = JSON.parse(xhr.responseText);
-    LS.state.save("expanded_urls", data);
-    expand(data);
-  };
-  var expand = function(data) {
-    for (var raw_url in data) {
-      var exp_url = data[raw_url];
-      if (exp_url) {
-        data[raw_url] = exp_url.replace(/\/(?=$|\?)/, "");
-      }
-    }
-    [].forEach.call(anchors, function(a, i) {
-      var exp_url = data[a.href];
-      if (exp_url) {
-        a.classList.add("expanded_url");
-        a.classList.remove("maybe_shorten_url");
-        a.href = a.textContent = decodeURIComponent(escape(exp_url));
-      }
-    });
-  };
-  var anchors = D.qs.call(parent, "a.maybe_shorten_url");
-  var urls = [].map.call(anchors, function(a) { return a.href; });
-  if (urls.length) {
-    if (expurls) expand(expurls);
-    else API.resolveURL(urls, onScs, null);
-  }
-};
-
-
 // XHR Functions
-
 X = {};
 
 // make OAuth access token
@@ -868,7 +828,6 @@ X.getX = function get(url, f, b) {
   };
   D.q("body").add(script);
 };
-
 
 // Twitter API Functions
 API = {};
@@ -1477,7 +1436,6 @@ API.unlisting = function(myname, slug, uname, onScs, onErr) {
          onScs, onErr);
 };
 
-
 // Objects for View
 V = {};
 
@@ -1811,6 +1769,7 @@ V.init.structPage = function() {
 
 // Functions of Render main content
 V.content = {};
+
 // Show Content by path in URL
 V.content.showPage = function(my) {
   var it = V.content;
@@ -2790,7 +2749,9 @@ V.content.rendUsers = function(data, my, mode) {
     pageCursor ? undefined: undefined
   );
 };
+
 V.misc = {};
+
 V.misc.showCursorIds = function(data) {
   var cur = {
     sor: D.cf(),
@@ -2839,11 +2800,13 @@ V.misc.showCursorIds = function(data) {
   });
   D.q("#cursor").add(cur.sor);
 };
+
 V.content.cursorIdsPopState = function(e) {
   var state = LS.state.load();
   V.content.rendUsers(state.ids_object, state.ids_my, state.ids_mode);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
+
 // Step to Render View of list of users (following/ers, lists members.,)
 V.content.showUsers = function(url, my, mode) {
   var onScs = function(xhr) {
@@ -2857,6 +2820,7 @@ V.content.showUsers = function(url, my, mode) {
   LS.state.save("users_my", my);
   LS.state.save("users_mode", mode);
 };
+
 V.misc.showCursor = function(data, sender) {
   var cur = {
     sor: D.cf(),
@@ -2900,6 +2864,7 @@ V.misc.showCursor = function(data, sender) {
   });
   D.q("#cursor").add(cur.sor);
 };
+
 V.content.cursorPopState = function(e) {
   var state = LS.state.load();
   V.content.rendUsers(state.users_object, state.users_my, state.users_mode);
@@ -2923,6 +2888,7 @@ V.content.showLists = function(url, my) {
   LS.state.save("lists_my", my);
   LS.state.save("lists_oname", oname);
 };
+
 V.content.rendLists = function rendLists(data, oname) {
   var root = D.cf();
   var lists = D.ce("ul");
@@ -2945,11 +2911,13 @@ V.content.rendLists = function rendLists(data, oname) {
   );
   V.misc.showCursor(data, V.content.showLists);
 };
+
 V.content.cursorListsPopState = function(e) {
   var state = LS.state.load();
   V.content.rendLists(state.lists_object, state.lists_oname);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
+
 V.content.rendLists.one = function(list) {
   var nd = {
     root: D.ce("li").sa("class", "list"),
@@ -2989,10 +2957,12 @@ V.content.showTL = function(url, my) {
   LS.state.save("my", my);
   X.get(url, onScs, onErr);
 };
+
 V.content.prendTL = function(timeline, my, expurls) {
   V.content.rendTL(timeline, my);
-  A.expandUrls(D.q("#timeline"), expurls);
+  V.misc.expandUrls(D.q("#timeline"), expurls);
 };
+
 // Render View of Timeline (of home, mentions, messages, lists.,)
 V.content.rendTL = function rendTL(timeline, my) {
   var tl_element = D.ce("ol").sa("id", "timeline");
@@ -3031,10 +3001,12 @@ V.content.rendTL = function rendTL(timeline, my) {
     e.preventDefault();
   });
 };
+
 // modify [url's state]
 V.content.onScroll = function() {
   LS.state.save("scrollTop", D.q("body").scrollTop);
 };
+
 // load [url's state]
 V.content.onPopState = function(e) {
   var state = LS.state.load();
@@ -3205,9 +3177,40 @@ V.misc.mayReqLogin = function(xhr) {
   D.q("#main").add(O.htmlify(data));
 };
 
-// Make Action buttons panel
+// Scripts after render page
+V.misc.expandUrls = function(parent, expurls) {
+  var onScs = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    LS.state.save("expanded_urls", data);
+    expand(data);
+  };
+  var expand = function(data) {
+    for (var raw_url in data) {
+      var exp_url = data[raw_url];
+      if (exp_url) {
+        data[raw_url] = exp_url.replace(/\/(?=$|\?)/, "");
+      }
+    }
+    [].forEach.call(anchors, function(a, i) {
+      var exp_url = data[a.href];
+      if (exp_url) {
+        a.classList.add("expanded_url");
+        a.classList.remove("maybe_shorten_url");
+        a.href = a.textContent = decodeURIComponent(escape(exp_url));
+      }
+    });
+  };
+  var anchors = D.qs.call(parent, "a.maybe_shorten_url");
+  var urls = [].map.call(anchors, function(a) { return a.href; });
+  if (urls.length) {
+    if (expurls) expand(expurls);
+    else API.resolveURL(urls, onScs, null);
+  }
+};
 
+// Make Action buttons panel
 V.panel = {};
+
 // ON/OFF Button Constructor
 V.panel.Button = function(name, labelDefault, labelOn) {
   this.name = name;
@@ -4012,7 +4015,6 @@ V.panel.showListPanel = function(my) {
   D.q("#side").add(list.panel);
 };
 
-
 // Render View of Outline (users profile, list profile.,)
 V.outline = {};
 // tw- path information
@@ -4269,7 +4271,6 @@ V.outline.rendProfileOutline = function(user) {
 
   D.q("#side").add(p.box);
 };
-
 
 // main
 (function() {
