@@ -2779,9 +2779,9 @@ V.content.rendUsers = function(data, my, mode) {
   D.q("#main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
-  basicCursor ? that.misc.showCursor(data, V.content.showUsers):
-  idsCursor ? that.misc.showCursorIds(data):
-  pageCursor ? that.misc.showCursorPage(data): undefined;
+  basicCursor ? V.misc.showCursor(data, V.content.showUsers):
+  idsCursor ? V.misc.showCursorIds(data):
+  pageCursor ? V.misc.showCursorPage(data): undefined;
 
   addEventListener("scroll", V.content.onScroll);
   addEventListener("popstate",
