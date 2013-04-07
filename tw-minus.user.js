@@ -2640,21 +2640,13 @@ V.content.showUsersByIds = function(url, my, mode) {
     var data = JSON.parse(xhr.responseText);
     V.content.showUsersByLookup(data, url, my, mode);
   };
-  var onErr = function(xhr) {
-    if (xhr.status === 401) {
-      D.q("#main").add(
-        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
-      );
-    }
-    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText || xhr.status)));
-  };
   // set ?count=<max>
   var urlpts = T.normalizeURL(url);
   delete urlpts.query["index"];
   delete urlpts.query["size"];
   var requrl = urlpts.base + "?" + T.strQuery(urlpts.query);
   mode |= 2;
-  X.get(requrl, onScs, onErr);
+  X.get(requrl, onScs, V.misc.mayReqLogin);
   V.panel.showUserManager(my);
 };
 
@@ -2678,7 +2670,8 @@ V.content.showUsersByLookup = function(data, url, my, mode) {
     LS.state.save("ids_object", object);
     that.rendUsers(object, my, mode);
   };
-  X.get(API.urls.users.lookup()() + "?user_id=" + sliced_ids.join(","), onScs);
+  X.get(API.urls.users.lookup()() + "?user_id=" + sliced_ids.join(","),
+    onScs, V.misc.mayReqLogin);
   LS.state.save("ids_data", data);
   LS.state.save("ids_url", url);
   LS.state.save("ids_my", my);
@@ -2859,15 +2852,7 @@ V.content.showUsers = function(url, my, mode) {
     V.content.rendUsers(data, my, mode);
     LS.state.save("users_object", data);
   };
-  var onErr = function(xhr) {
-    if (xhr.status === 401) {
-      D.q("#main").add(
-        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
-      );
-    }
-    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText)));
-  };
-  X.get(url, onScs, onErr);
+  X.get(url, onScs, V.misc.mayReqLogin);
   if (!(mode & 8)) { mode |= 8; V.panel.showUserManager(my); }
   LS.state.save("users_url", url);
   LS.state.save("users_my", my);
@@ -2932,15 +2917,7 @@ V.content.showLists = function(url, my) {
     V.content.rendLists(data, oname);
     LS.state.save("lists_object", data);
   };
-  var onErr = function(xhr) {
-    if (xhr.status === 401) {
-      D.q("#main").add(
-        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
-      );
-    }
-    D.q("#main").add(O.htmlify(JSON.parse(xhr.responseText)));
-  };
-  X.get(url, onGet, onErr);
+  X.get(url, onGet, V.misc.mayReqLogin);
   addEventListener("scroll", V.content.onScroll);
   addEventListener("popstate", V.content.cursorListsPopState);
   LS.state.save("lists_url", url);
@@ -3007,18 +2984,7 @@ V.content.showTL = function(url, my) {
     that.prendTL([].concat(timeline), my);
   }
   function onErr(xhr) {
-    var data;
-    if (xhr.responseText === "") { // protected user timeline
-      data = {"Empty": "No tweets found"};
-    } else {
-      data = JSON.parse(xhr.responseText);
-    }
-    if (xhr.status === 401) {
-      D.q("#main").add(
-        D.ce("a").sa("href", U.ROOT + "login").add(D.ct("Login"))
-      );
-    }
-    D.q("#main").add(O.htmlify(data));
+    V.misc.mayReqLogin(xhr);
     LS.state.save("timeline_data", []);
   }
   LS.state.save("timeline_url", url);
@@ -3203,6 +3169,8 @@ V.misc.showCursorPage = function(data) {
   cur.sor.add(D.ce("li").add(cur.next));
   D.q("#cursor").add(cur.sor);
 };
+
+// show xhr state tip
 V.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
@@ -3224,6 +3192,20 @@ V.misc.onXHREnd = function(success, xhr, method, url, q) {
     s.textContent = "Failed(" + xhr.status + ")" +
       " " + method + " " + url + (q ? "?" + q: "");
   }
+};
+
+// show login link if 401
+V.misc.mayReqLogin = function(xhr) {
+  var data; try { data = JSON.parse(xhr.responseText); }
+  catch(e) { data = { error: xhr.getAllResponseHeaders() }; }
+  switch (xhr.status) {
+  case 400: case 401:
+    D.q("#main").add(
+      D.ce("a").sa("href", U.ROOT + "login").add(D.ct("login"))
+    );
+    break;
+  }
+  D.q("#main").add(O.htmlify(data));
 };
 
 // Make Action buttons panel
