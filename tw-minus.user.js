@@ -763,7 +763,7 @@ X.formData = function(qrys) {
 };
 
 X.onloadstart = function(method, url, q) {
-  V.content.misc.onXHRStart(method, url, q);
+  V.misc.onXHRStart(method, url, q);
 };
 X.onloadend = function(xhr, method, url, q) {};
 
@@ -778,10 +778,10 @@ X.onload = function(method, url, q, f, b) {
   if (this.status === 200) {
     if (f) f(this); else if (f === undefined) onScs(this, method, url);
     API.cc.reuseData.apply(this, arguments);
-    V.content.misc.onXHREnd(true, this, method, url, q);
+    V.misc.onXHREnd(true, this, method, url, q);
   } else {
     if (b) b(this); else if (b === undefined) onErr(this, method, url);
-    V.content.misc.onXHREnd(false, this, method, url, q);
+    V.misc.onXHREnd(false, this, method, url, q);
   }
 };
 
@@ -791,7 +791,7 @@ X.onerror = function(method, url, q, f, b) {
     alert([xhr.status, url, xhr.responseText].join("\n"));
   };
   if (b) b(this); else if (b === undefined) onErr(this, method, url);
-  V.content.misc.onXHREnd(false, this, method, url, q);
+  V.misc.onXHREnd(false, this, method, url, q);
 };
 
 // HEAD Method for Twitter API
@@ -2798,8 +2798,8 @@ V.content.rendUsers = function(data, my, mode) {
     pageCursor ? undefined: undefined
   );
 };
-V.content.misc = {};
-V.content.misc.showCursorIds = function(data) {
+V.misc = {};
+V.misc.showCursorIds = function(data) {
   var cur = {
     sor: D.cf(),
     next: D.ce("a").sa("class", "cursor_next"),
@@ -2873,7 +2873,7 @@ V.content.showUsers = function(url, my, mode) {
   LS.state.save("users_my", my);
   LS.state.save("users_mode", mode);
 };
-V.content.misc.showCursor = function(data, sender) {
+V.misc.showCursor = function(data, sender) {
   var cur = {
     sor: D.cf(),
     next: D.ce("a").add(D.ct("next")),
@@ -2967,7 +2967,7 @@ V.content.rendLists = function rendLists(data, oname) {
   D.q("#main").add(
     data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
-  V.content.misc.showCursor(data, V.content.showLists);
+  V.misc.showCursor(data, V.content.showLists);
 };
 V.content.cursorListsPopState = function(e) {
   var state = LS.state.load();
@@ -3185,7 +3185,7 @@ V.content.rendTL.tweet = function(tweet, my) {
 };
 
 // users search cursor
-V.content.misc.showCursorPage = function(data) {
+V.misc.showCursorPage = function(data) {
   var cur = {
     sor: D.cf(),
     next: D.ce("a").sa("class", "cursor_next"),
@@ -3203,16 +3203,16 @@ V.content.misc.showCursorPage = function(data) {
   cur.sor.add(D.ce("li").add(cur.next));
   D.q("#cursor").add(cur.sor);
 };
-V.content.misc.onXHRStart = function(method, url, q) {
+V.misc.onXHRStart = function(method, url, q) {
   var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
   D.q("body").ins(loading);
   setTimeout(function() { D.rm(loading); }, 1000);
   return loading;
 };
-V.content.misc.onXHREnd = function(success, xhr, method, url, q) {
+V.misc.onXHREnd = function(success, xhr, method, url, q) {
   var s = D.q(".xhr-state.loading");
-  if (!s) s = V.content.misc.onXHRStart(method, url, q);
+  if (!s) s = V.misc.onXHRStart(method, url, q);
   s.classList.remove("loading");
   s.classList.add("done");
   if (success) {
