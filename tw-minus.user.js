@@ -1760,11 +1760,11 @@ V.init.structPage = function() {
 };
 
 // Functions of Render main content
-V.content = {};
+V.main = {};
 
 // Show Content by path in URL
-V.content.showPage = function(my) {
-  var it = V.content;
+V.main.showPage = function(my) {
+  var it = V.main;
   var curl = U.getURL();
   var path = curl.path;
   var hash = path.split("/");
@@ -1790,8 +1790,8 @@ V.content.showPage = function(my) {
     break;
   }
 };
-V.content.showPage.on1 = function(hash, q, my) {
-  var it = V.content;
+V.main.showPage.on1 = function(hash, q, my) {
+  var it = V.main;
   switch (hash[0]) {
   case "login":
     it.showLoginUI(q);
@@ -1844,8 +1844,8 @@ V.content.showPage.on1 = function(hash, q, my) {
   }
 };
 
-V.content.showPage.on2 = function(hash, q, my) {
-  var it = V.content;
+V.main.showPage.on2 = function(hash, q, my) {
+  var it = V.main;
   if (hash[0] === "following") switch (hash[1]) {
   case "requests":
     it.showUsersByIds(API.urls.users.outgoing()() + "?" + q +
@@ -1924,8 +1924,8 @@ V.content.showPage.on2 = function(hash, q, my) {
   }
 };
 
-V.content.showPage.on3 = function(hash, q, my) {
-  var it = V.content;
+V.main.showPage.on3 = function(hash, q, my) {
+  var it = V.main;
   if (hash[1] === "lists") switch (hash[2]) {
   case "memberships":
     it.showLists(API.urls.lists.listed()() + "?" + q +
@@ -1974,7 +1974,7 @@ V.content.showPage.on3 = function(hash, q, my) {
 };
 
 // Render view of list of settings
-V.content.showSettings = function(my) {
+V.main.showSettings = function(my) {
   var root = U.ROOT + "settings/";
   var nd = {
     api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
@@ -1995,7 +1995,7 @@ V.content.showSettings = function(my) {
 };
 
 // Login UI
-V.content.showLoginUI = function(qs) {
+V.main.showLoginUI = function(qs) {
   var getReqToken = function() {
     var url = API.urls.oauth.request()();
     X.post(url, "", ongetReqToken, onErr);
@@ -2078,11 +2078,11 @@ V.content.showLoginUI = function(qs) {
 
 // Render View of Colors Setting
 // Change colors of text, link, background-color.,
-V.content.customizeDesign = function(my) {
+V.main.customizeDesign = function(my) {
   if (my.status) {
     var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
     delete tweet.retweeted_status;
-    V.content.rendTL([tweet], my);
+    V.main.rendTL([tweet], my);
   }
   V.outline.rendProfileOutline(my, my, 2);
   V.outline.changeDesign(my);
@@ -2245,7 +2245,7 @@ V.content.customizeDesign = function(my) {
 };
 
 // Render UI of account settings
-V.content.settingAccount = function(my) {
+V.main.settingAccount = function(my) {
   var uname = D.ce("input");
   var unameBtn = D.ce("button").add(D.ct("Check"));
   var auto = D.ce("input").sa("type", "number").sa("min", "0").sa("value", "4");
@@ -2307,7 +2307,7 @@ V.content.settingAccount = function(my) {
 };
 
 // Render UI for API testing
-V.content.testAPI = function(my) {
+V.main.testAPI = function(my) {
   var nd = {
     main: D.q("#main"),
     side: D.q("#side"),
@@ -2402,7 +2402,7 @@ V.content.testAPI = function(my) {
 };
 
 // Settings view to updating user profile
-V.content.settingProfile = function(my) {
+V.main.settingProfile = function(my) {
   var nd = {
     icon: D.ce("input").sa("type", "file"),
     upload: D.ce("button").add(D.ct("Upload")),
@@ -2417,7 +2417,7 @@ V.content.settingProfile = function(my) {
     var data = JSON.parse(xhr.responseText);
     if (API.getType(data) === "user") {
       D.empty(D.q("#side")); D.empty(D.q("#main"));
-      V.content.settingProfile(data);
+      V.main.settingProfile(data);
     }
   };
   nd.save.addEventListener("click", function() {
@@ -2451,7 +2451,7 @@ V.content.settingProfile = function(my) {
 };
 
 // Settings of this application
-V.content.settingOptions = function() {
+V.main.settingOptions = function() {
   var lsn = "localStorage['" + LS.NS + "']";
   var lsdata = LS.load();
   var lstext = JSON.stringify(lsdata);
@@ -2498,7 +2498,7 @@ V.content.settingOptions = function() {
 };
 
 // Render UI of following settings
-V.content.settingFollow = function(my) {
+V.main.settingFollow = function(my) {
   var ids = {
     following: null,
     followers: null
@@ -2587,10 +2587,10 @@ V.content.settingFollow = function(my) {
 };
 
 // step to render users list by ids
-V.content.showUsersByIds = function(url, my, mode) {
+V.main.showUsersByIds = function(url, my, mode) {
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    V.content.showUsersByLookup(data, url, my, mode);
+    V.main.showUsersByLookup(data, url, my, mode);
   };
   // set ?count=<max>
   var urlpts = T.normalizeURL(url);
@@ -2603,8 +2603,8 @@ V.content.showUsersByIds = function(url, my, mode) {
 };
 
 // lookup by ids.json
-V.content.showUsersByLookup = function(data, url, my, mode) {
-  var it = V.content;
+V.main.showUsersByLookup = function(data, url, my, mode) {
+  var it = V.main;
   var object = it.genCursors(data, url);
   var index = object.index, size = object.size;
   var sliced_ids = data.ids.slice(index, index + size);  // ids:[1, 23, 77]
@@ -2631,7 +2631,7 @@ V.content.showUsersByLookup = function(data, url, my, mode) {
 };
 
 // set cursor
-V.content.genCursors = function(data, url) {
+V.main.genCursors = function(data, url) {
   var re = {
     cursor: url.match(/[?&]cursor=([-\d]+)/),
     index: url.match(/[?&]index=(\d+)/),
@@ -2671,7 +2671,7 @@ V.content.genCursors = function(data, url) {
 };
 
 // Render View of list of users
-V.content.rendUsers = function(data, my, mode) {
+V.main.rendUsers = function(data, my, mode) {
   var users = data.users || data;
   var followerRequests = mode & 1;
   var idsCursor = mode & 2;
@@ -2730,14 +2730,14 @@ V.content.rendUsers = function(data, my, mode) {
   D.q("#main").add(users_list.hasChildNodes() ?
                    users_list : O.htmlify({"Empty": "No users found"}));
 
-  basicCursor ? V.misc.showCursor(data, V.content.showUsers):
+  basicCursor ? V.misc.showCursor(data, V.main.showUsers):
   idsCursor ? V.misc.showCursorIds(data):
   pageCursor ? V.misc.showCursorPage(data): undefined;
 
-  addEventListener("scroll", V.content.onScroll);
+  addEventListener("scroll", V.main.onScroll);
   addEventListener("popstate",
-    basicCursor ? V.content.cursorPopState:
-    idsCursor ? V.content.cursorIdsPopState:
+    basicCursor ? V.main.cursorPopState:
+    idsCursor ? V.main.cursorIdsPopState:
     pageCursor ? undefined: undefined
   );
 };
@@ -2780,7 +2780,7 @@ V.misc.showCursorIds = function(data) {
     D.empty(D.q("#cursor"));
     D.rm(D.q("#users"));
     D.q("body").scrollIntoView();
-    V.content.showUsersByLookup(
+    V.main.showUsersByLookup(
       state.ids_data, url, state.ids_my, state.ids_mode);
     e.preventDefault();
   };
@@ -2793,17 +2793,17 @@ V.misc.showCursorIds = function(data) {
   D.q("#cursor").add(cur.sor);
 };
 
-V.content.cursorIdsPopState = function(e) {
+V.main.cursorIdsPopState = function(e) {
   var state = LS.state.load();
-  V.content.rendUsers(state.ids_object, state.ids_my, state.ids_mode);
+  V.main.rendUsers(state.ids_object, state.ids_my, state.ids_mode);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
 // Step to Render View of list of users (following/ers, lists members.,)
-V.content.showUsers = function(url, my, mode) {
+V.main.showUsers = function(url, my, mode) {
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
-    V.content.rendUsers(data, my, mode);
+    V.main.rendUsers(data, my, mode);
     LS.state.save("users_object", data);
   };
   X.get(url, onScs, V.misc.mayReqLogin);
@@ -2833,9 +2833,9 @@ V.misc.showCursor = function(data, sender) {
   var onClick = function(e, newcur) {
     var state = LS.state.load();
     var url, my, mode;
-    if (sender === V.content.showUsers) {
+    if (sender === V.main.showUsers) {
       url = state.users_url, my = state.users_my, mode = state.users_mode;
-    } else if (sender === V.content.showLists) {
+    } else if (sender === V.main.showLists) {
       url = state.lists_url, my = state.lists_my;
     }
     var urlpts = T.normalizeURL(url);
@@ -2857,31 +2857,31 @@ V.misc.showCursor = function(data, sender) {
   D.q("#cursor").add(cur.sor);
 };
 
-V.content.cursorPopState = function(e) {
+V.main.cursorPopState = function(e) {
   var state = LS.state.load();
-  V.content.rendUsers(state.users_object, state.users_my, state.users_mode);
+  V.main.rendUsers(state.users_object, state.users_my, state.users_mode);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
 // Render View of list of lists
-V.content.showLists = function(url, my) {
+V.main.showLists = function(url, my) {
   var re = url.match(/[?&]screen_name=(\w+)/);
   var oname = re ? re[1]: my.screen_name;
   var onGet = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     if (!data.lists) data = {lists:data}; // format {cursor:0,lists[]}
-    V.content.rendLists(data, oname);
+    V.main.rendLists(data, oname);
     LS.state.save("lists_object", data);
   };
   X.get(url, onGet, V.misc.mayReqLogin);
-  addEventListener("scroll", V.content.onScroll);
-  addEventListener("popstate", V.content.cursorListsPopState);
+  addEventListener("scroll", V.main.onScroll);
+  addEventListener("popstate", V.main.cursorListsPopState);
   LS.state.save("lists_url", url);
   LS.state.save("lists_my", my);
   LS.state.save("lists_oname", oname);
 };
 
-V.content.rendLists = function rendLists(data, oname) {
+V.main.rendLists = function rendLists(data, oname) {
   var root = D.cf();
   var lists = D.ce("ul");
   var subs = D.ce("ul");
@@ -2901,16 +2901,16 @@ V.content.rendLists = function rendLists(data, oname) {
   D.q("#main").add(
     data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
-  V.misc.showCursor(data, V.content.showLists);
+  V.misc.showCursor(data, V.main.showLists);
 };
 
-V.content.cursorListsPopState = function(e) {
+V.main.cursorListsPopState = function(e) {
   var state = LS.state.load();
-  V.content.rendLists(state.lists_object, state.lists_oname);
+  V.main.rendLists(state.lists_object, state.lists_oname);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
-V.content.rendLists.one = function(list) {
+V.main.rendLists.one = function(list) {
   var nd = {
     root: D.ce("li").sa("class", "list"),
     full_name: D.ce("a").add(D.ct(list.full_name.substring(1))).
@@ -2934,12 +2934,12 @@ V.content.rendLists.one = function(list) {
 };
 
 // Step to Render View of Timeline
-V.content.showTL = function(url, my) {
+V.main.showTL = function(url, my) {
   function onScs(xhr) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses; // search 1.1
     LS.state.save("timeline_data", timeline);
-    V.content.prendTL([].concat(timeline), my);
+    V.main.prendTL([].concat(timeline), my);
   }
   function onErr(xhr) {
     V.misc.mayReqLogin(xhr);
@@ -2950,22 +2950,22 @@ V.content.showTL = function(url, my) {
   X.get(url, onScs, onErr);
 };
 
-V.content.prendTL = function(timeline, my, expurls) {
-  V.content.rendTL(timeline, my);
+V.main.prendTL = function(timeline, my, expurls) {
+  V.main.rendTL(timeline, my);
   V.misc.expandUrls(D.q("#timeline"), expurls);
 };
 
 // Render View of Timeline (of home, mentions, messages, lists.,)
-V.content.rendTL = function rendTL(timeline, my) {
+V.main.rendTL = function rendTL(timeline, my) {
   var tl_element = D.ce("ol").sa("id", "timeline");
   timeline.forEach(function(tweet) {
-    tl_element.add(V.content.rendTL.tweet(tweet, my));
+    tl_element.add(V.main.rendTL.tweet(tweet, my));
   });
   D.empty(D.q("#cursor"));
   D.rm(D.q("#timeline"));
   D.q("#main").add(tl_element);
-  addEventListener("popstate", V.content.onPopState);
-  addEventListener("scroll", V.content.onScroll);
+  addEventListener("popstate", V.main.onPopState);
+  addEventListener("scroll", V.main.onScroll);
   if (!timeline.length) {
     tl_element.add(O.htmlify({"Empty": "No tweets found"}));
     return;
@@ -2985,7 +2985,7 @@ V.content.rendTL = function rendTL(timeline, my) {
     pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
     // change url + show next page
     history.pushState("", "", e.target.href);
-    V.content.showTL(pasturl, my);
+    V.main.showTL(pasturl, my);
     D.empty(D.q("#cursor"));
     D.rm(D.q("#timeline"));
     D.q("body").scrollIntoView();
@@ -2995,19 +2995,19 @@ V.content.rendTL = function rendTL(timeline, my) {
 };
 
 // modify [url's state]
-V.content.onScroll = function() {
+V.main.onScroll = function() {
   LS.state.save("scrollTop", D.q("body").scrollTop);
 };
 
 // load [url's state]
-V.content.onPopState = function(e) {
+V.main.onPopState = function(e) {
   var state = LS.state.load();
-  V.content.prendTL([].concat(state["timeline_data"]),
+  V.main.prendTL([].concat(state["timeline_data"]),
     state["my"], state["expanded_urls"]);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
-V.content.rendTL.tweet = function(tweet, my) {
+V.main.rendTL.tweet = function(tweet, my) {
   var tweet_org = tweet;
 
   var isDM = "sender" in tweet && "recipient" in tweet;
@@ -3963,7 +3963,7 @@ V.panel.showListPanel = function(my) {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var ls = API.cc.onGotMyList(data);
-      V.content.rendLists(ls["mylists"], my.screen_name);
+      V.main.rendLists(ls["mylists"], my.screen_name);
     };
     API.createList(list.name.value, list.privat.checked ? "private": "public",
                    list.description.value, onScs);
@@ -3972,7 +3972,7 @@ V.panel.showListPanel = function(my) {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var ls = API.cc.onGotMyList(data);
-      V.content.rendLists(ls["mylists"], my.screen_name);
+      V.main.rendLists(ls["mylists"], my.screen_name);
     };
     API.updateList(my.screen_name, list.name.value, list.rename.value,
                    list.privat.checked ? "private" : "public",
@@ -3982,7 +3982,7 @@ V.panel.showListPanel = function(my) {
     var onScs = function(xhr) {
       var data = JSON.parse(xhr.responseText);
       var ls = API.cc.onGotMyList(data, true);
-      V.content.rendLists(ls["mylists"], my.screen_name);
+      V.main.rendLists(ls["mylists"], my.screen_name);
     };
     API.deleteList(my.screen_name, list.name.value, onScs);
   });
@@ -4271,7 +4271,7 @@ V.outline.rendProfileOutline = function(user) {
   var editDOM = function() {
     V.init.initNode();
     V.init.structPage();
-    V.content.showPage(my);
+    V.main.showPage(my);
   };
   API.urls.init();
   if (document.readyState === "complete") editDOM();
