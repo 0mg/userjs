@@ -4,14 +4,6 @@
 // ==/UserScript==
 "use strict";
 
-// UserJS Debug Functions
-var props = function(arg) {
-  if (arg === null || arg === undefined) return arg;
-  var proplist = [];
-  for (var i in arg) proplist.push(i + " : " + arg[i]);
-  proplist.unshift(arg);
-  return proplist.join("\n");
-};
 var U, C, D, O, T, P, X, V, API, LS;
 
 // CONST VALUE
