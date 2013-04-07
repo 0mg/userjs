@@ -326,7 +326,7 @@ U = {
   Q: "&",
   getURL: function() {
     var pathall = (location.pathname + location.search).
-                   substring(this.ROOT.length).split(this.Q);
+                   substring(U.ROOT.length).split(U.Q);
     var path = pathall[0];
     var query = pathall.slice(1).join("&");
     return {
@@ -1395,7 +1395,7 @@ API.unwantRT = function(uname, onScs, onErr) {
 };
 
 API.requestFollow = function(uname, onScs, onErr) {
-  this.follow(uname, onScs, onErr);
+  API.follow(uname, onScs, onErr);
 };
 
 API.unrequestFollow = function(uname, onScs, onErr) {
@@ -1813,6 +1813,7 @@ V.init.structPage = function() {
 V.content = {};
 // Show Content by path in URL
 V.content.showPage = function(my) {
+  var it = V.content;
   var curl = U.getURL();
   var path = curl.path;
   var hash = path.split("/");
@@ -1825,66 +1826,67 @@ V.content.showPage = function(my) {
 
   switch (hash.length) {
   case 1:
-    this.showPage.on1.call(this, hash, q, my);
+    it.showPage.on1(hash, q, my);
     break;
   case 2:
-    this.showPage.on2.call(this, hash, q, my);
+    it.showPage.on2(hash, q, my);
     break;
   case 3:
-    this.showPage.on3.call(this, hash, q, my);
+    it.showPage.on3(hash, q, my);
     break;
   default:
-    this.showPage.on3.call(this, hash, q, my);
+    it.showPage.on3(hash, q, my);
     break;
   }
 };
 V.content.showPage.on1 = function(hash, q, my) {
+  var it = V.content;
   switch (hash[0]) {
   case "login":
-    this.showLoginUI(q);
+    it.showLoginUI(q);
     break;
   case "settings":
-    this.showSettings(my);
+    it.showSettings(my);
     break;
   case "lists":
-    this.showLists(API.urls.lists.all()() + "?" + q +
+    it.showLists(API.urls.lists.all()() + "?" + q +
       "&reverse=true&cursor=-1", my);
     V.panel.showListPanel(my);
     break;
   case "inbox":
-    this.showTL(API.urls.d.inbox()() + "?" + q +
+    it.showTL(API.urls.d.inbox()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "sent":
-    this.showTL(API.urls.d.sent()() + "?" + q +
+    it.showTL(API.urls.d.sent()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "favorites":
-    this.showTL(API.urls.favorites.list()() + "?" + q +
+    it.showTL(API.urls.favorites.list()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "following":
-    this.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
+    it.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "followers":
-    this.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
+    it.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "mentions":
-    this.showTL(API.urls.timeline.mentions()() + "?" + q +
+    it.showTL(API.urls.timeline.mentions()() + "?" + q +
                 "&include_entities=true", my);
     break;
   case "blocking":
-    this.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
+    it.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
       "&cursor=-1&stringify_ids=true", my);
     break;
   case "":
-    this.showTL(API.urls.timeline.home()() + "?" + q +
+    it.showTL(API.urls.timeline.home()() + "?" + q +
                 "&include_entities=true", my);
     break;
   default:
-    this.showTL(API.urls.timeline.user()() + "?" + q +
+    it.showTL(API.urls.timeline.user()() + "?" + q +
                 "&include_entities=true&include_rts=true" +
                 "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my);
@@ -1892,75 +1894,76 @@ V.content.showPage.on1 = function(hash, q, my) {
 };
 
 V.content.showPage.on2 = function(hash, q, my) {
+  var it = V.content;
   if (hash[0] === "following") switch (hash[1]) {
   case "requests":
-    this.showUsersByIds(API.urls.users.outgoing()() + "?" + q +
+    it.showUsersByIds(API.urls.users.outgoing()() + "?" + q +
       "&cursor=-1", my);
     break;
 
   } else if (hash[0] === "followers") switch (hash[1]) {
   case "requests":
-    this.showUsersByIds(API.urls.users.incoming()() + "?" + q +
+    it.showUsersByIds(API.urls.users.incoming()() + "?" + q +
       "&cursor=-1", my, 1);
     break;
 
   } else if (hash[0] === "lists") switch (hash[1]) {
   case "ownerships":
-    this.showLists(API.urls.lists.list()() + "?" + q, my);
+    it.showLists(API.urls.lists.list()() + "?" + q, my);
     V.panel.showListPanel(my);
     break;
   case "memberships":
-    this.showLists(API.urls.lists.listed()() + "?" + q, my);
+    it.showLists(API.urls.lists.listed()() + "?" + q, my);
     break;
   case "subscriptions":
-    this.showLists(API.urls.lists.subscriptions()() + "?" + q, my);
+    it.showLists(API.urls.lists.subscriptions()() + "?" + q, my);
     V.panel.showUserManager(my);
     break;
 
   } else if (hash[0] === "settings") switch (hash[1]) {
-  case "profile": this.settingProfile(my); break;
-  case "options": this.settingOptions(); break;
-  case "follow": this.settingFollow(my); break;
-  case "design": this.customizeDesign(my); break;
-  case "account": this.settingAccount(my); break;
-  case "api": this.testAPI(my); break;
+  case "profile": it.settingProfile(my); break;
+  case "options": it.settingOptions(); break;
+  case "follow": it.settingFollow(my); break;
+  case "design": it.customizeDesign(my); break;
+  case "account": it.settingAccount(my); break;
+  case "api": it.testAPI(my); break;
 
   } else if (hash[0] === "search") {
-    this.showTL(API.urls.search.tweets()() + "?" + q +
+    it.showTL(API.urls.search.tweets()() + "?" + q +
       "&q=" + hash[1] + "&rpp=20&include_entities=true", my);
 
   } else switch (hash[1]) {
   case "status": case "statuses":
-    this.showTL(API.urls.timeline.user()() + "?" + q +
+    it.showTL(API.urls.timeline.user()() + "?" + q +
       "&include_entities=true&include_rts=true" +
       "&screen_name=" + hash[0], my);
     break;
   case "favorites":
-    this.showTL(API.urls.favorites.list()() + "?" + q +
+    it.showTL(API.urls.favorites.list()() + "?" + q +
       "&include_entities=true&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
-    this.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
+    it.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
       "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "followers":
-    this.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
+    it.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
       "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
-    this.showLists(API.urls.lists.all()() + "?" + q +
+    it.showLists(API.urls.lists.all()() + "?" + q +
       "&screen_name=" + hash[0] + "&reverse=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
-      this.showTL(API.urls.tweet.get()(hash[1]) + "?" + q +
+      it.showTL(API.urls.tweet.get()(hash[1]) + "?" + q +
         "&include_entities=true", my);
     } else {
-      this.showTL(API.urls.lists.tweets()() + "?" + q +
+      it.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
         "&slug=" + hash[1] +
         "&include_rts=false" +
@@ -1971,47 +1974,48 @@ V.content.showPage.on2 = function(hash, q, my) {
 };
 
 V.content.showPage.on3 = function(hash, q, my) {
+  var it = V.content;
   if (hash[1] === "lists") switch (hash[2]) {
   case "memberships":
-    this.showLists(API.urls.lists.listed()() + "?" + q +
+    it.showLists(API.urls.lists.listed()() + "?" + q +
       "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "subscriptions":
-    this.showLists(API.urls.lists.subscriptions()() + "?" + q +
+    it.showLists(API.urls.lists.subscriptions()() + "?" + q +
       "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
 
   } else if (hash[0] === "search" && hash[1] === "users") {
-    this.showUsers(API.urls.search.users()() + "?" + q +
+    it.showUsers(API.urls.search.users()() + "?" + q +
       "&q=" + hash[2] + "&include_entities=true", my, 4);
 
   } else switch (hash[2]) {
   case "tweets": case "timeline":
     if (hash[1] === "following") {
-      this.showTL("/1/statuses/following_timeline.json?" + q +
+      it.showTL("/1/statuses/following_timeline.json?" + q +
         "&include_entities=true&screen_name=" + hash[0], my);
       V.outline.showProfileOutline(hash[0], my, 3);
     } else {
-      this.showTL(API.urls.lists.tweets()() + "?" + q +
+      it.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
         "&slug=" + hash[1] + "&include_entities=true", my);
     }
     break;
   case "members":
-    this.showUsers(API.urls.lists.users.members()() + "?" + q +
+    it.showUsers(API.urls.lists.users.members()() + "?" + q +
       "&owner_screen_name=" + hash[0] + "&slug=" + hash[1], my);
     V.outline.showListOutline(hash, my, 3);
     break;
   case "subscribers":
-    this.showUsers(API.urls.lists.users.subscribers()() + "?" + q +
+    it.showUsers(API.urls.lists.users.subscribers()() + "?" + q +
       "&owner_screen_name=" + hash[0] + "&slug=" + hash[1], my);
     V.outline.showListOutline(hash, my, 3);
     break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
-      this.showTL(API.urls.tweet.get()(hash[2]) + "?" + q +
+      it.showTL(API.urls.tweet.get()(hash[2]) + "?" + q +
         "&include_entities=true", my);
       V.outline.showProfileOutline(hash[0], my, 1);
     }
@@ -2127,7 +2131,7 @@ V.content.customizeDesign = function(my) {
   if (my.status) {
     var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
     delete tweet.retweeted_status;
-    this.rendTL([tweet], my);
+    V.content.rendTL([tweet], my);
   }
   V.outline.rendProfileOutline(my, my, 2);
   V.outline.changeDesign(my);
@@ -2633,7 +2637,6 @@ V.content.settingFollow = function(my) {
 
 // step to render users list by ids
 V.content.showUsersByIds = function(url, my, mode) {
-  var that = this;
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     V.content.showUsersByLookup(data, url, my, mode);
@@ -2650,8 +2653,8 @@ V.content.showUsersByIds = function(url, my, mode) {
 
 // lookup by ids.json
 V.content.showUsersByLookup = function(data, url, my, mode) {
-  var that = this;
-  var object = that.genCursors(data, url);
+  var it = V.content;
+  var object = it.genCursors(data, url);
   var index = object.index, size = object.size;
   var sliced_ids = data.ids.slice(index, index + size);  // ids:[1, 23, 77]
   if (!sliced_ids.length) {
@@ -2666,7 +2669,7 @@ V.content.showUsersByLookup = function(data, url, my, mode) {
     });
     object["users"] = users;
     LS.state.save("ids_object", object);
-    that.rendUsers(object, my, mode);
+    it.rendUsers(object, my, mode);
   };
   X.get(API.urls.users.lookup()() + "?user_id=" + sliced_ids.join(","),
     onScs, V.misc.mayReqLogin);
@@ -2723,8 +2726,6 @@ V.content.rendUsers = function(data, my, mode) {
   var idsCursor = mode & 2;
   var pageCursor = mode & 4;
   var basicCursor = !idsCursor && !pageCursor;
-
-  var that = this;
 
   var users_list = D.ce("ul").sa("id", "users");
 
@@ -2974,12 +2975,11 @@ V.content.rendLists.one = function(list) {
 
 // Step to Render View of Timeline
 V.content.showTL = function(url, my) {
-  var that = this;
   function onScs(xhr) {
     var timeline = JSON.parse(xhr.responseText);
     if (timeline.statuses) timeline = timeline.statuses; // search 1.1
     LS.state.save("timeline_data", timeline);
-    that.prendTL([].concat(timeline), my);
+    V.content.prendTL([].concat(timeline), my);
   }
   function onErr(xhr) {
     V.misc.mayReqLogin(xhr);
@@ -2990,15 +2990,14 @@ V.content.showTL = function(url, my) {
   X.get(url, onScs, onErr);
 };
 V.content.prendTL = function(timeline, my, expurls) {
-  this.rendTL(timeline, my);
+  V.content.rendTL(timeline, my);
   A.expandUrls(D.q("#timeline"), expurls);
 };
 // Render View of Timeline (of home, mentions, messages, lists.,)
 V.content.rendTL = function rendTL(timeline, my) {
-  var that = this;
   var tl_element = D.ce("ol").sa("id", "timeline");
   timeline.forEach(function(tweet) {
-    tl_element.add(that.rendTL.tweet(tweet, my));
+    tl_element.add(V.content.rendTL.tweet(tweet, my));
   });
   D.empty(D.q("#cursor"));
   D.rm(D.q("#timeline"));
@@ -3235,27 +3234,15 @@ V.panel.Button.prototype = {
     }
     return this;
   },
-  enable: function() {
-    this.node.disabled = false;
-    return this;
-  },
-  disable: function() {
-    this.node.disabled = true;
-    return this;
-  },
-  show: function() {
-    this.node.hidden = false;
-    return this;
-  },
-  hide: function() {
-    this.node.hidden = true;
-    return this;
-  }
+  enable: function() { this.node.disabled = false; return this; },
+  disable: function() { this.node.disabled = true; return this; },
+  show: function() { this.node.hidden = false; return this; },
+  hide: function() { this.node.hidden = true; return this; }
 };
 
 // Buttons to do Follow Request Accept/Deny
 V.panel.makeReqDecider = function(user) {
-  var Button = this.Button;
+  var Button = V.panel.Button;
   var ad = {
     node: D.ce("div").sa("class", "user-action"),
     accept: new Button("accept-follow", "Accept", "Accept"),
@@ -3285,7 +3272,7 @@ V.panel.makeTwAct = function(t, my) {
   var isTweetRTedByMe = "current_user_retweet" in t;
   var isRTRTedByMeToo = isRT && isTweetRTedByMe && false;
   if (isDM) t.user = t.sender;
-  var Button = this.Button;
+  var Button = V.panel.Button;
   var ab = {
     node: D.ce("div").sa("class", "tweet-action"),
     fav: new Button("fav", "Fav", "Unfav"),
@@ -3573,12 +3560,12 @@ V.panel.showFollowPanel = function(user) {
 };
 // Action buttons panel for add user to list
 V.panel.showAddListPanel = function(user, my) {
-  var that = this;
+  var it = V.panel;
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     var expander = D.ce("button").add(D.ct("Lists"));
     expander.addEventListener("click", function() {
-      D.rm(expander); that.lifeListButtons(data.lists || data, user, my);
+      D.rm(expander); it.lifeListButtons(data.lists || data, user, my);
     });
     D.q("#subaction-inner-1").add(expander);
   };
@@ -3625,10 +3612,9 @@ V.panel.lifeListButtons = function(lists, user, my) {
 
 // Button to do follow list
 V.panel.showListFollowPanel = function(list) {
-  var Button = this.Button;
   var ab = {
     node: D.ce("div"),
-    follow: new Button("follow", "Follow", "Unfollow")
+    follow: new V.panel.Button("follow", "Follow", "Unfollow")
   };
   function onFollow() { ab.follow.turn(true); }
   function onUnfollow() { ab.follow.turn(false); }
@@ -3645,7 +3631,7 @@ V.panel.showListFollowPanel = function(list) {
 
 // update my stats in header
 V.panel.updMyStats = function(my) {
-  var g = this.global_bar;
+  var g = V.panel.global_bar;
   g.profile.href = U.ROOT + my.screen_name;
   g.tweets_len.textContent = my.statuses_count;
   g.screen_name.textContent = my.screen_name;
@@ -3658,7 +3644,7 @@ V.panel.updMyStats = function(my) {
 // Global bar: links to home, profile, mentions, lists.,
 V.panel.global_bar = null;
 V.panel.showGlobalBar = function(my) {
-
+  var it = V.panel;
   var g = {
     bar: D.ce("ul"),
     home: D.ce("a"),
@@ -3686,8 +3672,8 @@ V.panel.showGlobalBar = function(my) {
     fwers_len: D.ce("span").sa("class", "followers_count"),
     listed_len: D.ce("span").sa("class", "listed_count")
   };
-  this.global_bar = g;
-  this.updMyStats(my);
+  it.global_bar = g;
+  it.updMyStats(my);
 
   g.bar.id = "globalbar";
 
@@ -4077,15 +4063,15 @@ V.outline.changeDesign = function(user) {
 
 // Step to Render list outline and color
 V.outline.showListOutline = function(hash, my, mode) {
-  var that = this;
+  var it = V.outline;
   var url = API.urls.lists.show()() + "?" +
             "owner_screen_name=" + hash[0] + "&slug=" + hash[1];
   var onScs = function(xhr) {
     var list = JSON.parse(xhr.responseText);
     if (mode === undefined) mode = 7;
     if (list.mode === "private") mode &= ~4;
-    mode & 1 && that.changeDesign(list.user);
-    mode & 2 && that.showListProfile(list);
+    mode & 1 && it.changeDesign(list.user);
+    mode & 2 && it.showListProfile(list);
     mode & 4 && V.panel.showListFollowPanel(list);
     if (xhr instanceof XMLHttpRequest) {
       LS.state.save("lists_show", list);
@@ -4159,7 +4145,7 @@ V.outline.showListProfile = function(list) {
 
 // Step to Render user profile outline and color
 V.outline.showProfileOutline = function(screen_name, my, mode) {
-  var that = this;
+  var it = V.outline;
 
   if (mode === undefined) mode = 15;
 
@@ -4168,8 +4154,8 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
 
     if (user.id_str === my.id_str) mode &= ~4;
 
-    mode & 1 && that.changeDesign(user);
-    mode & 2 && that.rendProfileOutline(user);
+    mode & 1 && it.changeDesign(user);
+    mode & 2 && it.rendProfileOutline(user);
     mode & 4 && V.panel.showFollowPanel(user);
     mode & 8 && V.panel.showAddListPanel(user, my);
   };
