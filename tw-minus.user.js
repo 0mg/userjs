@@ -1443,6 +1443,7 @@ V.init.CSS = '\
     padding: 0;\
   }\
   html {\
+    min-height: 100%;\
     background-attachment: fixed;\
     background-repeat: no-repeat;\
   }\
@@ -1704,27 +1705,18 @@ V.init.CSS = '\
 
 // Clear all node and set new one
 V.init.initNode = function() {
-
-  D.rm(document.documentElement);
-
-  var html = D.ce("html");
-  var head = D.ce("head");
-  var meta = D.ce("meta");
-  var title = D.ce("title");
-  var style = D.ce("style");
-  var body = D.ce("body");
-
-  // Original page Overlayer
-  // css 'height' does work, but scrollable area be narrower in XML.
-  html.style.minHeight = "100%";
-  // Opera 10.5x Fonts Fix
-  html.lang = "ja";
-
-  meta.sa("charset", "utf-8");
-  title.add(D.ct("tw-"));
-  style.add(D.ct(V.init.CSS));
-
-  document.appendChild(html.add(head.add(meta, title, style), body));
+  D.add.call(D.empty(document),
+    document.implementation.createDocumentType("html", "", ""),
+    D.ce("html").add(
+      D.ce("head").add(
+        D.ce("meta").sa("charset", "utf-8"),
+        D.ce("style").add(D.ct(V.init.CSS)),
+        D.ce("style").sa("id", "custom-css"),
+        D.ce("title").add(D.ct("tw-"))
+      ),
+      D.ce("body")
+    )
+  );
 };
 
 // Set DOM struct of tw-
