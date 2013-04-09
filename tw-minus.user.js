@@ -4027,32 +4027,26 @@ V.outline.showSubTitle = function(hash) {
 // Change CSS(text color, background-image) by user settings
 V.outline.changeDesign = function(user) {
   var rec = /^#[0-9a-f]{6}|/i;
-  var colorBg = rec.exec("#" + user.profile_background_color)[0];
-  var colorSideFill = rec.exec("#" + user.profile_sidebar_fill_color)[0];
-  var colorSideBorder = rec.exec("#" + user.profile_sidebar_border_color)[0];
-  var colorText = rec.exec("#" + user.profile_text_color)[0];
-  var colorLink = rec.exec("#" + user.profile_link_color)[0];
-  var root = D.q("html");
-  root.style.backgroundColor = colorBg;
-  if (user.profile_use_background_image) {
-    var bgImgUrl = "url(" + user.profile_background_image_url + ")";
-    var bgImgRepeat = user.profile_background_tile ? "repeat" : "no-repeat";
-    root.style.backgroundImage = bgImgUrl;
-    root.style.backgroundRepeat = bgImgRepeat;
-  } else {
-    root.style.backgroundImage = "none";
-  }
-
-  D.q("#header").style.backgroundColor =
-  D.q("#content").style.backgroundColor =
-  D.q("#side").style.backgroundColor = colorSideFill;
-
-  D.q("#subtitle").style.borderColor =
-  D.q("#side").style.borderColor = colorSideBorder;
-
-  D.q("body").style.color = colorText;
-
-  D.q("style").textContent += "a { color: " + colorLink + "; }";
+  var color = {
+    bg: rec.exec("#" + user.profile_background_color)[0],
+    bgImg: user.profile_use_background_image ?
+      "url(" + user.profile_background_image_url + ")": "none",
+    bgImgRepeat: user.profile_background_tile ? "repeat": "no-repeat",
+    side_fill: rec.exec("#" + user.profile_sidebar_fill_color)[0],
+    side_border: rec.exec("#" + user.profile_sidebar_border_color)[0],
+    text: rec.exec("#" + user.profile_text_color)[0],
+    link: rec.exec("#" + user.profile_link_color)[0]
+  };
+  var style = D.q("#custom-css");
+  style.textContent = "html{" +
+      "background-color:" + color.bg + ";" +
+      "background-image:" + color.bgImg + ";" +
+      "background-repeat:" + color.bgImgRepeat + ";" +
+    "}" +
+    "body{color:" + color.text + "}" +
+    "a{color:" + color.link + "}" +
+    "#header,#content,#side{background-color:" + color.side_fill + "}" +
+    "#subtitle,#side{border-color:" + color.side_border + "}";
 };
 
 // Step to Render list outline and color
