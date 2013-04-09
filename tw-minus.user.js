@@ -1230,9 +1230,12 @@ API.cc.getCredentials = function() {
 };
 
 API.updateProfileBgImage = function(image, use, tile, onScs, onErr) {
-  X.post(API.urls.account.update_background_image()(), X.formData({
-    image: image, use: use, tile: tile
-  }), onScs, onErr);
+  var q = {};
+  if (image !== undefined) q.image = image;
+  if (use !== undefined) q.use = use;
+  if (tile !== undefined) q.tile = tile;
+  X.post(API.urls.account.update_background_image()(),
+    X.formData(q), onScs, onErr);
 };
 
 API.updateProfileColors = function(background_color, text_color, link_color,
@@ -2077,27 +2080,26 @@ V.main.showLoginUI = function(qs) {
 };
 
 // Render View of Colors Setting
-// Change colors of text, link, background-color.,
 V.main.customizeDesign = function(my) {
-  if (my.status) {
-    var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
-    delete tweet.retweeted_status;
-    V.main.rendTL([tweet], my);
-  }
-  V.outline.rendProfileOutline(my, my, 2);
-  V.outline.changeDesign(my);
+  // {colors/bgimage model}
+  var color = JSON.parse(JSON.stringify(my));
 
-  var background = D.q("html");
+  // opened image file
+  var imgfile = { b64: null, dataURL: null };
+
+  // form nodes
   var fm = {
     form: D.ce("dl"),
     bg: {
-      sel0: D.ce("input").sa("type", "radio").sa("name", "bgimgsel"),
-      sel1: D.ce("input").sa("type", "radio").sa("name", "bgimgsel"),
-      image: D.ce("input"),
-      useImage: D.ce("input"),
-      tile: D.ce("input"),
+      cur: D.ce("input").sa("type", "radio").sa("name", "bgimgsel").
+        sa("checked", "checked"),
+      new: D.ce("input").sa("type", "radio").sa("name", "bgimgsel").
+        sa("disabled", "disabled"),
+      file: D.ce("input").sa("type", "file"),
+      use: D.ce("input").sa("type", "checkbox"),
+      tile: D.ce("input").sa("type", "checkbox"),
       color: D.ce("input"),
-      update: D.ce("button")
+      update: D.ce("button").add(D.ct("Update"))
     },
     textColor: D.ce("input"),
     linkColor: D.ce("input"),
@@ -2105,104 +2107,77 @@ V.main.customizeDesign = function(my) {
       fillColor: D.ce("input"),
       borderColor: D.ce("input")
     },
-    update: D.ce("button")
+    update: D.ce("button").add(D.ct("Update"))
   };
 
+  // set current <input>.values
+  fm.bg.tile.checked = color.profile_background_tile;
+  fm.bg.use.checked = color.profile_use_background_image;
+  fm.bg.color.value = color.profile_background_color;
+  fm.textColor.value = color.profile_text_color;
+  fm.linkColor.value = color.profile_link_color;
+  fm.sidebar.fillColor.value = color.profile_sidebar_fill_color;
+  fm.sidebar.borderColor.value = color.profile_sidebar_border_color;
+
+  // add event listeners
   fm.form.addEventListener("input", function(event) {
     var input = event.target;
     if (input.value.length !== 6 || isNaN("0x" + input.value)) return;
     switch (input) {
-    case fm.bg.color:
-      background.style.backgroundColor = "#" + input.value;
-      break;
-    case fm.textColor:
-      D.q("body").style.color = "#" + input.value;
-      break;
-    case fm.linkColor:
-      [].forEach.call(D.qs("a"), function(a) {
-        a.style.color = "#" + input.value;
-      });
-      break;
+    case fm.bg.color: color.profile_background_color = input.value; break;
+    case fm.textColor: color.profile_text_color = input.value; break;
+    case fm.linkColor: color.profile_link_color = input.value; break;
     case fm.sidebar.fillColor:
-      D.q("#subtitle").style.backgroundColor =
-      D.q("#side").style.backgroundColor = "#" + input.value;
+      color.profile_sidebar_fill_color = input.value;
       break;
     case fm.sidebar.borderColor:
-      D.q("#subtitle").style.borderColor =
-      D.q("#side").style.borderColor = "#" + input.value;
+      color.profile_sidebar_border_color = input.value;
       break;
     }
+    V.outline.changeDesign(color);
   });
-
-  fm.bg.sel0.checked = true;
-
-  var selbg = "", selbg_raw = "", crrbg;
-  function chgCrrBg() {
-    crrbg = fm.bg.sel0.checked ? my.profile_background_image_url : selbg;
-  }
-  chgCrrBg();
-
-  fm.bg.sel0.addEventListener("change", function() {
-    chgCrrBg();
-    onChkUseImg();
+  fm.bg.cur.addEventListener("change", function(e) {
+    if (e.target.checked) {
+      color.profile_background_image_url = my.profile_background_image_url;
+      V.outline.changeDesign(color);
+    }
   });
-  fm.bg.sel1.addEventListener("change", function() {
-    chgCrrBg();
-    onChkUseImg();
+  fm.bg.new.addEventListener("change", function(e) {
+    if (e.target.checked) {
+      color.profile_background_image_url = imgfile.dataURL;
+      V.outline.changeDesign(color);
+    }
   });
-
-  fm.bg.image.type = "file";
-  fm.bg.image.addEventListener("change", function() {
-    var file = fm.bg.image.files[0];
+  fm.bg.file.addEventListener("change", function() {
+    var file = fm.bg.file.files[0];
     var fr = new FileReader;
-    fr.onload = function() {
-      selbg_raw = btoa(fr.result);
-      selbg = "data:" + file.type + ";base64," + btoa(fr.result);
-      fm.bg.sel1.checked = true;
-      chgCrrBg();
-      onChkUseImg();
-      onChkTile();
-    };
+    fr.addEventListener("load", function() {
+      imgfile.b64 = btoa(fr.result);
+      imgfile.dataURL = "data:" + file.type + ";base64," + imgfile.b64;
+      color.profile_background_image_url = imgfile.dataURL;
+      fm.bg.new.checked = true;
+      fm.bg.new.disabled = false;
+      color.profile_use_background_image = true;
+      fm.bg.use.checked = true;
+      V.outline.changeDesign(color);
+    });
     fr.readAsBinaryString(file);
   });
-
-  function onChkUseImg() {
-    background.style.backgroundImage =
-      fm.bg.useImage.checked && crrbg ? "url(" + crrbg + ")" : "none";
-  }
-  function onChkTile() {
-    background.style.backgroundRepeat =
-      fm.bg.tile.checked ? "repeat" : "no-repeat";
-  }
-  fm.bg.useImage.type = "checkbox";
-  fm.bg.useImage.checked = my.profile_use_background_image;
-  fm.bg.useImage.addEventListener("change", onChkUseImg);
-
-  fm.bg.tile.type = "checkbox";
-  fm.bg.tile.checked = my.profile_background_tile;
-  fm.bg.tile.addEventListener("change", onChkTile);
-  onChkTile();
-
-  fm.bg.color.value = my.profile_background_color;
-
-  fm.bg.update.add(D.ct("Update"));
+  fm.bg.use.addEventListener("change", function(e) {
+    color.profile_use_background_image = e.target.checked;
+    V.outline.changeDesign(color);
+  });
+  fm.bg.tile.addEventListener("change", function(e) {
+    color.profile_background_tile = e.target.checked;
+    V.outline.changeDesign(color);
+  });
   fm.bg.update.addEventListener("click", function() {
     API.updateProfileBgImage(
-      fm.bg.sel1.checked && selbg_raw || "",
-      fm.bg.useImage.checked,
-      fm.bg.tile.checked
+      color.profile_use_background_image ? imgfile.b64: undefined,
+      color.profile_use_background_image,
+      color.profile_background_tile, null
     );
   });
-
-  fm.textColor.value = my.profile_text_color;
-
-  fm.linkColor.value = my.profile_link_color;
-
-  fm.sidebar.fillColor.value = my.profile_sidebar_fill_color;
-
-  fm.sidebar.borderColor.value = my.profile_sidebar_border_color;
-
-  fm.update.add(D.ct("Update"));
   fm.update.addEventListener("click", function() {
     API.updateProfileColors(
       fm.bg.color.value,
@@ -2213,19 +2188,16 @@ V.main.customizeDesign = function(my) {
     );
   });
 
-  fm.form.add(
+  // render form nodes
+  D.q("#main").ins(fm.form.add(
     D.ce("dt").add(D.ct("background image")),
-    D.ce("dd").add(D.ce("label").add(fm.bg.sel0, D.ct("current"))),
-    D.ce("dd").add(D.ce("label").add(fm.bg.sel1, D.ct("upload"), fm.bg.image)),
+    D.ce("dd").add(D.ce("label").add(fm.bg.cur, D.ct("current"))),
+    D.ce("dd").add(D.ce("label").add(fm.bg.new, D.ct("upload"), fm.bg.file)),
     D.ce("dd").add(
-      D.ce("label").add(
-        fm.bg.useImage, D.ct("use image")
-      )
+      D.ce("label").add(fm.bg.use, D.ct("use image"))
     ),
     D.ce("dd").add(
-      D.ce("label").add(
-        fm.bg.tile, D.ct("tile")
-      )
+      D.ce("label").add(fm.bg.tile, D.ct("tile"))
     ),
     D.ce("dd").add(fm.bg.update),
     D.ce("dt").add(D.ct("background color")),
@@ -2239,9 +2211,16 @@ V.main.customizeDesign = function(my) {
     D.ce("dt").add(D.ct("sidebar border color")),
     D.ce("dd").add(fm.sidebar.borderColor),
     D.ce("dd").add(fm.update)
-  );
+  ));
 
-  D.q("#main").ins(fm.form);
+  // render current colors/bgimage
+  V.outline.rendProfileOutline(my, my, 2);
+  V.outline.changeDesign(my);
+  if (my.status) {
+    var tweet = {user:my}; for (var i in my.status) tweet[i] = my.status[i];
+    delete tweet.retweeted_status;
+    V.main.rendTL([tweet], my);
+  }
 };
 
 // Render UI of account settings
