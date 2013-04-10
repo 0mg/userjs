@@ -486,9 +486,9 @@ D.tweetize.one = function(ctx, fragment) {
     str = str[0]; uname = str.substring(1);
     fragment.add(D.tweetize.mention(uname));
 
-  } else if (str = TWRE.url.exec(ctx)) {
+  /*} else if (str = TWRE.url.exec(ctx)) {
     str = str[0]; url = str;
-    fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
+    fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));/**/
 
   } else {
     str = ctx.substring(0, 1); fragment.add(D.ct(str));
