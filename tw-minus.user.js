@@ -1716,36 +1716,19 @@ V.init.initNode = function() {
 
 // Set DOM struct of tw-
 V.init.structPage = function() {
-  var fw = {
-    header: D.ce("header"),
-    content: D.ce("section"),
-    subtitle: D.ce("h2"),
-    subaction: D.ce("div"),
-    subfw: D.ce("div"),
-    subli: D.ce("div"),
-    submain: D.ce("article"),
-    subcursor: D.ce("ul"),
-    side: D.ce("aside")
-  };
-  fw.header.id    = "header";
-  fw.content.id   = "content";
-  fw.subtitle.id  = "subtitle";
-  fw.subaction.id = "subaction";
-  fw.subfw.id     = "subaction-inner-1";
-  fw.subli.id     = "subaction-inner-2";
-  fw.submain.id   = "main";
-  fw.subcursor.id = "cursor";
-  fw.side.id      = "side";
-  fw.subaction.className = "user-action";
   D.q("body").add(
-    fw.header,
-    fw.content.add(
-      fw.subtitle,
-      fw.subaction.add(fw.subfw, fw.subli),
-      fw.submain,
-      fw.subcursor
+    D.ce("ul").sa("id", "xhr-statuses"),
+    D.ce("header").sa("id", "header"),
+    D.ce("section").sa("id", "content").add(
+      D.ce("h2").sa("id", "subtitle"),
+      D.ce("div").sa("id", "subaction").sa("class", "user-action").add(
+        D.ce("div").sa("id", "subaction-inner-1"),
+        D.ce("div").sa("id", "subaction-inner-2")
+      ),
+      D.ce("article").sa("id", "main"),
+      D.ce("ul").sa("id", "cursor")
     ),
-    fw.side
+    D.ce("aside").sa("id", "side")
   );
 };
 
