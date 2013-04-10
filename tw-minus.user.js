@@ -1570,18 +1570,11 @@ V.init.CSS = '\
   a.expanded_url {\
     text-decoration: underline;\
   }\
-  .xhr-state {\
-    position: fixed; top: 0; left: 0; font-size:xx-small;\
-  }\
-  .xhr-state.loading {\
-    background: gray; color: white;\
-  }\
-  .xhr-state.done.success {\
-    background: white; color: gray;\
-  }\
-  .xhr-state.done.failed {\
-    background: red; color: white;\
-  }\
+  #xhr-statuses { position: fixed; top: 0; left: 0; }\
+  .xhr-state { font-size:xx-small; }\
+  .xhr-state.loading { position:absolute; background: gray; color: white; }\
+  .xhr-state.done.success { background: white; color: gray; }\
+  .xhr-state.done.failed { background: red; color: white; }\
   #subaction a,\
   .list,\
   .user,\
@@ -3082,9 +3075,9 @@ V.misc.showCursorPage = function(data) {
 
 // show xhr state tip
 V.misc.onXHRStart = function(method, url, q) {
-  var loading = D.ce("div").sa("class", "xhr-state").add(D.ct("loading.."));
+  var loading = D.ce("li").sa("class", "xhr-state").add(D.ct("loading.."));
   loading.classList.add("loading");
-  D.q("body").ins(loading);
+  D.q("#xhr-statuses").add(loading);
   setTimeout(function() { D.rm(loading); }, 1000);
   return loading;
 };
