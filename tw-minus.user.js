@@ -1564,16 +1564,11 @@ V.init.CSS = '\
     height: 7em;\
   }\
   a.maybe_shorten_url {\
-    background-color: #ddd;\
   }\
   a.expanded_tco_url {\
-    background-color: #ff9;\
   }\
   a.expanded_url {\
-    background-color: #9ff;\
-  }\
-  a.expanded_tco_url.expanded_url {\
-    background-color: #cfc;\
+    text-decoration: underline;\
   }\
   .xhr-state {\
     position: fixed; top: 0; left: 0; font-size:xx-small;\
