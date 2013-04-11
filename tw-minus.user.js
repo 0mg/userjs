@@ -3235,12 +3235,16 @@ V.panel.makeTwAct = function(t, my) {
   });
   if (!isDM) ab.node.add(ab.fav.node);
   ab.rep.className = "reply";
-  ab.rep.title = (rt || t).id_str;
   ab.rep.add(D.ct("Reply"));
   if (isDM) {
     ab.rep.addEventListener("click", function() {
+      // main
       var status = D.q("#status");
       status.value = "d " + t.user.screen_name + " " + status.value;
+      // outline
+      var ce = document.createEvent("Event");
+      ce.initEvent("input", true, false);
+      status.dispatchEvent(ce);
       status.focus();
     });
   } else {
