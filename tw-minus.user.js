@@ -3005,7 +3005,7 @@ V.main.rendTL.tweet = function(tweet, my) {
 
   var dmhref = U.ROOT + U.getURL().path +
                U.Q + "count=1&max_id=" + tweet.id_str;
-  var tweethref = "http://twitter.com/" + tweet.user.screen_name +
+  var tweethref = "https://twitter.com/" + tweet.user.screen_name +
                   "/status/" + tweet.id_str;
   ent.date.href = isDM ? dmhref : tweethref;
 
@@ -3026,9 +3026,9 @@ V.main.rendTL.tweet = function(tweet, my) {
     ent.geo = D.ce("a");
     ent.geo.add(D.ct(tweet.place.name));
     if (tweet.geo && tweet.geo.coordinates) {
-      ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
+      ent.geo.href = "https://map.google.com/?q=" + tweet.geo.coordinates;
     } else {
-      ent.geo.href = "http://map.google.com/?q=" + tweet.place.full_name;
+      ent.geo.href = "https://map.google.com/?q=" + tweet.place.full_name;
     }
     ent.meta.add(D.ct(" from "), ent.geo);
   }
