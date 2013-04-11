@@ -1662,8 +1662,6 @@ V.init.CSS = '\
   .tweet .in_reply_to {\
     font-size: smaller;\
   }\
-  .tweet.reply_target {\
-  }\
   .list .user-icon,\
   .user .user-icon,\
   .tweet .user-icon {\
@@ -1685,6 +1683,7 @@ V.init.CSS = '\
     content: "\\ff1f";\
     font-weight: bold;\
   }\
+  .tweet.reply_target .reply::before,\
   .tweet-action button.true::before,\
   .user-action button.true::before {\
     content: "\\2714";\
@@ -3712,7 +3711,6 @@ V.panel.showTweetBox = function() {
     media: D.ce("input").sa("id", "media_selector")
   };
   var switchReplyTarget = function() {
-    if (!t.id.value) return;
     var replying = false;
     var replink = D.q("#reply_target_link");
     [].forEach.call(D.qs(".tweet"), function(tweet) {
@@ -3725,12 +3723,10 @@ V.panel.showTweetBox = function() {
       if (id && uname && t.id.value === id &&
         t.status.value.match("@" + uname + "\\b")) {
         tweet.classList.add("reply_target");
-        if (repbtn) repbtn.disabled = true;
         replink.textContent = "to @" + uname;
         replying = true;
       } else {
         tweet.classList.remove("reply_target");
-        if (repbtn) repbtn.disabled = false;
       }
     });
     replink.classList[replying ? "add": "remove"]("replying");
