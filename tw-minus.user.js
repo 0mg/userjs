@@ -3248,14 +3248,20 @@ V.panel.makeTwAct = function(t, my) {
       status.focus();
     });
   } else {
-    ab.rep.addEventListener("click", function() {
-      var status = D.q("#status");
-      var repid = D.q("#in_reply_to_status_id");
-      status.value = "@" + (rt || t).user.screen_name + " " + status.value;
-      repid.value = (rt || t).id_str;
-      var e = document.createEvent("Event");
-      e.initEvent("input", true, false);
-      status.dispatchEvent(e);
+    ab.rep.addEventListener("click", function(ev) {
+      var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
+      var tgt = ev.ctrlKey ? t: rt || t;
+      // main
+      if (repid.value !== tgt.id_str) {
+        status.value = "@" + tgt.user.screen_name + " " + status.value;
+        repid.value = tgt.id_str;
+      } else {
+        repid.value = "";
+      }
+      // outline
+      var ce = document.createEvent("Event");
+      ce.initEvent("input", true, false);
+      status.dispatchEvent(ce);
       status.focus();
     });
   }
