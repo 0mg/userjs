@@ -3708,7 +3708,7 @@ V.panel.showGlobalBar = function(my) {
 // Global Tweet box
 V.panel.showTweetBox = function() {
   var media_b64 = "";
-  var t = {
+  var nd = {
     box: D.ce("div").sa("id", "update_controller"),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
@@ -3717,97 +3717,78 @@ V.panel.showTweetBox = function() {
     btns: D.ce("div").sa("id", "update_buttons"),
     mediabox: D.ce("div").sa("id", "media_controller"),
     imgvw: D.ce("div").sa("id", "media_view"),
-    usemedia: D.ce("input").sa("id", "media_toggle").sa("type", "checkbox"),
-    media: D.ce("input").sa("id", "media_selector")
+    usemedia: D.ce("input").sa("id", "media_toggle").sa("type", "checkbox").
+      sa("disabled", "disabled"),
+    media: D.ce("input").sa("type", "file").sa("id", "media_selector")
   };
   var switchReplyTarget = function() {
-    var replying = false;
-    var replink = D.q("#reply_target_link");
-    [].forEach.call(D.qs(".tweet"), function(tweet) {
-      var str = /\bscreen_name-(\w+)/.exec(tweet.className);
-      var uname = str && str[1];
-      str = /\bid-(\d+)/.exec(tweet.className);
-      var id = str && str[1];
-      str = null;
-      var repbtn = D.q.call(tweet, ".reply");
-      if (id && uname && t.id.value === id &&
-        t.status.value.match("@" + uname + "\\b")) {
-        tweet.classList.add("reply_target");
-        replink.textContent = "to @" + uname;
-        replying = true;
-      } else {
-        tweet.classList.remove("reply_target");
-      }
+    // reset
+    [].forEach.call(D.qs(".reply_target"), function(e) {
+      e.classList.remove("reply_target");
     });
-    replink.classList[replying ? "add": "remove"]("replying");
-    return replying;
+    nd.replink.classList.remove("replying");
+    // add
+    var reptgt = D.q(".tweet.id-" + nd.id.value); if (!reptgt) return;
+    var uname = reptgt.q(".screen_name").textContent;
+    if (nd.status.value.match("@" + uname + "\\b")) {
+      nd.replink.textContent = "to @" + uname;
+      nd.replink.classList.add("replying");
+      reptgt.classList.add("reply_target");
+      return true;
+    }
   };
-
-  t.id.addEventListener("input", switchReplyTarget, false);
-
-  t.status.addEventListener("input", function() {
+  var onCheck = function() {
+    nd.imgvw.classList[nd.usemedia.checked ? "add": "remove"]("use_media");
+  };
+  // add event listeners
+  nd.status.addEventListener("input", function() {
     var replying = switchReplyTarget();
     var red = /^d\s+\w+\s*/;
     var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
-    t.update.textContent =
-      replying ? "Reply": red.test(t.status.value) ? "D": "Tweet";
-    t.update.disabled = t.status.value.replace(red, "").
+    nd.update.textContent =
+      replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
+    nd.update.disabled = nd.status.value.replace(red, "").
       replace(reurl, "$1http://t.co/1234567").length > 140;
   });
-
-  t.update.addEventListener("click", function() {
-    if (t.usemedia.checked && media_b64) {
-      API.tweetMedia(media_b64, t.status.value, t.id.value, "", "", "", "");
+  nd.update.addEventListener("click", function() {
+    if (nd.usemedia.checked && media_b64) {
+      API.tweetMedia(media_b64, nd.status.value, nd.id.value, "", "", "", "");
     } else {
-      API.tweet(t.status.value, t.id.value, "", "", "", "", "");
+      API.tweet(nd.status.value, nd.id.value, "", "", "", "", "");
     }
   });
-
-  var onCheck = function() {
-    t.imgvw.classList[t.usemedia.checked ? "add": "remove"]("use_media");
-  };
-  t.usemedia.addEventListener("change", onCheck, false);
-
-  t.media.type = "file";
-  t.media.addEventListener("change", function() {
-    var file = t.media.files[0];
-    var fr = new FileReader;
+  nd.usemedia.addEventListener("change", onCheck);
+  nd.media.addEventListener("change", function() {
+    var file = nd.media.files[0], fr = new FileReader;
     fr.addEventListener("load", function() {
       media_b64 = btoa(fr.result);
-      var img = D.ce("img").sa("class", "media_image").sa("alt", file.name);
-      img.src = "data:" + file.type + ";base64," + media_b64;
-      D.empty(t.imgvw).add(img);
-      t.update.disabled = false;
-      t.usemedia.checked = true;
+      D.empty(nd.imgvw).add(
+        D.ce("img").sa("class", "media_image").sa("alt", file.name).
+          sa("src", "data:" + file.type + ";base64," + media_b64)
+      );
+      nd.usemedia.disabled = false;
+      nd.usemedia.checked = true;
       onCheck();
     });
-    fr.addEventListener("error", function() {
-      t.update.disabled = false;
-      t.usemedia.checked = false;
-      onCheck();
-    });
-    t.update.disabled = true;
     fr.readAsBinaryString(file);
   });
-
-  t.replink.addEventListener("click", function() {
-    var e = D.q(".tweet.id-" + t.id.value);
+  nd.replink.addEventListener("click", function() {
+    var e = D.q(".tweet.id-" + nd.id.value);
     if (e) {
-      t.replink.disabled = true;
+      nd.replink.disabled = true;
       e.scrollIntoView();
       e.classList.add("focus");
       setTimeout(function() {
         e.classList.remove("focus");
-        t.replink.disabled = false;
+        nd.replink.disabled = false;
       }, 500);
     }
   });
-
-  t.box.add(t.status, t.btns);
-  t.btns.add(t.mediabox.add(t.imgvw, t.usemedia, t.media));
-  t.btns.add(t.id, t.update, t.replink);
-
-  D.q("#header").add(t.box);
+  // render tweet box
+  nd.box.add(nd.status, nd.btns);
+  nd.btns.add(nd.mediabox.add(nd.imgvw, nd.usemedia, nd.media));
+  nd.btns.add(nd.id, nd.update, nd.replink);
+  D.q("#header").add(nd.box);
 };
 
 // Panel for manage list members, following, followers.,
