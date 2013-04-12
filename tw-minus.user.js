@@ -2003,23 +2003,10 @@ V.main.showLoginUI = function(qs) {
   var nd = {
     errvw: D.ce("dd"),
     login: D.ce("button").add(D.ct("Get Request token")),
-    verify: D.ce("button").add(D.ct("Get Access token")),
-    csbox: D.ce("input").sa("size", 50),
-    cssubmit: D.ce("button").add(D.ct("SAVE"))
-  };
-  nd.csbox.value = LS.load()["consumer_secret"];
-  var saveCS = function() {
-    var csinput = nd.csbox.value;
-    if (confirm("sure?")) {
-      LS.save("consumer_secret", csinput);
-    }
+    verify: D.ce("button").add(D.ct("Get Access token"))
   };
   nd.login.addEventListener("click", getReqToken);
   nd.verify.addEventListener("click", getAcsToken);
-  nd.cssubmit.addEventListener("click", saveCS);
-  nd.csbox.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) saveCS();
-  });
   if (qs) D.q("#main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 2 of 2)")),
@@ -2031,12 +2018,7 @@ V.main.showLoginUI = function(qs) {
     D.ce("dl").add(
       D.ce("dt").add(D.ct("Login (STEP 1 of 2)")),
       D.ce("dd").add(nd.login),
-      nd.errvw,
-      D.ce("dt").add(D.ct("Consumer secret key")),
-      D.ce("dd").add(
-        nd.csbox,
-        nd.cssubmit
-      )
+      nd.errvw
     )
   );
 };
