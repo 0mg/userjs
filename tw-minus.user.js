@@ -2539,7 +2539,7 @@ V.main.showUsersByIds = function(url, my, mode) {
   delete urlpts.query["size"];
   var requrl = urlpts.base + "?" + T.strQuery(urlpts.query);
   mode |= 2;
-  X.get(requrl, onScs, V.misc.mayReqLogin);
+  X.get(requrl, onScs, V.misc.showXHRError);
   V.panel.showUserManager(my);
 };
 
@@ -2564,7 +2564,7 @@ V.main.showUsersByLookup = function(data, url, my, mode) {
     it.rendUsers(object, my, mode);
   };
   X.get(API.urls.users.lookup()() + "?user_id=" + sliced_ids.join(","),
-    onScs, V.misc.mayReqLogin);
+    onScs, V.misc.showXHRError);
   LS.state.save("ids_data", data);
   LS.state.save("ids_url", url);
   LS.state.save("ids_my", my);
@@ -2747,7 +2747,7 @@ V.main.showUsers = function(url, my, mode) {
     V.main.rendUsers(data, my, mode);
     LS.state.save("users_object", data);
   };
-  X.get(url, onScs, V.misc.mayReqLogin);
+  X.get(url, onScs, V.misc.showXHRError);
   if (!(mode & 8)) { mode |= 8; V.panel.showUserManager(my); }
   LS.state.save("users_url", url);
   LS.state.save("users_my", my);
@@ -2814,7 +2814,7 @@ V.main.showLists = function(url, my) {
     V.main.rendLists(data, oname);
     LS.state.save("lists_object", data);
   };
-  X.get(url, onGet, V.misc.mayReqLogin);
+  X.get(url, onGet, V.misc.showXHRError);
   addEventListener("scroll", V.main.onScroll);
   addEventListener("popstate", V.main.cursorListsPopState);
   LS.state.save("lists_url", url);
@@ -2883,7 +2883,7 @@ V.main.showTL = function(url, my) {
     V.main.prendTL([].concat(timeline), my);
   }
   function onErr(xhr) {
-    V.misc.mayReqLogin(xhr);
+    V.misc.showXHRError(xhr);
     LS.state.save("timeline_data", []);
   }
   LS.state.save("timeline_url", url);
@@ -3097,17 +3097,16 @@ V.misc.onXHREnd = function(success, xhr, method, url, q) {
 };
 
 // show login link if 401
-V.misc.mayReqLogin = function(xhr) {
+V.misc.showXHRError = function(xhr, to) {
   var data; try { data = JSON.parse(xhr.responseText); }
   catch(e) { data = { error: xhr.getAllResponseHeaders() }; }
+  if (!to) to = D.q("#main");
   switch (xhr.status) {
   case 400: case 401:
-    D.q("#main").add(
-      D.ce("a").sa("href", U.ROOT + "login").add(D.ct("login"))
-    );
+    to.add(D.ce("a").sa("href", U.ROOT + "login").add(D.ct("login")));
     break;
   }
-  D.q("#main").add(O.htmlify(data));
+  to.add(O.htmlify(data));
 };
 
 // Scripts after render page
@@ -3996,7 +3995,7 @@ V.outline.showListOutline = function(hash, my, mode) {
     }
   };
   var onErr = function(xhr) {
-    D.q("#side").add(O.htmlify(JSON.parse(xhr.responseText)))
+    V.misc.showXHRError(xhr, D.q("#side"));
   };
   // use cache (history.state) if exist
   var state = LS.state.load();
@@ -4083,12 +4082,10 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     mode &= ~8;
     var hack = D.ce("button").add(D.ct("unblock"));
     hack.addEventListener("click", function() {
-      API.unblock(screen_name, onScs, function(x) {
-        D.q("#side").add(O.htmlify(JSON.parse(x.responseText)));
-        D.rm(hack);
-      });
+      API.unblock(screen_name, onScs);
     });
-    D.q("#side").add(hack, O.htmlify(JSON.parse(xhr.responseText)));
+    D.q("#side").add(hack);
+    V.misc.showXHRError(xhr, D.q("#side"));
   };
 
   X.get(API.urls.users.show()() + "?screen_name=" + screen_name, onScs, onErr);
