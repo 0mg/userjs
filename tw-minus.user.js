@@ -3025,9 +3025,9 @@ V.main.rendTL.tweet = function(tweet, my) {
     ent.geo = D.ce("a");
     ent.geo.add(D.ct(tweet.place.name));
     if (tweet.geo && tweet.geo.coordinates) {
-      ent.geo.href = "http://map.google.com/?q=" + tweet.geo.coordinates;
+      ent.geo.href = "https://maps.google.com/?q=" + tweet.geo.coordinates;
     } else {
-      ent.geo.href = "http://map.google.com/?q=" + tweet.place.full_name;
+      ent.geo.href = "https://maps.google.com/?q=" + tweet.place.full_name;
     }
     ent.meta.add(D.ct(" from "), ent.geo);
   }
