@@ -312,19 +312,18 @@ P.oauth.genSig = (function() {
 
 // URL CONST VALUE and Functions
 
-U = {
-  ROOT: "/robots.txt?-=/",
-  Q: "&",
-  getURL: function() {
-    var pathall = (location.pathname + location.search).
-                   substring(U.ROOT.length).split(U.Q);
-    var path = pathall[0];
-    var query = pathall.slice(1).join("&");
-    return {
-      path: path,
-      query: query
-    };
-  }
+U = {};
+U.ROOT = "/robots.txt?-=/";
+U.Q = "&";
+U.getURL = function() {
+  var pathall =
+    (location.pathname + location.search).substring(U.ROOT.length).split(U.Q);
+  var path = pathall[0];
+  var query = T.parseQuery(pathall.slice(1).join("&"));
+  return {
+    path: path,
+    query: query
+  };
 };
 
 // DOM Functions
@@ -824,7 +823,7 @@ X.getX = function get(url, f, b) {
 // Twitter API Functions
 API = {};
 API.urls = {};
-API.urls.init = function(ver) {
+API.urls.init = function() {
   var urls = API.urls, uv = API.urlvers;
   urls.oauth = {
     request: uv({
@@ -1733,7 +1732,7 @@ V.main.showPage = function(my) {
   var curl = U.getURL();
   var path = curl.path;
   var hash = path.split("/");
-  var q = curl.query;
+  var q = T.strQuery(curl.query);
 
   D.q("title").textContent = "tw-/" + path;
   V.outline.showSubTitle(hash);
@@ -2586,60 +2585,36 @@ V.main.rendUsers = function(data, my, mode) {
   var idsCursor = mode & 2;
   var pageCursor = mode & 4;
   var basicCursor = !idsCursor && !pageCursor;
-
   var users_list = D.ce("ul").sa("id", "users");
-
   users && users.forEach(function(user) {
     var lu = {
       root: D.ce("li").sa("class", "user"),
-      screen_name: D.ce("a").sa("class", "screen_name"),
-      icon: D.ce("img").sa("class", "user-icon"),
-      name: D.ce("span").sa("class", "name"),
-      description: D.ce("p").sa("class", "description"),
-      created_at: D.ce("a").sa("class", "created_at")
+      screen_name: D.ce("a").sa("href", U.ROOT + user.screen_name).
+        sa("class", "screen_name").add(D.ct(user.screen_name)),
+      icon: D.ce("img").sa("class", "user-icon").
+        sa("src", user.profile_image_url).sa("alt", user.screen_name),
+      name: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(user.name))),
+      description: D.ce("p").sa("class", "description").
+        add(D.tweetize(user.description)),
+      created_at: D.ce("a").sa("class", "created_at").
+        add(D.ct(T.gapTime(new Date(user.created_at))))
     };
-
     if (user.protected) lu.root.classList.add("protected");
     if (user.verified) lu.root.classList.add("verified");
-
-    lu.screen_name.add(D.ct(user.screen_name));
-    lu.screen_name.href = U.ROOT + user.screen_name;
-
-    lu.icon.alt = user.screen_name;
-    lu.icon.src = user.profile_image_url;
-
-    lu.name.add(D.ct(T.decodeHTML(user.name)));
-
-    lu.description.add(D.tweetize(user.description));
-
-    lu.created_at.href = user.url || lu.screen_name.href;
-    lu.created_at.add(
-      D.ct(T.gapTime(new Date(user.created_at)))
-    );
-
-    lu.root.add(
-      lu.screen_name,
-      lu.icon,
-      lu.name,
-      lu.description,
-      D.ce("span").sa("class", "meta").add(
-        lu.created_at
-      )
-    );
-
-    if (followerRequests) {
-      lu.root.add(V.panel.makeReqDecider(user));
-    }
-
-    users_list.add(lu.root);
+    if (user.url) lu.created_at.href = user.url;
+    users_list.add(lu.root.add(
+      lu.screen_name, lu.icon, lu.name, lu.description,
+      D.ce("span").sa("class", "meta").add(lu.created_at),
+      followerRequests ? lu.root.add(V.panel.makeReqDecider(user)): D.cf()
+    ));
   });
 
   D.empty(D.q("#cursor"));
   D.empty(D.q("#main"));
-  D.q("#main").add(users_list.hasChildNodes() ?
-                   users_list : O.htmlify({"Empty": "No users found"}));
+  D.q("#main").add(
+    users.length ? users_list: O.htmlify({"Empty": "No users found"}));
 
-  basicCursor ? V.misc.showCursor(data, V.main.showUsers):
+  basicCursor ? V.misc.showCursor(data):
   idsCursor ? V.misc.showCursorIds(data):
   pageCursor ? V.misc.showCursorPage(data): undefined;
 
@@ -2659,47 +2634,34 @@ V.misc.showCursorIds = function(data) {
     next: D.ce("a").sa("class", "cursor_next"),
     prev: D.ce("a").sa("class", "cursor_prev")
   };
-  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
+  var curl = U.getURL(), qrys = curl.query;
   if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
-    qrys["cursor"] = data.previous_cursor_str;
-    qrys["index"] = data.prev_index;
-    qrys["size"] = data.size;
+    O.sa(qrys, { cursor: data.previous_cursor_str, index: data.prev_index });
     cur.prev.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
-    cur.prev.add(D.ct("prev"));
-    cur.sor.add(D.ce("li").add(cur.prev));
+    cur.sor.add(D.ce("li").add(cur.prev.add(D.ct("prev"))));
   }
   if ("next_cursor_str" in data && data.next_cursor_str !== "0") {
-    qrys["cursor"] = data.next_cursor_str;
-    qrys["index"] = data.next_index;
-    qrys["size"] = data.size;
+    O.sa(qrys, { cursor: data.next_cursor_str, index: data.next_index });
     cur.next.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
-    cur.next.add(D.ct("next"));
-    cur.sor.add(D.ce("li").add(cur.next));
+    cur.sor.add(D.ce("li").add(cur.next.add(D.ct("next"))));
   }
-  var onClick = function(e, newcur, newidx) {
-    var state = LS.state.load();
-    var urlpts = T.normalizeURL(state.ids_url), qrys = urlpts.query;
-    qrys["cursor"] = [].concat(qrys["cursor"])[0];
-    if (qrys["cursor"] !== data[newcur]) return;
-    qrys["cursor"] = data[newcur];
-    qrys["index"] = data[newidx];
-    qrys["size"] = data["size"];
-    var url = urlpts.base + "?" + T.strQuery(qrys);
-    history.pushState("", "", e.target.href);
-    D.empty(D.q("#cursor"));
-    D.rm(D.q("#users"));
-    D.q("body").scrollIntoView();
-    V.main.showUsersByLookup(
-      state.ids_data, url, state.ids_my, state.ids_mode);
-    e.preventDefault();
-  };
-  cur.next.addEventListener("click", function(e) {
-    onClick(e, "next_cursor_str", "next_index");
-  });
-  cur.prev.addEventListener("click", function(e) {
-    onClick(e, "previous_cursor_str", "prev_index");
-  });
+  cur.next.addEventListener("click", V.misc.onClickCursorIds);
+  cur.prev.addEventListener("click", V.misc.onClickCursorIds);
   D.q("#cursor").add(cur.sor);
+};
+
+V.misc.onClickCursorIds = function(e) {
+  var state = LS.state.load();
+  var qrys = T.normalizeURL(e.target.href).query;
+  if (qrys["cursor"] !== [].concat(U.getURL().query["cursor"])[0]) return;
+  V.main.showUsersByLookup(
+    state.ids_data,
+    T.normalizeURL(state.ids_url).base + "?" + T.strQuery(qrys),
+    state.ids_my, state.ids_mode
+  );
+  history.pushState("", "", e.target.href);
+  D.empty(D.q("#main")); D.empty(D.q("#cursor")); D.q("body").scrollIntoView();
+  e.preventDefault();
 };
 
 V.main.cursorIdsPopState = function(e) {
@@ -2722,13 +2684,13 @@ V.main.showUsers = function(url, my, mode) {
   LS.state.save("users_mode", mode);
 };
 
-V.misc.showCursor = function(data, sender) {
+V.misc.showCursor = function(data) {
   var cur = {
     sor: D.cf(),
     next: D.ce("a").add(D.ct("next")),
     prev: D.ce("a").add(D.ct("prev"))
   };
-  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
+  var curl = U.getURL(), qrys = curl.query;
   if ("previous_cursor_str" in data && data.previous_cursor_str !== "0") {
     qrys["cursor"] = data.previous_cursor_str;
     cur.prev.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
@@ -2739,31 +2701,27 @@ V.misc.showCursor = function(data, sender) {
     cur.next.href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
     cur.sor.add(D.ce("li").add(cur.next));
   }
-  var onClick = function(e, newcur) {
-    var state = LS.state.load();
-    var url, my, mode;
-    if (sender === V.main.showUsers) {
-      url = state.users_url, my = state.users_my, mode = state.users_mode;
-    } else if (sender === V.main.showLists) {
-      url = state.lists_url, my = state.lists_my;
-    }
-    var urlpts = T.normalizeURL(url);
-    var qrys = urlpts.query; qrys["cursor"] = data[newcur];
-    var url = urlpts.base + "?" + T.strQuery(qrys);
-    history.pushState("", "", e.target.href);
-    D.empty(D.q("#cursor"));
-    D.empty(D.q("#main"));
-    D.q("body").scrollIntoView();
-    sender(url, my, mode);
-    e.preventDefault();
-  };
-  cur.next.addEventListener("click", function(e) {
-    onClick(e, "next_cursor_str");
-  });
-  cur.prev.addEventListener("click", function(e) {
-    onClick(e, "previous_cursor_str");
-  });
+  cur.next.addEventListener("click", V.misc.onClickCursor);
+  cur.prev.addEventListener("click", V.misc.onClickCursor);
   D.q("#cursor").add(cur.sor);
+};
+
+V.misc.onClickCursor = function(e) {
+  var state = LS.state.load(), url, my, mode;
+  var sender = "users_url" in state ? V.main.showUsers: V.main.showLists;
+  if (sender === V.main.showUsers) {
+    url = state.users_url, my = state.users_my, mode = state.users_mode;
+  } else if (sender === V.main.showLists) {
+    url = state.lists_url, my = state.lists_my;
+  }
+  var urlpts = T.normalizeURL(url);
+  var newurl = urlpts.base + "?" + T.strQuery(O.sa(urlpts.query, {
+    cursor: T.normalizeURL(e.target.href).query["cursor"]
+  }));
+  history.pushState("", "", e.target.href);
+  sender(newurl, my, mode);
+  D.empty(D.q("#cursor")); D.empty(D.q("#main")); D.q("body").scrollIntoView();
+  e.preventDefault();
 };
 
 V.main.cursorPopState = function(e) {
@@ -2810,7 +2768,7 @@ V.main.rendLists = function rendLists(data, oname) {
   D.q("#main").add(
     data.lists.length ? root: O.htmlify({Empty:"No Lists found"})
   );
-  V.misc.showCursor(data, V.main.showLists);
+  V.misc.showCursor(data);
 };
 
 V.main.cursorListsPopState = function(e) {
@@ -2870,37 +2828,30 @@ V.main.rendTL = function rendTL(timeline, my) {
   timeline.forEach(function(tweet) {
     tl_element.add(V.main.rendTL.tweet(tweet, my));
   });
-  D.empty(D.q("#cursor"));
-  D.rm(D.q("#timeline"));
-  D.q("#main").add(tl_element);
-  addEventListener("popstate", V.main.onPopState);
-  addEventListener("scroll", V.main.onScroll);
+  D.empty(D.q("#main")).add(tl_element);
   if (!timeline.length) {
-    tl_element.add(O.htmlify({"Empty": "No tweets found"}));
-    return;
+    return tl_element.add(O.htmlify({"Empty": "No tweets found"}));
   }
+  // show cursor
   var curl = U.getURL();
-  var last_id = timeline[timeline.length - 1].id_str;
-  var max_id = T.decrement(last_id);
-  var qrys = T.parseQuery(curl.query); qrys["max_id"] = max_id;
-  var href = U.ROOT + curl.path + U.Q + T.strQuery(qrys);
-  var past = D.ce("a").sa("href", href).add(D.ct("past"));
-  past.className = "cursor_next";
-  D.q("#cursor").add(D.ce("li").add(past));
-  // change url + show next page
+  var max_id = T.decrement(timeline[timeline.length - 1].id_str);
+  var past = D.ce("a").sa("href", U.ROOT + curl.path + U.Q + T.strQuery(
+    O.sa(curl.query, { max_id: max_id })
+  )).sa("class", "cursor_next").add(D.ct("past"));
+  D.empty(D.q("#cursor")).add(D.ce("li").add(past));
+  // ajaxize cursor
   past.addEventListener("click", function(e) {
-    var url = LS.state.load()["timeline_url"];
-    var pasturl = T.normalizeURL(url); pasturl.query["max_id"] = max_id;
-    pasturl = pasturl.base + "?" + T.strQuery(pasturl.query);
-    // change url + show next page
+    var url = T.normalizeURL(LS.state.load()["timeline_url"]);
+    var pasturl = url.base + "?" +
+      T.strQuery(O.sa(url.query, { max_id: max_id }));
     history.pushState("", "", e.target.href);
-    V.main.showTL(pasturl, my);
-    D.empty(D.q("#cursor"));
-    D.rm(D.q("#timeline"));
+    D.empty(D.q("#main")); D.empty(D.q("#cursor"));
     D.q("body").scrollIntoView();
-    // cancel <a> navigation
+    V.main.showTL(pasturl, my);
     e.preventDefault();
   });
+  addEventListener("popstate", V.main.onPopState);
+  addEventListener("scroll", V.main.onScroll);
 };
 
 // modify [url's state]
@@ -3027,7 +2978,7 @@ V.misc.showCursorPage = function(data) {
     next: D.ce("a").sa("class", "cursor_next"),
     prev: D.ce("a").sa("class", "cursor_prev")
   };
-  var curl = U.getURL(), qrys = T.parseQuery(curl.query);
+  var curl = U.getURL(), qrys = curl.query;
   var cpage = +[].concat(qrys["page"])[0] || 1;
   if (cpage > 1) {
     cur.prev.href = U.ROOT + curl.path + U.Q + "page=" + (cpage - 1);
