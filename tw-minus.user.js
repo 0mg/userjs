@@ -547,7 +547,7 @@ O.htmlify = function htmlify(arg) {
 // Text Functions
 T = {};
 // normalize URL
-T.normalizeURL = function(url) {
+T.fixURL = function(url) {
   var urlParts = url.match(/([^?#]*)[?]?([^#]*)#?([\S\s]*)/);
   var baseURL = { raw: urlParts[1] };
   var search = { raw: urlParts[2] };
@@ -763,7 +763,7 @@ X.head = function head(url, f, b) {
 X.get = function get(url, f, b) {
   var xhr = new XMLHttpRequest;
   var method = "GET";
-  url = T.normalizeURL(url);
+  url = T.fixURL(url);
   xhr.open(method, url, true);
   xhr.setRequestHeader("X-PHX", "true");
   var auth = X.getOAuthHeader(method, url, {});
@@ -1129,7 +1129,7 @@ API.cc.reuseData = function(method, url, q) {
   try { var data = JSON.parse(xhr.responseText); } catch(e) { return; }
   var dataType = API.getType(data);
   var ls = LS.load(), my = ls["credentials"], me = null;
-  var urlpts = T.normalizeURL(url), qobj = urlpts.query;
+  var urlpts = T.fixURL(url), qobj = urlpts.query;
   // update cache: mylists, my credentials
   var q_screen_name = String(/\w*/.exec(qobj["screen_name"] || ""));
   var q_id = String(/\d*/.exec(qobj["id"] || ""));
@@ -1782,11 +1782,11 @@ V.main.showPage.on1 = function(hash, q, my) {
     break;
   case "following":
     it.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
-      "&cursor=-1&stringify_ids=true", my);
+      "&stringify_ids=true", my);
     break;
   case "followers":
     it.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
-      "&cursor=-1&stringify_ids=true", my);
+      "&stringify_ids=true", my);
     break;
   case "mentions":
     it.showTL(API.urls.timeline.mentions()() + "?" + q +
@@ -1794,7 +1794,7 @@ V.main.showPage.on1 = function(hash, q, my) {
     break;
   case "blocking":
     it.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
-      "&cursor=-1&stringify_ids=true", my);
+      "&stringify_ids=true", my);
     break;
   case "":
     it.showTL(API.urls.timeline.home()() + "?" + q +
@@ -1812,14 +1812,12 @@ V.main.showPage.on2 = function(hash, q, my) {
   var it = V.main;
   if (hash[0] === "following") switch (hash[1]) {
   case "requests":
-    it.showUsersByIds(API.urls.users.outgoing()() + "?" + q +
-      "&cursor=-1", my);
+    it.showUsersByIds(API.urls.users.outgoing()() + "?" + q, my);
     break;
 
   } else if (hash[0] === "followers") switch (hash[1]) {
   case "requests":
-    it.showUsersByIds(API.urls.users.incoming()() + "?" + q +
-      "&cursor=-1", my, 1);
+    it.showUsersByIds(API.urls.users.incoming()() + "?" + q, my, 1);
     break;
 
   } else if (hash[0] === "lists") switch (hash[1]) {
@@ -1860,12 +1858,12 @@ V.main.showPage.on2 = function(hash, q, my) {
     break;
   case "following":
     it.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
-      "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
+      "&screen_name=" + hash[0] + "&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "followers":
     it.showUsersByIds(API.urls.users.followers_ids()() + "?" + q +
-      "&screen_name=" + hash[0] + "&cursor=-1&stringify_ids=true", my);
+      "&screen_name=" + hash[0] + "&stringify_ids=true", my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "lists":
@@ -2501,7 +2499,7 @@ V.main.showUsersByIds = function(url, my, mode) {
     V.main.showUsersByLookup(data, url, my, mode);
   };
   // set ?count=<max>
-  var urlpts = T.normalizeURL(url);
+  var urlpts = T.fixURL(url);
   delete urlpts.query["index"];
   delete urlpts.query["size"];
   var requrl = urlpts.base + "?" + T.strQuery(urlpts.query);
@@ -2540,14 +2538,10 @@ V.main.showUsersByLookup = function(data, url, my, mode) {
 
 // set cursor
 V.main.genCursors = function(data, url) {
-  var re = {
-    cursor: url.match(/[?&]cursor=([-\d]+)/),
-    index: url.match(/[?&]index=(\d+)/),
-    size: url.match(/[?&]size=(\d+)/)
-  };
-  var cursor = re.cursor ? re.cursor[1] : "-1";
-  var index = re.index ? +re.index[1] : 0;
-  var size = re.size ? +re.size[1] : 20;
+  var qrys = T.fixURL(url).query;
+  var cursor = [].concat(qrys.cursor)[0] || "-1";
+  var index = +([].concat(qrys.index)[0] || 0);
+  var size = +([].concat(qrys.size)[0] || 20);
   /*
     [next_cursor_str, previous_cursor_str] ?query for ids API
     [next_index, prev_index, size]
@@ -2652,14 +2646,14 @@ V.misc.showCursorIds = function(data) {
 
 V.misc.onClickCursorIds = function(e) {
   var state = LS.state.load();
-  var qrys = T.normalizeURL(e.target.href).query;
-  if (qrys["cursor"] !== [].concat(U.getURL().query["cursor"])[0]) return;
+  var qrys = T.fixURL(e.target.href).query;
+  if (qrys["cursor"] !== state.ids_object["cursor"]) return;
   e.preventDefault();
   D.empty(D.q("#main")); D.empty(D.q("#cursor")); D.q("body").scrollIntoView();
   history.pushState("", "", e.target.href);
   V.main.showUsersByLookup(
     state.ids_data,
-    T.normalizeURL(state.ids_url).base + "?" + T.strQuery(qrys),
+    T.fixURL(state.ids_url).base + "?" + T.strQuery(qrys),
     state.ids_my, state.ids_mode
   );
 };
@@ -2716,9 +2710,9 @@ V.misc.onClickCursor = function(e) {
   } else if (sender === V.main.showLists) {
     url = state.lists_url, my = state.lists_my;
   }
-  var urlpts = T.normalizeURL(url);
+  var urlpts = T.fixURL(url);
   var newurl = urlpts.base + "?" + T.strQuery(O.sa(urlpts.query, {
-    cursor: T.normalizeURL(e.target.href).query["cursor"]
+    cursor: T.fixURL(e.target.href).query["cursor"]
   }));
   e.preventDefault();
   D.empty(D.q("#cursor")); D.empty(D.q("#main")); D.q("body").scrollIntoView();
@@ -2839,7 +2833,7 @@ V.main.rendTL = function rendTL(timeline, my) {
   D.empty(D.q("#cursor")).add(D.ce("li").add(past));
   // ajaxize cursor
   past.addEventListener("click", function(e) {
-    var url = T.normalizeURL(LS.state.load()["timeline_url"]);
+    var url = T.fixURL(LS.state.load()["timeline_url"]);
     var pasturl = url.base + "?" +
       T.strQuery(O.sa(url.query, { max_id: max_id }));
     e.preventDefault();
