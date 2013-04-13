@@ -2187,7 +2187,7 @@ V.main.settingAccount = function(my) {
     xhrpool = [];
   }
   function checkUnameAuto(len) {
-    while (autoResult.hasChildNodes()) D.rm(autoResult.lastChild);
+    D.empty(autoResult);
     for (var i = 0, max = 50; i <= max; ++i) {
       var src = "1234567890abcdefghijklmnopqrstuvwxyz_";
       var s = "";
@@ -2205,13 +2205,10 @@ V.main.settingAccount = function(my) {
   function checkUname(unameValue) {
     X.get(api + unameValue, function(xhr) {
       var main = D.q("#main");
-      while (main.hasChildNodes()) D.rm(main.lastChild);
-      main.add(O.htmlify(JSON.parse(xhr.responseText)));
+      D.empty(main).add(O.htmlify(JSON.parse(xhr.responseText)));
     }, null);
   }
-  unameBtn.addEventListener("click", function(e) {
-    checkUname(uname.value);
-  });
+  unameBtn.addEventListener("click", function() { checkUname(uname.value); });
   uname.addEventListener("keypress", function(e) {
     if (e.keyCode === 13) {
       var ev = document.createEvent("Event");
@@ -2220,7 +2217,7 @@ V.main.settingAccount = function(my) {
     }
   });
   autoBtn.addEventListener("click", function(e) {
-    xhrpool.length ? autoFinish() : autoStart();
+    xhrpool.length ? autoFinish(): autoStart();
   });
   D.q("#subaction").add(uname, unameBtn);
   D.q("#side").add(
@@ -2309,15 +2306,9 @@ V.main.testAPI = function(my) {
   nd.main.add(
     D.ce("h3").add(D.ct(location.host)),
     D.ce("ul").add(
-      D.ce("li").add(
-        nd.head.url, nd.head.send
-      ),
-      D.ce("li").add(
-        nd.get.url, nd.get.send
-      ),
-      D.ce("li").add(
-        nd.post.url, nd.post.send
-      )
+      D.ce("li").add(nd.head.url, nd.head.send),
+      D.ce("li").add(nd.get.url, nd.get.send),
+      D.ce("li").add(nd.post.url, nd.post.send)
     ),
     nd.dst
   );
@@ -2442,9 +2433,7 @@ V.main.settingFollow = function(my) {
   };
   node.mirrorAna.addEventListener("click", function() { mirrorAnalize(); });
   node.mirrorBtn.addEventListener("click", function() {
-    var str = "!!DANGER!!\nMirroring following/followers.\n"
-            + "It does auto follow and unfollow operations. Sure?";
-    if (confirm(str)) mirrorAnalize(), mirror();
+    if (confirm("sure?")) mirrorAnalize(), mirror();
   });
   node.main.add(
     D.ce("h3").add(D.ct("Mirroring")),
@@ -2460,22 +2449,19 @@ V.main.settingFollow = function(my) {
   );
   function mirrorAnalize() {
     list.follow = [], list.unfollow = [];
-    if (ids.following && ids.followers) {
-      ids.followers.forEach(function(follower_id) {
-        if (ids.following.indexOf(follower_id) === -1) {
-          list.follow.push(follower_id);
-        }
-      });
-      ids.following.forEach(function(following_id) {
-        if (ids.followers.indexOf(following_id) === -1) {
-          list.unfollow.push(following_id);
-        }
-      });
-      node.followTotal.textContent = list.follow.length;
-      node.unfollowTotal.textContent = list.unfollow.length;
-    } else {
-      alert("It's not readied. Try again.");
-    }
+    if (!ids.following || !ids.followers) return alert("not readied");
+    ids.followers.forEach(function(follower_id) {
+      if (ids.following.indexOf(follower_id) === -1) {
+        list.follow.push(follower_id);
+      }
+    });
+    ids.following.forEach(function(following_id) {
+      if (ids.followers.indexOf(following_id) === -1) {
+        list.unfollow.push(following_id);
+      }
+    });
+    node.followTotal.textContent = list.follow.length;
+    node.unfollowTotal.textContent = list.unfollow.length;
   }
   function mirror() {
     if (!list.follow || !list.unfollow) return;
