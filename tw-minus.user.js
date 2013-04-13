@@ -3928,21 +3928,16 @@ V.outline.showListOutline = function(hash, my, mode) {
 // Render outline of list information
 V.outline.showListProfile = function(list) {
   var li = {
-    st: D.ce("dl"),
-    members: D.ce("a"),
-    followers: D.ce("a")
+    st: D.ce("dl").sa("class", "list-profile"),
+    members: D.ce("a").add(D.ct("Members")).
+      sa("href", U.ROOT + list.uri.substring(1) + "/members"),
+    followers: D.ce("a").add(D.ct("Subscribers")).
+      sa("href", U.ROOT + list.uri.substring(1) + "/subscribers"),
+    owner: D.ce("a").add(D.ct(list.user.screen_name)).
+      sa("href", U.ROOT + list.user.screen_name)
   };
-
-  li.st.className = "list-profile";
   if (list.mode === "private") li.st.classList.add("private");
-
-  li.members.href = U.ROOT + list.uri.substring(1) + "/members";
-  li.members.add(D.ct("Members"));
-
-  li.followers.href = U.ROOT + list.uri.substring(1) + "/subscribers";
-  li.followers.add(D.ct("Subscribers"));
-
-  li.st.add(
+  D.q("#side").add(li.st.add(
     D.ce("dt").add(D.ct("Name")),
     D.ce("dd").sa("class", "name").add(D.ct(T.decodeHTML(list.name))),
     D.ce("dt").add(D.ct("Full Name")),
@@ -3960,32 +3955,22 @@ V.outline.showListProfile = function(list) {
     D.ce("dt").add(D.ct("Since")),
     D.ce("dd").add(D.ct(T.gapTime(new Date(list.created_at)))),
     D.ce("dt").add(D.ct("Owner")),
-    D.ce("dd").add(
-      D.ce("a").sa("href", U.ROOT + list.user.screen_name).
-        add(D.ct(list.user.screen_name))
-    )
-  );
-
-  D.q("#side").add(li.st);
+    D.ce("dd").add(li.owner)
+  ));
 };
 
 // Step to Render user profile outline and color
 V.outline.showProfileOutline = function(screen_name, my, mode) {
   var it = V.outline;
-
   if (mode === undefined) mode = 15;
-
   var onScs = function(xhr) {
     var user = JSON.parse(xhr.responseText);
-
     if (user.id_str === my.id_str) mode &= ~4;
-
     mode & 1 && it.changeDesign(user);
     mode & 2 && it.rendProfileOutline(user);
     mode & 4 && V.panel.showFollowPanel(user);
     mode & 8 && V.panel.showAddListPanel(user, my);
   };
-
   var onErr = function(xhr) { // hacking(using API bug) function
     // bug: /blocks/destroy.json returns suspended user's profile
     mode &= ~4;
@@ -3997,68 +3982,43 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     D.q("#side").add(hack);
     V.misc.showXHRError(xhr, D.q("#side"));
   };
-
   X.get(API.urls.users.show()() + "?screen_name=" + screen_name, onScs, onErr);
 };
 
 // Render outline of User Profile
 V.outline.rendProfileOutline = function(user) {
-  var p = {
-    box: D.ce("dl"),
-    icon: D.ce("img"),
-    icorg: D.ce("a"),
-    tweets: D.ce("a"),
-    following: D.ce("a"),
-    following_timeline: D.ce("a"),
-    followers: D.ce("a"),
-    listed: D.ce("a"),
-    lists: D.ce("a"),
-    listsub: D.ce("a"),
-    favorites: D.ce("a")
-  };
   var entities = user.entities || {};
-
-  p.box.className = "user-profile";
+  var baseurl = U.ROOT + user.screen_name;
+  var p = {
+    box: D.ce("dl").sa("class", "user-profile"),
+    icon: D.ce("img").sa("class", "user-icon").sa("alt", user.screen_name).
+      sa("src", user.profile_image_url.replace("_normal.", "_bigger.")),
+    icorg: D.ce("a").
+      sa("href", user.profile_image_url.replace("_normal.", ".")),
+    tweets: D.ce("a").add(D.ct("Tweets")).
+      sa("href", baseurl + "/status"),
+    favorites: D.ce("a").add(D.ct("Favorites")).
+      sa("href", baseurl + "/favorites"),
+    following: D.ce("a").add(D.ct("Following")).
+      sa("href", baseurl + "/following"),
+    following_timeline: D.ce("a").add(D.ct("Tweets")).
+      sa("href", baseurl + "/following/tweets"),
+    followers: D.ce("a").add(D.ct("Followers")).
+      sa("href", baseurl + "/followers"),
+    lists: D.ce("a").add(D.ct("Lists")).
+      sa("href", baseurl + "/lists"),
+    listsub: D.ce("a").add(D.ct("Subscriptions")).
+      sa("href", baseurl + "/lists/subscriptions"),
+    listed: D.ce("a").add(D.ct("Listed")).
+      sa("href", baseurl + "/lists/memberships")
+  };
   if (user.protected) p.box.classList.add("protected");
   if (user.verified) p.box.classList.add("verified");
-
-  p.icon.className = "user-icon";
-  p.icon.alt = user.screen_name;
-  p.icon.src = user.profile_image_url.replace("_normal.", "_bigger.");
-
-  p.icorg.add(p.icon);
-  p.icorg.href = user.profile_image_url.replace("_normal.", ".");
-
-  p.tweets.add(D.ct("Tweets"));
-  p.tweets.href = U.ROOT + user.screen_name + "/status";
-
-  p.following.add(D.ct("Following"));
-  p.following.href = U.ROOT + user.screen_name + "/following";
-
-  p.following_timeline.add(D.ct("Tweets"));
-  p.following_timeline.href = U.ROOT + user.screen_name +
-                              "/following/tweets";
-
-  p.followers.add(D.ct("Followers"));
-  p.followers.href = U.ROOT + user.screen_name + "/followers";
-
-  p.lists.add(D.ct("Lists"));
-  p.lists.href = U.ROOT + user.screen_name + "/lists";
-
-  p.listsub.add(D.ct("Subscriptions"));
-  p.listsub.href = U.ROOT + user.screen_name + "/lists/subscriptions";
-
-  p.listed.add(D.ct("Listed"));
-  p.listed.href = U.ROOT + user.screen_name + "/lists/memberships";
-
-  p.favorites.add(D.ct("Favorites"));
-  p.favorites.href = U.ROOT + user.screen_name + "/favorites";
-
-  p.box.add(
+  D.q("#side").add(p.box.add(
     D.ce("dt").add(D.ct("Screen Name")),
     D.ce("dd").add(D.ct(user.screen_name)),
     D.ce("dt").add(D.ct("Icon")),
-    D.ce("dd").add(p.icorg),
+    D.ce("dd").add(p.icorg.add(p.icon)),
     D.ce("dt").add(D.ct("Name")),
     D.ce("dd").add(D.ct(T.decodeHTML(user.name))),
     D.ce("dt").add(D.ct("Location")),
@@ -4089,9 +4049,7 @@ V.outline.rendProfileOutline = function(user) {
     D.ce("dd").add(D.ct(user.lang)),
     D.ce("dt").add(D.ct("Since")),
     D.ce("dd").add(D.ct(new Date(user.created_at).toLocaleString()))
-  );
-
-  D.q("#side").add(p.box);
+  ));
 };
 
 // main
