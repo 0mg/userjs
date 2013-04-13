@@ -2654,14 +2654,14 @@ V.misc.onClickCursorIds = function(e) {
   var state = LS.state.load();
   var qrys = T.normalizeURL(e.target.href).query;
   if (qrys["cursor"] !== [].concat(U.getURL().query["cursor"])[0]) return;
+  e.preventDefault();
+  D.empty(D.q("#main")); D.empty(D.q("#cursor")); D.q("body").scrollIntoView();
+  history.pushState("", "", e.target.href);
   V.main.showUsersByLookup(
     state.ids_data,
     T.normalizeURL(state.ids_url).base + "?" + T.strQuery(qrys),
     state.ids_my, state.ids_mode
   );
-  history.pushState("", "", e.target.href);
-  D.empty(D.q("#main")); D.empty(D.q("#cursor")); D.q("body").scrollIntoView();
-  e.preventDefault();
 };
 
 V.main.cursorIdsPopState = function(e) {
@@ -2708,7 +2708,9 @@ V.misc.showCursor = function(data) {
 
 V.misc.onClickCursor = function(e) {
   var state = LS.state.load(), url, my, mode;
-  var sender = "users_url" in state ? V.main.showUsers: V.main.showLists;
+  var sender =
+    "users_url" in state ? V.main.showUsers:
+    "lists_url" in state ? V.main.showLists: undefined;
   if (sender === V.main.showUsers) {
     url = state.users_url, my = state.users_my, mode = state.users_mode;
   } else if (sender === V.main.showLists) {
@@ -2718,10 +2720,10 @@ V.misc.onClickCursor = function(e) {
   var newurl = urlpts.base + "?" + T.strQuery(O.sa(urlpts.query, {
     cursor: T.normalizeURL(e.target.href).query["cursor"]
   }));
+  e.preventDefault();
+  D.empty(D.q("#cursor")); D.empty(D.q("#main")); D.q("body").scrollIntoView();
   history.pushState("", "", e.target.href);
   sender(newurl, my, mode);
-  D.empty(D.q("#cursor")); D.empty(D.q("#main")); D.q("body").scrollIntoView();
-  e.preventDefault();
 };
 
 V.main.cursorPopState = function(e) {
@@ -2808,13 +2810,9 @@ V.main.showTL = function(url, my) {
     LS.state.save("timeline_data", timeline);
     V.main.prendTL([].concat(timeline), my);
   }
-  function onErr(xhr) {
-    V.misc.showXHRError(xhr);
-    LS.state.save("timeline_data", []);
-  }
   LS.state.save("timeline_url", url);
-  LS.state.save("my", my);
-  X.get(url, onScs, onErr);
+  LS.state.save("timeline_my", my);
+  X.get(url, onScs, V.misc.showXHRError);
 };
 
 V.main.prendTL = function(timeline, my, expurls) {
@@ -2844,11 +2842,11 @@ V.main.rendTL = function rendTL(timeline, my) {
     var url = T.normalizeURL(LS.state.load()["timeline_url"]);
     var pasturl = url.base + "?" +
       T.strQuery(O.sa(url.query, { max_id: max_id }));
-    history.pushState("", "", e.target.href);
+    e.preventDefault();
     D.empty(D.q("#main")); D.empty(D.q("#cursor"));
     D.q("body").scrollIntoView();
+    history.pushState("", "", e.target.href);
     V.main.showTL(pasturl, my);
-    e.preventDefault();
   });
   addEventListener("popstate", V.main.onPopState);
   addEventListener("scroll", V.main.onScroll);
@@ -2863,7 +2861,7 @@ V.main.onScroll = function() {
 V.main.onPopState = function(e) {
   var state = LS.state.load();
   V.main.prendTL([].concat(state["timeline_data"]),
-    state["my"], state["expanded_urls"]);
+    state["timeline_my"], state["expanded_urls"]);
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
