@@ -1455,10 +1455,9 @@ V.init.CSS = '\
     font-size: 14px;\
   }\
   textarea {\
-    padding: 2px;\
+    display: block;\
   }\
   button {\
-    margin: 0;\
     line-height: 1.1;\
   }\
   dl {\
@@ -2363,18 +2362,13 @@ V.main.settingProfile = function(my) {
 
 // Settings of this application
 V.main.settingOptions = function() {
-  var lsn = "localStorage['" + LS.NS + "']";
   var lsdata = LS.load();
   var lstext = JSON.stringify(lsdata);
   var nd = {
     vwLS: {
-      tree: D.ce("dd").add(O.htmlify(lsdata)),
+      tree: O.htmlify(lsdata),
       raw: D.ce("textarea").sa("cols", 60).sa("rows", 10),
       save: D.ce("button").add(D.ct("SAVE"))
-    },
-    rmLS: {
-      root: D.ce("dd"),
-      start: D.ce("button").add(D.ct("DELETE"))
     }
   };
   nd.vwLS.raw.value = lstext;
@@ -2383,28 +2377,15 @@ V.main.settingOptions = function() {
       var lstextInput = nd.vwLS.raw.value;
       var lsdataInput = JSON.parse(lstextInput);
       localStorage[LS.NS] = lstextInput;
-      while (nd.vwLS.tree.hasChildNodes()) D.rm(nd.vwLS.tree.lastChild);
+      D.empty(nd.vwLS.tree);
       nd.vwLS.tree.add(O.htmlify(lsdataInput));
     } catch(e) {
       alert(e);
     }
   });
-  nd.rmLS.start.addEventListener("click", function() {
-    if (confirm("sure?")) {
-      delete localStorage[LS.NS];
-      D.rm(nd.rmLS.start);
-      nd.rmLS.root.add(D.ct("DELETED"));
-    }
-  });
   D.q("#main").add(
-    D.ce("dl").add(
-      D.ce("dt").add(D.ct(lsn)),
-      D.ce("dd").add(D.ct(C.APP_NAME + "'s settings data")),
-      nd.rmLS.root.add(nd.rmLS.start),
-      nd.vwLS.tree,
-      D.ce("dd").add(nd.vwLS.raw),
-      D.ce("dd").add(nd.vwLS.save)
-    )
+    D.ce("h3").add(D.ct("localStorage['" + LS.NS + "']")),
+    nd.vwLS.raw, nd.vwLS.save, nd.vwLS.tree
   );
 };
 
