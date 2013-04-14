@@ -2348,14 +2348,14 @@ V.main.settingProfile = function(my) {
   D.q("#main").add(
     D.ce("dl").add(
       D.ce("dt").add(D.ct("icon")), D.ce("dd").add(nd.icon),
-      D.ce("dt").add(D.ct("apply")), D.ce("dd").add(nd.upload)
+      D.ce("dd").add(nd.upload)
     ),
     D.ce("dl").add(
       D.ce("dt").add(D.ct("name")), D.ce("dd").add(nd.name),
       D.ce("dt").add(D.ct("url")), D.ce("dd").add(nd.url),
       D.ce("dt").add(D.ct("location")), D.ce("dd").add(nd.loc),
       D.ce("dt").add(D.ct("description")), D.ce("dd").add(nd.desc),
-      D.ce("dt").add(D.ct("apply")), D.ce("dd").add(nd.save)
+      D.ce("dd").add(nd.save)
     )
   );
 };
@@ -3692,28 +3692,23 @@ V.panel.showUserManager = function(my) {
   };
   var curl = U.getURL();
   var onBtn = function(event) {
-    var isAdd = event.target === um.add, isDel = event.target === um.del;
-    if (!isAdd && !isDel) return;
-
+    var isAdd = event.target === um.add;
     var dir = um.dir.value, target = um.target.value;
     if (!dir || !target) return;
 
     var dir_is_list = dir.indexOf("/") >= 0;
     var target_is_list = target.indexOf("/") >= 0;
-    var mode = dir_is_list | (target_is_list << 1);
+    var mode = (target_is_list << 1) | dir_is_list;
 
     switch (mode) {
     case 0:
       switch (dir) {
       case "following":
-        API[isAdd ? "follow" : "unfollow"](target, null);
-        break;
+        API[isAdd ? "follow" : "unfollow"](target, null); break;
       case "followers":
-        API[isAdd ? "unblock" : "block"](target, null);
-        break;
+        API[isAdd ? "unblock" : "block"](target, null); break;
       case "blocking":
-        API[isAdd ? "block" : "unblock"](target, null);
-        break;
+        API[isAdd ? "block" : "unblock"](target, null); break;
       }
       break;
     case 1:
@@ -3722,10 +3717,8 @@ V.panel.showUserManager = function(my) {
         API[isAdd ? "requestFollow" : "unrequestFollow"](target, null);
         break;
       default: // add user to list
-        var myname_slug = dir.split("/");
-        var myname = myname_slug[0];
-        var slug = myname_slug[1];
-        API[isAdd ? "listing" : "unlisting"](myname, slug, target, null);
+        var arr = dir.split("/"), uname = arr[0], slug = arr[1];
+        API[isAdd ? "listing" : "unlisting"](uname, slug, target, null);
         break;
       }
       break;
@@ -3734,9 +3727,7 @@ V.panel.showUserManager = function(my) {
     case 3:
       switch (dir) {
       case "lists/subscriptions":
-        var uname_slug = target.split("/");
-        var uname = uname_slug[0];
-        var slug = uname_slug[1];
+        var arr = target.split("/"), uname = arr[0], slug = arr[1];
         API[isAdd ? "followList" : "unfollowList"](uname, slug, null);
         break;
       }
@@ -3746,13 +3737,13 @@ V.panel.showUserManager = function(my) {
   um.dir.value = curl.path.match(/[^/]+(?:[/][^/]+)?/);
   um.add.addEventListener("click", onBtn);
   um.del.addEventListener("click", onBtn);
-  um.node.add(
-    D.ce("dt").add(D.ct("location")),
+  D.q("#side").add(um.node.add(
+    D.ce("dt").add(D.ct("destination")),
     D.ce("dd").add(um.dir),
     D.ce("dt").add(D.ct("target")),
-    D.ce("dd").add(um.target, D.ce("br"), um.add, um.del)
-  );
-  D.q("#side").add(um.node);
+    D.ce("dd").add(um.target),
+    D.ce("dd").add(um.add, um.del)
+  ));
 };
 
 // Panel for Manage list
@@ -3805,7 +3796,7 @@ V.panel.showListPanel = function(my) {
     };
     API.deleteList(my.screen_name, list.name.value, onScs);
   });
-  list.panel.add(
+  D.q("#side").add(list.panel.add(
     D.ce("dt").add(D.ct("name")),
     D.ce("dd").add(list.name),
     D.ce("dt").add(D.ct("rename")),
@@ -3813,17 +3804,13 @@ V.panel.showListPanel = function(my) {
     D.ce("dt").add(D.ct("description")),
     D.ce("dd").add(list.description),
     D.ce("dt").add(D.ct("mode")),
-    D.ce("dd").add(
-      D.ce("label").add(list.privat, D.ct("private"))
-    ),
-    D.ce("dt").add(D.ct("apply")),
+    D.ce("dd").add(D.ce("label").add(list.privat, D.ct("private"))),
     D.ce("dd").add(
       list.create,
       list.update,
       list.del
     )
-  );
-  D.q("#side").add(list.panel);
+  ));
 };
 
 // Render View of Outline (users profile, list profile.,)
