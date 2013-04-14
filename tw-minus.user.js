@@ -1513,17 +1513,18 @@ V.init.CSS = '\
   }\
   #update_controller {\
     display: table;\
+    width: 100%;\
   }\
   #status {\
     display: table-cell;\
     vertical-align: bottom;\
-    width: 30em;\
+    width: 100%;\
     height: 7em;\
-    font-size: inherit;\
   }\
   #update_buttons {\
     display: table-cell;\
     vertical-align: bottom;\
+    width: 42%;\
   }\
   #media_view .media_image {\
     width: 48px;\
@@ -1534,6 +1535,9 @@ V.init.CSS = '\
   }\
   #media_view {\
     visibility: hidden;\
+  }\
+  #media_selector{\
+    width: 50%;\
   }\
   #reply_target_link.replying {\
     visibility: visible;\
