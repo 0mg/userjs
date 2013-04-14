@@ -2801,7 +2801,8 @@ V.main.rendTL = function rendTL(timeline, my) {
   timeline.forEach(function(tweet) {
     tl_element.add(V.main.rendTL.tweet(tweet, my));
   });
-  D.empty(D.q("#main")).add(tl_element);
+  D.rm(D.q("#timeline"));
+  D.q("#main").add(tl_element);
   if (!timeline.length) {
     return tl_element.add(O.htmlify({"Empty": "No tweets found"}));
   }
@@ -2818,7 +2819,7 @@ V.main.rendTL = function rendTL(timeline, my) {
     var pasturl = url.base + "?" +
       T.strQuery(O.sa(url.query, { max_id: max_id }));
     e.preventDefault();
-    D.empty(D.q("#main")); D.empty(D.q("#cursor"));
+    D.rm(D.q("#timeline")); D.empty(D.q("#cursor"));
     D.q("body").scrollIntoView();
     history.pushState("", "", e.target.href);
     V.main.showTL(pasturl, my);
