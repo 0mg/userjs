@@ -1515,16 +1515,20 @@ V.init.CSS = '\
     display: table;\
     width: 100%;\
   }\
-  #status {\
+  #status_profile {\
     display: table-cell;\
     vertical-align: bottom;\
+    box-sizing: border-box;\
+    width: 500px;\
+  }\
+  #status {\
     width: 100%;\
     height: 7em;\
   }\
   #update_buttons {\
     display: table-cell;\
     vertical-align: bottom;\
-    width: 42%;\
+    width: 250px;\
   }\
   #media_view .media_image {\
     width: 48px;\
@@ -1577,12 +1581,14 @@ V.init.CSS = '\
   .xhr-state.loading { position:absolute; background: gray; color: white; }\
   .xhr-state.done.success { background: white; color: gray; }\
   .xhr-state.done.failed { background: red; color: white; }\
+  #status_profile,\
   #subaction a,\
   .list,\
   .user,\
   .tweet {\
     background-color: #fdfdfd;\
   }\
+  #status_profile,\
   .list,\
   .user,\
   .tweet {\
@@ -1627,12 +1633,14 @@ V.init.CSS = '\
   .list.private .name::after {\
     content: "private";\
   }\
+  #status_profile .name,\
   .list .name,\
   .user .name,\
   .tweet .name,\
   .tweet .in_reply_to {\
     margin-left: 1ex;\
   }\
+  #status_profile .name,\
   .list .name, .list .name *, .list .meta, .list .meta *,\
   .user .name, .user .name *, .user .meta, .user .meta *,\
   .tweet .name, .tweet .name *, .tweet .meta, .tweet .meta * {\
@@ -1656,6 +1664,7 @@ V.init.CSS = '\
     color: white;\
     font-weight: bold;\
   }\
+  #status_profile .screen_name,\
   .list .full_name,\
   .user .screen_name,\
   .tweet .screen_name {\
@@ -1664,6 +1673,7 @@ V.init.CSS = '\
   .tweet .in_reply_to {\
     font-size: smaller;\
   }\
+  #status_profile .user-icon,\
   .list .user-icon,\
   .user .user-icon,\
   .tweet .user-icon {\
@@ -1740,7 +1750,7 @@ V.main.showPage = function(my) {
   D.q("title").textContent = "tw-/" + path;
   V.outline.showSubTitle(hash);
   V.panel.showGlobalBar(my);
-  V.panel.showTweetBox();
+  V.panel.showTweetBox(my);
 
   switch (hash.length) {
   case 1:
@@ -3601,10 +3611,16 @@ V.panel.showGlobalBar = function(my) {
 };
 
 // Global Tweet box
-V.panel.showTweetBox = function() {
+V.panel.showTweetBox = function(my) {
   var media_b64 = "";
   var nd = {
     box: D.ce("div").sa("id", "update_controller"),
+    profile: D.ce("div").sa("id", "status_profile"),
+    usname: D.ce("a").sa("class", "screen_name").add(D.ct(my.screen_name)).
+      sa("href", U.ROOT + my.screen_name),
+    uicon: D.ce("img").sa("class", "user-icon").
+      sa("src", my.profile_image_url || "data:").sa("alt", my.screen_name),
+    uname: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(my.name))),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
     update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
@@ -3680,9 +3696,14 @@ V.panel.showTweetBox = function() {
     }
   });
   // render tweet box
-  nd.box.add(nd.status, nd.btns);
-  nd.btns.add(nd.mediabox.add(nd.imgvw, nd.usemedia, nd.media));
-  nd.btns.add(nd.id, nd.update, nd.replink);
+  nd.profile.add(
+    nd.usname, nd.uicon, nd.uname, nd.replink,
+    nd.status,
+    nd.update, nd.usemedia, nd.media,
+    nd.id
+  );
+  nd.btns.add(nd.imgvw);
+  nd.box.add(nd.profile, nd.btns);
   D.q("#header").add(nd.box);
 };
 
