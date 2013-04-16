@@ -2584,7 +2584,7 @@ V.main.rendUsers = function(data, my, mode) {
     users_list.add(lu.root.add(
       lu.screen_name, lu.icon, lu.name, lu.description,
       D.ce("span").sa("class", "meta").add(lu.created_at),
-      followerRequests ? lu.root.add(V.panel.makeReqDecider(user)): D.cf()
+      followerRequests ? V.panel.makeReqDecider(user): D.cf()
     ));
   });
 
