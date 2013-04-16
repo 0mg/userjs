@@ -1511,43 +1511,41 @@ V.init.CSS = '\
     border-left: 1px solid transparent;\
     word-wrap: break-word;\
   }\
-  #update_controller {\
+  #status_section {\
     display: table;\
-    width: 100%;\
   }\
   #status_profile {\
     display: table-cell;\
     vertical-align: bottom;\
     box-sizing: border-box;\
     width: 500px;\
+    margin-right: 250px;\
   }\
   #status {\
     width: 100%;\
     height: 7em;\
   }\
-  #update_buttons {\
-    display: table-cell;\
-    vertical-align: bottom;\
-    width: 250px;\
+  #in_reply_to_status_id, #in_reply_to_screen_name {\
+    display: none;\
   }\
-  #media_view .media_image {\
-    width: 48px;\
-    height: 48px;\
+  #status_media_preview {\
+    display: none;\
+    margin-top: 1ex;\
   }\
-  #media_view.use_media {\
-    visibility: visible;\
+  #status_media_preview.use_media {\
+    display: block;\
   }\
-  #media_view {\
-    visibility: hidden;\
+  #status_media_preview .media_image {\
+    width: 100%;\
   }\
-  #media_selector{\
-    width: 50%;\
+  #status_media {\
+    max-width: 50%;\
   }\
   #reply_target_link.replying {\
-    visibility: visible;\
+    display: inline;\
   }\
   #reply_target_link {\
-    visibility: hidden;\
+    display: none;\
   }\
   #timeline {\
   }\
@@ -1597,10 +1595,8 @@ V.init.CSS = '\
     min-height: 48px;\
     padding: 1ex 1ex 1ex 60px;\
     border-bottom: 1px solid silver;\
-    transition: background-color 2s ease-out;\
   }\
   .tweet.focus {\
-    transition: 0s;\
     background-color: #fc0;\
   }\
   .user-profile.verified > dd:first-of-type::before,\
@@ -3619,7 +3615,7 @@ V.panel.showGlobalBar = function(my) {
 V.panel.showTweetBox = function(my) {
   var media_b64 = "";
   var nd = {
-    box: D.ce("div").sa("id", "update_controller"),
+    box: D.ce("div").sa("id", "status_section"),
     profile: D.ce("div").sa("id", "status_profile"),
     usname: D.ce("a").sa("class", "screen_name").add(D.ct(my.screen_name)).
       sa("href", U.ROOT + my.screen_name),
@@ -3627,18 +3623,15 @@ V.panel.showTweetBox = function(my) {
       sa("src", my.profile_image_url || "data:").sa("alt", my.screen_name),
     uname: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(my.name))),
     status: D.ce("textarea").sa("id", "status"),
-    id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
-    to_uname: D.ce("input").sa("id", "in_reply_to_screen_name").
-      sa("type", "hidden"),
-    update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
-    replink: D.ce("a").sa("class", "in_reply_to").
-      sa("id", "reply_target_link"),
-    btns: D.ce("div").sa("id", "update_buttons"),
-    mediabox: D.ce("div").sa("id", "media_controller"),
-    imgvw: D.ce("div").sa("id", "media_view"),
-    usemedia: D.ce("input").sa("id", "media_toggle").sa("type", "checkbox").
-      sa("disabled", "disabled"),
-    media: D.ce("input").sa("type", "file").sa("id", "media_selector")
+    id: D.ce("input").sa("id", "in_reply_to_status_id"),
+    to_uname: D.ce("input").sa("id", "in_reply_to_screen_name"),
+    update: D.ce("button").sa("id", "status_update").add(D.ct("Tweet")),
+    replink: D.ce("a").sa("id", "reply_target_link").
+      sa("class", "in_reply_to"),
+    imgvw: D.ce("div").sa("id", "status_media_preview"),
+    usemedia: D.ce("input").sa("id", "status_media_use").
+      sa("type", "checkbox").sa("disabled", "disabled"),
+    media: D.ce("input").sa("id", "status_media").sa("type", "file")
   };
   var switchReplyTarget = function() {
     var uid = nd.id.value, uname = nd.to_uname.value;
@@ -3709,10 +3702,10 @@ V.panel.showTweetBox = function(my) {
     nd.usname, nd.uicon, nd.uname, nd.replink,
     nd.status,
     nd.update, nd.usemedia, nd.media,
+    nd.imgvw,
     nd.id, nd.to_uname
   );
-  nd.btns.add(nd.imgvw);
-  nd.box.add(nd.profile, nd.btns);
+  nd.box.add(nd.profile);
   D.q("#header").add(nd.box);
 };
 
