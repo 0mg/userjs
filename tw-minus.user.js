@@ -1634,6 +1634,7 @@ V.init.CSS = '\
     content: "private";\
   }\
   #status_profile .name,\
+  #status_profile .in_reply_to,\
   .list .name,\
   .user .name,\
   .tweet .name,\
@@ -1670,6 +1671,7 @@ V.init.CSS = '\
   .tweet .screen_name {\
     font-weight: bold;\
   }\
+  #status_profile .in_reply_to,\
   .tweet .in_reply_to {\
     font-size: smaller;\
   }\
@@ -3156,13 +3158,16 @@ V.panel.makeTwAct = function(t, my) {
   } else {
     ab.rep.addEventListener("click", function(ev) {
       var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
+      var repname = D.q("#in_reply_to_screen_name");
       var tgt = ev.ctrlKey ? t: rt || t;
       // main
       if (repid.value !== tgt.id_str) {
         status.value = "@" + tgt.user.screen_name + " " + status.value;
         repid.value = tgt.id_str;
+        repname.value = tgt.user.screen_name;
       } else {
         repid.value = "";
+        repname.value = "";
       }
       // outline
       var ce = document.createEvent("Event");
@@ -3623,8 +3628,11 @@ V.panel.showTweetBox = function(my) {
     uname: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(my.name))),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id").sa("type", "hidden"),
+    to_uname: D.ce("input").sa("id", "in_reply_to_screen_name").
+      sa("type", "hidden"),
     update: D.ce("button").sa("id", "update").add(D.ct("Tweet")),
-    replink: D.ce("button").sa("id", "reply_target_link").add(D.ct("to")),
+    replink: D.ce("a").sa("class", "in_reply_to").
+      sa("id", "reply_target_link"),
     btns: D.ce("div").sa("id", "update_buttons"),
     mediabox: D.ce("div").sa("id", "media_controller"),
     imgvw: D.ce("div").sa("id", "media_view"),
@@ -3633,18 +3641,20 @@ V.panel.showTweetBox = function(my) {
     media: D.ce("input").sa("type", "file").sa("id", "media_selector")
   };
   var switchReplyTarget = function() {
+    var uid = nd.id.value, uname = nd.to_uname.value;
     // reset
     [].forEach.call(D.qs(".reply_target"), function(e) {
       e.classList.remove("reply_target");
     });
     nd.replink.classList.remove("replying");
-    // add
-    var reptgt = D.q(".tweet.id-" + nd.id.value); if (!reptgt) return;
-    var uname = reptgt.q(".screen_name").textContent;
-    if (nd.status.value.match("@" + uname + "\\b")) {
-      nd.replink.textContent = "to @" + uname;
+    // update reply target
+    var reptgt = D.q(".tweet.id-" + uid);
+    if (reptgt) reptgt.classList.add("reply_target");
+    // update replink
+    if (uid && nd.status.value.match("@" + uname + "\\b")) {
+      nd.replink.textContent = "in reply to " + uname;
+      nd.replink.sa("href", U.ROOT + uname + "/status/" + uid);
       nd.replink.classList.add("replying");
-      reptgt.classList.add("reply_target");
       return true;
     }
   };
@@ -3683,24 +3693,23 @@ V.panel.showTweetBox = function(my) {
     });
     fr.readAsBinaryString(file);
   });
-  nd.replink.addEventListener("click", function() {
-    var e = D.q(".tweet.id-" + nd.id.value);
-    if (e) {
-      nd.replink.disabled = true;
-      e.scrollIntoView();
-      e.classList.add("focus");
-      setTimeout(function() {
-        e.classList.remove("focus");
-        nd.replink.disabled = false;
-      }, 500);
-    }
+  nd.replink.addEventListener("click", function(v) {
+    var e = D.q(".tweet.id-" + nd.id.value); if (!e) return;
+    nd.replink.disabled = true;
+    e.scrollIntoView();
+    e.classList.add("focus");
+    setTimeout(function() {
+      e.classList.remove("focus");
+      nd.replink.disabled = false;
+    }, 500);
+    v.preventDefault();
   });
   // render tweet box
   nd.profile.add(
     nd.usname, nd.uicon, nd.uname, nd.replink,
     nd.status,
     nd.update, nd.usemedia, nd.media,
-    nd.id
+    nd.id, nd.to_uname
   );
   nd.btns.add(nd.imgvw);
   nd.box.add(nd.profile, nd.btns);
