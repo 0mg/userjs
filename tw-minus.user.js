@@ -1477,13 +1477,18 @@ V.init.CSS = '\
   }\
   #header {\
   }\
+  #globalbar {\
+    border-width: 0 0 1px 0;\
+    border-style: solid;\
+  }\
   #globalbar li {\
     display: inline-block;\
     margin-right: 2ex;\
   }\
   #subtitle {\
     padding: 1ex;\
-    border-bottom: 1px solid transparent;\
+    border-width: 0 0 1px 0;\
+    border-style: solid;\
   }\
   #subaction {\
     line-height: 1;\
@@ -1508,18 +1513,19 @@ V.init.CSS = '\
     width: 249px;\
     max-width: 249px;\
     font-size: smaller;\
-    border-left: 1px solid transparent;\
+    border-width: 0 0 0 1px;\
+    border-style: solid;\
     word-wrap: break-word;\
   }\
   #status_section {\
-    display: table;\
+    display: flex;\
+    border-width: 0 0 1px 0;\
+    border-style: solid;\
   }\
   #status_profile {\
-    display: table-cell;\
-    vertical-align: bottom;\
     box-sizing: border-box;\
     width: 500px;\
-    margin-right: 250px;\
+    border-bottom: none !important;\
   }\
   #status {\
     width: 100%;\
@@ -1562,6 +1568,9 @@ V.init.CSS = '\
   .cursor_next {\
   }\
   .cursor_prev {\
+  }\
+  .user-style-bar {\
+    border-color: transparent;\
   }\
   .debugbox {\
     width: 100%;\
@@ -1720,17 +1729,17 @@ V.init.initNode = function() {
 V.init.structPage = function() {
   D.q("body").add(
     D.ce("ul").sa("id", "xhr-statuses"),
-    D.ce("header").sa("id", "header"),
-    D.ce("section").sa("id", "content").add(
-      D.ce("h2").sa("id", "subtitle"),
-      D.ce("div").sa("id", "subaction").sa("class", "user-action").add(
+    D.ce("header").sa("id", "header").sa("class", "user-style-bar"),
+    D.ce("section").sa("id", "content").sa("class", "user-style-bar").add(
+      D.ce("h2").sa("id", "subtitle").sa("class", "user-style-bar"),
+      D.ce("div").sa("id", "subaction").add(
         D.ce("div").sa("id", "subaction-inner-1"),
         D.ce("div").sa("id", "subaction-inner-2")
       ),
       D.ce("article").sa("id", "main"),
       D.ce("ul").sa("id", "cursor")
     ),
-    D.ce("aside").sa("id", "side")
+    D.ce("aside").sa("id", "side").sa("class", "user-style-bar")
   );
 };
 
@@ -3529,6 +3538,7 @@ V.panel.showGlobalBar = function(my) {
   it.updMyStats(my);
 
   g.bar.id = "globalbar";
+  g.bar.className = "user-style-bar";
 
   g.home.href = U.ROOT;
   g.home.add(D.ct("Home"));
@@ -3615,7 +3625,7 @@ V.panel.showGlobalBar = function(my) {
 V.panel.showTweetBox = function(my) {
   var media_b64 = "";
   var nd = {
-    box: D.ce("div").sa("id", "status_section"),
+    box: D.ce("div").sa("id", "status_section").sa("class", "user-style-bar"),
     profile: D.ce("div").sa("id", "status_profile"),
     usname: D.ce("a").sa("class", "screen_name").add(D.ct(my.screen_name)).
       sa("href", U.ROOT + my.screen_name),
@@ -3879,8 +3889,10 @@ V.outline.changeDesign = function(user) {
     "}" +
     "body{color:" + color.text + "}" +
     "a{color:" + color.link + "}" +
-    "#header,#content,#side{background-color:" + color.side_fill + "}" +
-    "#subtitle,#side{border-color:" + color.side_border + "}";
+    ".user-style-bar{" +
+      "background-color:" + color.side_fill + ";" +
+      "border-color:" + color.side_border + ";" +
+    "}";
 };
 
 // Step to Render list outline and color
