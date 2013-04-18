@@ -1694,17 +1694,12 @@ V.init.CSS = '\
     width: 73px;\
     height: 73px;\
   }\
-  .tweet-action {\
-    font-size: smaller;\
-  }\
-  .tweet-action button.null::before,\
-  .user-action button.null::before {\
+  .toggle.null::before {\
     content: "\\ff1f";\
     font-weight: bold;\
   }\
   .tweet.reply_target .reply::before,\
-  .tweet-action button.true::before,\
-  .user-action button.true::before {\
+  .toggle.true::before {\
     content: "\\2714";\
   }\
 '.replace(/\s+/g, " ");
@@ -3058,13 +3053,13 @@ V.misc.expandUrls = function(parent, expurls) {
 V.panel = {};
 
 // ON/OFF Button Constructor
-V.panel.Button = function(name, labelDefault, labelOn) {
+V.Button = function(labelDefault, labelOn) {
   this.name = name;
   this.labelDefault = labelDefault;
-  this.labelOn = labelOn;
-  this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", name);
+  this.labelOn = labelOn !== undefined ? labelOn: labelDefault;
+  this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", "toggle");
 };
-V.panel.Button.prototype = {
+V.Button.prototype = {
   on: false,
   turn: function(flag) {
     if (flag !== null) {
@@ -3091,22 +3086,19 @@ V.panel.Button.prototype = {
 
 // Buttons to do Follow Request Accept/Deny
 V.panel.makeReqDecider = function(user) {
-  var Button = V.panel.Button;
   var ad = {
-    node: D.ce("div").sa("class", "user-action"),
-    accept: new Button("accept-follow", "Accept", "Accept"),
-    deny: new Button("deny-follow", "Deny", "Deny")
+    node: D.ce("div"),
+    accept: D.ce("button").add(D.ct("Accept")),
+    deny: D.ce("button").add(D.ct("Deny"))
   };
   function onDecide() { D.rm(ad.node.parentNode); }
-  var onAccept = onDecide;
-  var onDeny = onDecide;
-  ad.accept.node.addEventListener("click", function() {
-    API.acceptFollow(user.screen_name, onAccept);
+  ad.accept.addEventListener("click", function() {
+    API.acceptFollow(user.screen_name, onDecide);
   });
-  ad.deny.node.addEventListener("click", function() {
-    API.denyFollow(user.screen_name, onDeny);
+  ad.deny.addEventListener("click", function() {
+    API.denyFollow(user.screen_name, onDecide);
   });
-  ad.node.add(ad.accept.node, ad.deny.node);
+  ad.node.add(ad.accept, ad.deny);
   return ad.node;
 };
 
@@ -3121,13 +3113,12 @@ V.panel.makeTwAct = function(t, my) {
   var isTweetRTedByMe = "current_user_retweet" in t;
   var isRTRTedByMeToo = isRT && isTweetRTedByMe && false;
   if (isDM) t.user = t.sender;
-  var Button = V.panel.Button;
   var ab = {
-    node: D.ce("div").sa("class", "tweet-action"),
-    fav: new Button("fav", "Fav", "Unfav"),
+    node: D.ce("div"),
+    fav: new V.Button("Fav", "Unfav"),
     rep: D.ce("button"),
-    del: new Button("delete", "Delete", "Delete"),
-    rt: new Button("retweet", "RT", "UnRT")
+    del: new V.Button("Delete"),
+    rt: new V.Button("RT", "UnRT")
   };
   /*ab.node.add(
     D.ct(isRT ? "This is a RT by " + t.user.screen_name + ". " :
@@ -3235,15 +3226,14 @@ V.panel.showFollowPanel = function(user) {
     marked_spam: false,
     want_retweets: false
   };
-  var Button = V.panel.Button;
   var ab = {
     node: D.cf(),
-    follow: new Button("follow", "Follow", "Unfollow"),
-    block: new Button("block", "Block", "Unblock"),
-    spam: new Button("spam", "Spam", "Unspam"),
-    req_follow: new Button("req_follow", "ReqFollow", "UnreqFollow"),
-    dm: new Button("dm", "D"),
-    want_rt: new Button("want_rt", "WantRT", "UnwantRT")
+    follow: new V.Button("Follow", "Unfollow"),
+    block: new V.Button("Block", "Unblock"),
+    spam: new V.Button("Spam", "Unspam"),
+    req_follow: new V.Button("ReqFollow", "UnreqFollow"),
+    dm: new V.Button("D"),
+    want_rt: new V.Button("WantRT", "UnwantRT")
   };
   var update = function(xhr) {
     /*if (xhr && xhr.status === 200) {
@@ -3439,14 +3429,13 @@ V.panel.showAddListPanel = function(user, my) {
   }
 };
 V.panel.lifeListButtons = function(lists, user, my) {
-  var Button = V.panel.Button;
   var al = {
     node: D.ce("div")
   };
   var list_btns = {};
   lists.forEach(function(l) {
     var lb_label = (l.mode === "private" ? "-": "+") + l.slug;
-    var lb = new Button("listing", lb_label, lb_label);
+    var lb = new V.Button(lb_label);
     list_btns[l.slug] = lb;
     function onListing() { lb.turn(true); }
     function onUnlisting() { lb.turn(false); }
@@ -3476,16 +3465,15 @@ V.panel.lifeListButtons = function(lists, user, my) {
 V.panel.showListFollowPanel = function(list) {
   var ab = {
     node: D.ce("div"),
-    follow: new V.panel.Button("follow", "Follow", "Unfollow")
+    follow: new V.Button("Follow", "Unfollow")
   };
   function onFollow() { ab.follow.turn(true); }
   function onUnfollow() { ab.follow.turn(false); }
   list.following && onFollow();
   ab.follow.node.addEventListener("click", function() {
-    ab.follow.on ? API.unfollowList(list.user.screen_name,
-                                    list.slug, onUnfollow) :
-                   API.followList(list.user.screen_name,
-                                  list.slug, onFollow);
+    ab.follow.on ?
+      API.unfollowList(list.user.screen_name, list.slug, onUnfollow):
+      API.followList(list.user.screen_name, list.slug, onFollow);
   });
   ab.node.add(ab.follow.node);
   D.q("#subaction").add(ab.node);
