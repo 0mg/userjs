@@ -1456,6 +1456,8 @@ V.init.CSS = '\
   }\
   textarea {\
     display: block;\
+    width: 100%;\
+    height: 7em;\
   }\
   button {\
     line-height: 1.1;\
@@ -3790,7 +3792,12 @@ V.panel.showListPanel = function(my) {
     if (!mylists) return;
     if (mylists.contains(node) && node.classList.contains("list")) {
       name = D.q.call(node, ".full_name").textContent.split("/")[1];
-      desc = D.q.call(node, ".description").textContent;
+      desc = D.add.apply(D.cf(),
+        [].map.call(D.q.call(node, ".description").childNodes, function(e) {
+          if (e.nodeName.toLowerCase() === "br") return D.ct("\n");
+          return e.cloneNode(true);
+        })
+      ).textContent;
       list.name.value = name;
       list.description.value = desc;
     }
