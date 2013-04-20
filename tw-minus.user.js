@@ -1478,6 +1478,8 @@ V.init.CSS = '\
     text-decoration: none;\
   }\
   #header {\
+    border-width: 0 0 1ex 0;\
+    border-style: solid;\
   }\
   #globalbar {\
     border-width: 0 0 1px 0;\
@@ -1512,22 +1514,19 @@ V.init.CSS = '\
   }\
   #side {\
     display: table-cell;\
-    width: 249px;\
-    max-width: 249px;\
+    box-sizing: border-box;\
+    width: 250px;\
+    max-width: 250px;\
     font-size: smaller;\
     border-width: 0 0 0 1px;\
     border-style: solid;\
     word-wrap: break-word;\
   }\
   #status_section {\
-    display: flex;\
-    border-width: 0 0 1px 0;\
-    border-style: solid;\
   }\
   #status_profile {\
     box-sizing: border-box;\
-    width: 500px;\
-    border-bottom: none !important;\
+    max-width: 500px;\
   }\
   #status {\
     width: 100%;\
@@ -1555,6 +1554,10 @@ V.init.CSS = '\
   #reply_target_link {\
     display: none;\
   }\
+  #status_log {\
+    width: 100%;\
+    max-width: 500px;\
+  }\
   #timeline {\
   }\
   #users {\
@@ -1573,10 +1576,6 @@ V.init.CSS = '\
   }\
   .user-style-bar {\
     border-color: transparent;\
-  }\
-  .debugbox {\
-    width: 100%;\
-    height: 7em;\
   }\
   a.maybe_shorten_url {\
   }\
@@ -1723,10 +1722,14 @@ V.init.initNode = function() {
 };
 
 // Set DOM struct of tw-
-V.init.structPage = function() {
+V.init.structPage = function(my) {
   D.q("body").add(
     D.ce("ul").sa("id", "xhr-statuses"),
-    D.ce("header").sa("id", "header").sa("class", "user-style-bar"),
+    D.ce("header").sa("id", "header").sa("class", "user-style-bar").add(
+      D.ce("ul").sa("id", "globalbar").sa("class", "user-style-bar"),
+      D.ce("div").sa("id", "status_section").sa("class", "user-style-bar"),
+      D.ce("ol").sa("id", "status_log")
+    ),
     D.ce("section").sa("id", "content").sa("class", "user-style-bar").add(
       D.ce("h2").sa("id", "subtitle").sa("class", "user-style-bar"),
       D.ce("div").sa("id", "subaction").add(
@@ -1738,6 +1741,8 @@ V.init.structPage = function() {
     ),
     D.ce("aside").sa("id", "side").sa("class", "user-style-bar")
   );
+  D.q("#globalbar").add(V.panel.newGlobalBar(my));
+  D.q("#status_section").add(V.panel.newTweetBox(my));
 };
 
 // Functions of Render main content
@@ -1753,8 +1758,6 @@ V.main.showPage = function(my) {
 
   D.q("title").textContent = "tw-/" + path;
   V.outline.showSubTitle(hash);
-  V.panel.showGlobalBar(my);
-  V.panel.showTweetBox(my);
 
   switch (hash.length) {
   case 1:
@@ -2419,7 +2422,7 @@ V.main.settingFollow = function(my) {
   };
   var node = {
     main: D.q("#main"),
-    mirrorDebug: D.ce("textarea").sa("class", "debugbox"),
+    mirrorDebug: D.ce("textarea"),
     mirrorAna: D.ce("button").add(D.ct("Analize")),
     mirrorBtn: D.ce("button").add(D.ct("Mirror")),
     followCnt: D.ce("span").add(D.ct("0")),
@@ -2817,7 +2820,7 @@ V.main.prendTL = function(timeline, my, expurls) {
 V.main.rendTL = function rendTL(timeline, my) {
   var tl_element = D.ce("ol").sa("id", "timeline");
   timeline.forEach(function(tweet) {
-    tl_element.add(V.main.rendTL.tweet(tweet, my));
+    tl_element.add(V.main.newTweet(tweet, my));
   });
   D.rm(D.q("#timeline"));
   D.q("#main").add(tl_element);
@@ -2859,7 +2862,7 @@ V.main.onPopState = function(e) {
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
-V.main.rendTL.tweet = function(tweet, my) {
+V.main.newTweet = function(tweet, my) {
   var tweet_org = tweet;
 
   var isDM = "sender" in tweet && "recipient" in tweet;
@@ -3495,10 +3498,10 @@ V.panel.updMyStats = function(my) {
 
 // Global bar: links to home, profile, mentions, lists.,
 V.panel.global_bar = null;
-V.panel.showGlobalBar = function(my) {
+V.panel.newGlobalBar = function(my) {
   var it = V.panel;
   var g = {
-    bar: D.ce("ul"),
+    bar: D.cf(),
     home: D.ce("a"),
     profile: D.ce("a"),
     replies: D.ce("a"),
@@ -3526,9 +3529,6 @@ V.panel.showGlobalBar = function(my) {
   };
   it.global_bar = g;
   it.updMyStats(my);
-
-  g.bar.id = "globalbar";
-  g.bar.className = "user-style-bar";
 
   g.home.href = U.ROOT;
   g.home.add(D.ct("Home"));
@@ -3608,14 +3608,14 @@ V.panel.showGlobalBar = function(my) {
     D.ce("li").add(g.api),
     D.ce("li").add(g.logout)
   );
-  D.q("#header").add(g.bar);
+  return g.bar;
 };
 
 // Global Tweet box
-V.panel.showTweetBox = function(my) {
+V.panel.newTweetBox = function(my) {
   var media_b64 = "";
   var nd = {
-    box: D.ce("div").sa("id", "status_section").sa("class", "user-style-bar"),
+    box: D.cf(),
     profile: D.ce("div").sa("id", "status_profile"),
     usname: D.ce("a").sa("class", "screen_name").add(D.ct(my.screen_name)).
       sa("href", U.ROOT + my.screen_name),
@@ -3654,6 +3654,11 @@ V.panel.showTweetBox = function(my) {
   var onCheck = function() {
     nd.imgvw.classList[nd.usemedia.checked ? "add": "remove"]("use_media");
   };
+  var onTweet = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    D.q("#status_log").ins(V.main.newTweet(data, my));
+    D.empty(D.q("#status_section")).add(V.panel.newTweetBox(my));
+  };
   // add event listeners
   nd.status.addEventListener("input", function() {
     var replying = switchReplyTarget();
@@ -3665,10 +3670,12 @@ V.panel.showTweetBox = function(my) {
       replace(reurl, "$1http://t.co/1234567").length > 140;
   });
   nd.update.addEventListener("click", function() {
+    var u = undefined;
     if (nd.usemedia.checked && media_b64) {
-      API.tweetMedia(media_b64, nd.status.value, nd.id.value, "", "", "", "");
+      API.tweetMedia(media_b64, nd.status.value, nd.id.value,
+        u, u, u, u, onTweet);
     } else {
-      API.tweet(nd.status.value, nd.id.value, "", "", "", "", "");
+      API.tweet(nd.status.value, nd.id.value, u, u, u, u, u, onTweet);
     }
   });
   nd.usemedia.addEventListener("change", onCheck);
@@ -3697,6 +3704,8 @@ V.panel.showTweetBox = function(my) {
     }, 500);
     v.preventDefault();
   });
+  // init
+  switchReplyTarget();
   // render tweet box
   nd.profile.add(
     nd.usname, nd.uicon, nd.uname, nd.replink,
@@ -3706,7 +3715,7 @@ V.panel.showTweetBox = function(my) {
     nd.id, nd.to_uname
   );
   nd.box.add(nd.profile);
-  D.q("#header").add(nd.box);
+  return nd.box;
 };
 
 // Panel for manage list members, following, followers.,
@@ -4061,7 +4070,7 @@ V.outline.rendProfileOutline = function(user) {
   var my = ls["credentials"];
   var editDOM = function() {
     V.init.initNode();
-    V.init.structPage();
+    V.init.structPage(my);
     V.main.showPage(my);
   };
   API.urls.init();
