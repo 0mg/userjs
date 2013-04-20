@@ -1279,32 +1279,18 @@ API.resolveURL = function(links, onScs, onErr) {
         })).join("&urls[]=").substring(1), onScs, onErr);
 };
 
-API.tweet = function(status, id, lat, lon, place_id, display_coordinates,
-                source, onScs, onErr) {
-  X.post(API.urls.tweet.post()(),
-         "status=" + (P.oauth.enc(status) || "") +
-         "&in_reply_to_status_id=" + (id || "") +
-         "&lat=" + (lat || "") +
-         "&long=" + (lon || "") +
-         "&place_id=" + (place_id || "") +
-         "&display_coordinates=" + (display_coordinates || "") +
-         "&source=" + (source || ""), onScs, onErr);
+API.tweet = function(status, id, onScs, onErr) {
+  var q = { status: status };
+  if (id !== undefined) q.in_reply_to_status_id = id;
+  X.post(API.urls.tweet.post()(), q, onScs, onErr);
 };
 
-API.tweetMedia = function(media, status, id,
-                          lat, lon, place_id, display_coordinates,
-                          onScs, onErr) {
+API.tweetMedia = function(media, status, id, onScs, onErr) {
   var url = API.urls.tweet.upload()();
-  X.post(url, X.formData({
-    "media_data[]": media,
-    "status": status || "",
-    "in_reply_to_status_id": id || "",
-    "lat": lat || "",
-    "lon": lon || "",
-    "place_id": place_id || "",
-    "display_coordinates": display_coordinates || ""
-  }),
-  onScs, onErr);
+  var q = { "media_data[]": media };
+  if (status !== undefined) q.status = status;
+  if (id !== undefined) q.in_reply_to_status_id = id;
+  X.post(url, X.formData(q), onScs, onErr);
 };
 
 API.untweet = function(id, onScs, onErr) {
@@ -3675,12 +3661,10 @@ V.panel.newTweetBox = function(my) {
       replace(reurl, "$1http://t.co/1234567").length > 140;
   });
   nd.update.addEventListener("click", function() {
-    var u = undefined;
     if (nd.usemedia.checked && media_b64) {
-      API.tweetMedia(media_b64, nd.status.value, nd.id.value,
-        u, u, u, u, onTweet);
+      API.tweetMedia(media_b64, nd.status.value, nd.id.value, onTweet);
     } else {
-      API.tweet(nd.status.value, nd.id.value, u, u, u, u, u, onTweet);
+      API.tweet(nd.status.value, nd.id.value, onTweet);
     }
   });
   nd.usemedia.addEventListener("change", onCheck);
