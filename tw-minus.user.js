@@ -1478,7 +1478,7 @@ V.init.CSS = '\
     text-decoration: none;\
   }\
   #header {\
-    border-width: 0 0 1ex 0;\
+    border-width: 0 0 1px 0;\
     border-style: solid;\
   }\
   #globalbar {\
@@ -1527,6 +1527,7 @@ V.init.CSS = '\
   #status_profile {\
     box-sizing: border-box;\
     max-width: 500px;\
+    border: 0 !important;\
   }\
   #status {\
     width: 100%;\
@@ -1557,6 +1558,10 @@ V.init.CSS = '\
   #status_log {\
     width: 100%;\
     max-width: 500px;\
+  }\
+  #status_log .tweet {\
+    border: none;\
+    border-top: 1px solid silver;\
   }\
   #timeline {\
   }\
