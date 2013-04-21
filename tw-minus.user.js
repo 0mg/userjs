@@ -1211,7 +1211,8 @@ API.cc.onGotMyList = function(data, del) {
 API.cc.onGotMe = function(data) {
   LS.save("credentials", data);
   LS.save("credentials_modified", Date.now());
-  V.panel.updMyStats(data);
+  D.empty(D.q("#globalbar")).add(V.panel.newGlobalBar(data));
+  V.panel.updTweetBox(data);
 };
 API.cc.getMyLists = function() {
   var ls = LS.load();
@@ -2001,7 +2002,8 @@ V.main.showLoginUI = function(qs) {
       screen_name: tokens["screen_name"]
     };
     LS.save("credentials", my);
-    V.panel.updMyStats(my);
+    D.empty(D.q("#globalbar")).add(V.panel.newGlobalBar(my));
+    V.panel.updTweetBox(my);
     D.q("#main").add(O.htmlify(tokens));
   };
   var onErr = function(xhr) {
@@ -3475,22 +3477,8 @@ V.panel.showListFollowPanel = function(list) {
   D.q("#subaction").add(ab.node);
 };
 
-// update my stats in header
-V.panel.updMyStats = function(my) {
-  var g = V.panel.global_bar;
-  g.profile.href = U.ROOT + my.screen_name;
-  g.tweets_len.textContent = my.statuses_count;
-  g.screen_name.textContent = my.screen_name;
-  g.fav_len.textContent = my.favourites_count;
-  g.fwing_len.textContent = my.friends_count;
-  g.fwers_len.textContent = my.followers_count;
-  g.listed_len.textContent = my.listed_count;
-};
-
 // Global bar: links to home, profile, mentions, lists.,
-V.panel.global_bar = null;
 V.panel.newGlobalBar = function(my) {
-  var it = V.panel;
   var g = {
     bar: D.cf(),
     home: D.ce("a"),
@@ -3518,8 +3506,13 @@ V.panel.newGlobalBar = function(my) {
     fwers_len: D.ce("span").sa("class", "followers_count"),
     listed_len: D.ce("span").sa("class", "listed_count")
   };
-  it.global_bar = g;
-  it.updMyStats(my);
+  g.profile.href = U.ROOT + my.screen_name;
+  g.tweets_len.textContent = my.statuses_count;
+  g.screen_name.textContent = my.screen_name;
+  g.fav_len.textContent = my.favourites_count;
+  g.fwing_len.textContent = my.friends_count;
+  g.fwers_len.textContent = my.followers_count;
+  g.listed_len.textContent = my.listed_count;
 
   g.home.href = U.ROOT;
   g.home.add(D.ct("Home"));
@@ -3603,16 +3596,23 @@ V.panel.newGlobalBar = function(my) {
 };
 
 // Global Tweet box
+V.panel.updTweetBox = function(my) {
+  var nd = V.panel.tweetbox;
+  nd.usname.textContent = my.screen_name;
+  nd.usname.sa("href", U.ROOT + my.screen_name);
+  nd.uicon.sa("src", my.profile_image_url || "data:");
+  nd.uicon.sa("alt", my.screen_name);
+  nd.uname.textContent = T.decodeHTML(my.name);
+};
+V.panel.tweetbox = null;
 V.panel.newTweetBox = function(my) {
   var media_b64 = "";
   var nd = {
     box: D.cf(),
     profile: D.ce("div").sa("id", "status_profile"),
-    usname: D.ce("a").sa("class", "screen_name").add(D.ct(my.screen_name)).
-      sa("href", U.ROOT + my.screen_name),
-    uicon: D.ce("img").sa("class", "user-icon").
-      sa("src", my.profile_image_url || "data:").sa("alt", my.screen_name),
-    uname: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(my.name))),
+    usname: D.ce("a").sa("class", "screen_name"),
+    uicon: D.ce("img").sa("class", "user-icon"),
+    uname: D.ce("span").sa("class", "name"),
     status: D.ce("textarea").sa("id", "status"),
     id: D.ce("input").sa("id", "in_reply_to_status_id"),
     to_uname: D.ce("input").sa("id", "in_reply_to_screen_name"),
@@ -3624,6 +3624,8 @@ V.panel.newTweetBox = function(my) {
       sa("type", "checkbox").sa("disabled", "disabled"),
     media: D.ce("input").sa("id", "status_media").sa("type", "file")
   };
+  V.panel.tweetbox = nd;
+  V.panel.updTweetBox(my);
   var switchReplyTarget = function() {
     var uid = nd.id.value, uname = nd.to_uname.value;
     // reset
