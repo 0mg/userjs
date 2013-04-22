@@ -948,6 +948,9 @@ API.urls.init = function() {
       1: "/1/direct_messages/sent",
       1.1: "/1.1/direct_messages/sent"
     }),
+    create: uv({
+      1.1: "/1.1/direct_messages/new"
+    }),
     destroy: uv({
       1.1: "/1.1/direct_messages/destroy"
     })
@@ -1300,6 +1303,13 @@ API.untweet = function(id, onScs, onErr) {
 
 API.retweet = function(id, onScs, onErr) {
   X.post(API.urls.tweet.retweet()(id), "", onScs, onErr);
+};
+
+API.d = function(text, uname, onScs, onErr) {
+  X.post(API.urls.d.create()(), {
+    text: text,
+    screen_name: uname
+  }, onScs, onErr);
 };
 
 API.deleteMessage = function(id, onScs, onErr) {
@@ -3655,7 +3665,7 @@ V.panel.newTweetBox = function(my) {
   // add event listeners
   nd.status.addEventListener("input", function() {
     var replying = switchReplyTarget();
-    var red = /^d\s+\w+\s*/;
+    var red = /^d\s+\w+/;
     var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
     nd.update.textContent =
       replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
@@ -3663,8 +3673,11 @@ V.panel.newTweetBox = function(my) {
       replace(reurl, "$1http://t.co/1234567").length > 140;
   });
   nd.update.addEventListener("click", function() {
+    var d_ma = nd.status.value.match(/^d\s+(\w+)\s?([\S\s]*)/);
     if (nd.usemedia.checked && media_b64) {
       API.tweetMedia(media_b64, nd.status.value, nd.id.value, onTweet);
+    } else if (d_ma) {
+      API.d(d_ma[2], d_ma[1], onTweet);
     } else {
       API.tweet(nd.status.value, nd.id.value, onTweet);
     }
