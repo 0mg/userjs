@@ -3115,19 +3115,18 @@ V.panel.makeTwAct = function(tweet_org, my) {
 
   // JSON type
   var tweet_type = API.getType(tweet);
-  var isDM = tweet_type === "dmsg",
-      isRT = tweet_type === "rt",
-      isTW = tweet_type === "tweet";
+  var isDM = tweet_type === "dmsg";
+  var isRT = tweet_type === "rt";
+  var isTW = tweet_type === "tweet";
 
   // override props in JSON
-  if (isDM) tweet.user = tweet.sender;
-  else if (isRT) tweet = tweet.retweeted_status;
+  if (isRT) tweet = tweet.retweeted_status;
 
-  // more JSON type (supply)
+  // more JSON types (supply)
   var isMyTweet = isTW && tweet.user.id_str === my.id_str;
   var isMyRT = isRT && tweet_org.user.id_str === my.id_str;
   var isRTtoMe = isRT && tweet.user.id_str === my.id_str;
-  var isTweetRTedByMe = "current_user_retweet" in tweet_org;
+  var isAnyRTedByMe = "current_user_retweet" in tweet_org;
 
   // buttons nodes
   var ab = {
@@ -3144,16 +3143,16 @@ V.panel.makeTwAct = function(tweet_org, my) {
 
   // init
   if (tweet.favorited) ab.fav.turn(true);
-  if (isMyRT || isTweetRTedByMe) ab.rt.turn(true);
+  if (isMyRT || isAnyRTedByMe) ab.rt.turn(true);
 
   // test
-  ab.node.add(
+  /*ab.node.add(
     D.ct(isRT ? "This is a RT by " + tweet_org.user.screen_name + ". ":
                 "This is a Tweet. "),
     D.ct(
       isMyRT ? "So, by you.":
       isRTtoMe ? "It's RT to YOU":
-      isTweetRTedByMe ? "You RTed it.":
+      isAnyRTedByMe ? "You RTed it.":
       ""
     )
   );/**/
@@ -3171,12 +3170,10 @@ V.panel.makeTwAct = function(tweet_org, my) {
   ab.rep.addEventListener("click", isDM ? function() {
     // main
     var status = D.q("#status");
-    status.value = "d " + tweet.user.screen_name + " " + status.value;
+    status.value = "d " + tweet.sender.screen_name + " " + status.value;
     // outline
-    var ce = document.createEvent("Event");
-    ce.initEvent("input", true, false);
-    status.dispatchEvent(ce);
-    status.focus();
+    var ce = document.createEvent("Event"); ce.initEvent("input", true, false);
+    status.dispatchEvent(ce); status.focus();
   }: function(ev) {
     var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
     var repname = D.q("#in_reply_to_screen_name");
@@ -3191,10 +3188,8 @@ V.panel.makeTwAct = function(tweet_org, my) {
       repname.value = "";
     }
     // outline
-    var ce = document.createEvent("Event");
-    ce.initEvent("input", true, false);
-    status.dispatchEvent(ce);
-    status.focus();
+    var ce = document.createEvent("Event"); ce.initEvent("input", true, false);
+    status.dispatchEvent(ce); status.focus();
   });
 
   // [RT] btn
@@ -3202,30 +3197,32 @@ V.panel.makeTwAct = function(tweet_org, my) {
     // undo RT (button on my RT)
     if (isMyRT) API.untweet(tweet_org.id_str, function() {
       ab.rt.turn(false);
-      D.rm(ab.node.parentNode);
+      D.rm(D.q(".tweet.id-" + tweet.id_str));
     });
     // undo RT (button on owner tweet or others' RT)
-    else if (isTweetRTedByMe) API.untweet(
+    else if (isAnyRTedByMe) API.untweet(
       tweet_org.current_user_retweet.id_str,
       function() {
-        isTweetRTedByMe = false;
+        isAnyRTedByMe = false;
         ab.rt.turn(false);
       }
     );
     // do RT
     else API.retweet(tweet.id_str, function(xhr) {
       var data = JSON.parse(xhr.responseText);
-      tweet_org.current_user_retweet = data;
-      isTweetRTedByMe = true;
+      tweet_org.current_user_retweet = { id_str: data.id_str };
+      isAnyRTedByMe = true;
       ab.rt.turn(true);
     });
   });
 
   // [Delete] btn
   ab.del.node.addEventListener("click", isDM ? function() {
-    API.deleteMessage(tweet.id_str, function() { D.rm(ab.node.parentNode); });
+    API.deleteMessage(tweet.id_str,
+      function() { D.rm(D.q(".tweet.id-" + tweet.id_str)); });
   }: (isMyTweet || isRTtoMe) ? function() {
-    API.untweet(tweet.id_str, function() { D.rm(ab.node.parentNode); });
+    API.untweet(tweet.id_str,
+      function() { D.rm(D.q(".tweet.id-" + tweet.id_str)); });
   }: undefined);
 
   return ab.node;
