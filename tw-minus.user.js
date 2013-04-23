@@ -1118,8 +1118,9 @@ API.getType = function getType(data) {
   if (data.screen_name) return "user";
   if (data.slug) return "list";
   if ("text" in data) {
+    if (data.retweeted_status) return "rt";
     if ("retweeted" in data) return "tweet";
-    if (data.sender) return "directmessage";
+    if (data.sender) return "dmsg";
   }
   if (data.errors) return "error";
   return "unknown object";
@@ -1181,7 +1182,7 @@ API.cc.reuseData = function(method, url, q) {
       if (user.id_str === my.id_str) return me = user;
     });
     break;
-  case "directmessage":
+  case "dmsg":
     [].concat(data).some(function(d) {
       if (d.sender.id_str === my.id_str) return me = d.sender;
       if (d.recipient.id_str === my.id_str) return me = d.recipient;
@@ -1693,6 +1694,9 @@ V.init.CSS = '\
     width: 48px;\
     height: 48px;\
   }\
+  .meta .source:not(:empty)::before { content: " via "; }\
+  .meta .geo:not(:empty)::before { content: " from "; }\
+  .meta .retweeter:not(:empty)::before { content: " by "; }\
   .user-profile .user-icon {\
     width: 73px;\
     height: 73px;\
@@ -2865,19 +2869,20 @@ V.main.onPopState = function(e) {
   if ("scrollTop" in state) D.q("body").scrollTop = state["scrollTop"];
 };
 
-V.main.newTweet = function(tweet, my) {
-  var tweet_org = tweet;
+V.main.newTweet = function(tweet_org, my) {
+  var tweet = JSON.parse(JSON.stringify(tweet_org));
 
-  var isDM = "sender" in tweet && "recipient" in tweet;
-  var isRT = "retweeted_status" in tweet;
+  // type tweet, RT or DM
+  var twtype = API.getType(tweet);
+  var isDM = twtype === "dmsg", isRT = twtype === "rt";
 
+  // override props in JSON
   if (isDM) tweet.user = tweet.sender;
   else if (isRT) tweet = tweet.retweeted_status;
 
-  var ent = {
-    ry: D.ce("li").
-      sa("class", "tweet screen_name-" + tweet.user.screen_name +
-        " id-" + tweet.id_str),
+  // entry nodes
+  var nd = {
+    root: D.ce("li").sa("class", "tweet"),
     name: D.ce("a").
       sa("class", "screen_name").
       sa("href", U.ROOT + tweet.user.screen_name).
@@ -2899,74 +2904,68 @@ V.main.newTweet = function(tweet, my) {
     date: D.ce("a").
       sa("class", "created_at").
       add(D.ct(T.gapTime(new Date(tweet.created_at)))),
-    src: null,
-    geo: null,
-    retweeter: null,
-    retweeter_tweet: null
+    src: D.ce("a").sa("class", "source"),
+    geo: D.ce("a").sa("class", "geo"),
+    rter: D.ce("a").sa("class", "retweeter")
   };
 
-  if (tweet.user.protected) ent.ry.classList.add("protected");
-  if (tweet.user.verified) ent.ry.classList.add("verified");
-  if (isRT) ent.ry.classList.add("retweet");
-  if (/[RQ]T:?\s*@\w+/.test(tweet.text)) ent.ry.classList.add("quote");
-
-  if (tweet.in_reply_to_status_id) {
-    ent.reid.href = U.ROOT + tweet.in_reply_to_screen_name + "/status/" +
-                    tweet.in_reply_to_status_id_str;
-    ent.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
-  } else if (isDM) {
-    ent.reid.href = U.ROOT + tweet.recipient_screen_name;
-    ent.reid.add(D.ct("d " + tweet.recipient_screen_name));
-  }
-
-  var dmhref = U.ROOT + U.getURL().path +
-               U.Q + "count=1&max_id=" + tweet.id_str;
-  var tweethref = "https://twitter.com/" + tweet.user.screen_name +
-                  "/status/" + tweet.id_str;
-  ent.date.href = isDM ? dmhref : tweethref;
-
-  if (!isDM) {
-    var s;
-    if (s = /<a href="([^"]*)"[^>]*>([^<]*)<\/a>/.exec(tweet.source)) {
-      var aHref = s[1], aText = T.decodeHTML(s[2]);
-      ent.src = D.ce("a").sa("href", aHref).add(D.ct(aText));
-    } else {
-      ent.src = D.ce("span").add(D.ct(T.decodeHTML(tweet.source)));
-    }
-    ent.src.className = "source";
-  }
-
-  ent.meta.add(ent.date);
-  if (!isDM) ent.meta.add(D.ct(" via "), ent.src);
-  if (tweet.place && tweet.place.name && tweet.place.country) {
-    ent.geo = D.ce("a");
-    ent.geo.add(D.ct(tweet.place.name));
-    if (tweet.geo && tweet.geo.coordinates) {
-      ent.geo.href = "https://maps.google.com/?q=" + tweet.geo.coordinates;
-    } else {
-      ent.geo.href = "https://maps.google.com/?q=" + tweet.place.full_name;
-    }
-    ent.meta.add(D.ct(" from "), ent.geo);
-  }
-  if (isRT) {
-    ent.retweeter = D.ce("a");
-    ent.retweeter.href = U.ROOT + tweet_org.user.screen_name;
-    ent.retweeter.add(D.ct(tweet_org.user.screen_name));
-    ent.meta.add(D.ct(" by "), ent.retweeter);
-  }
-  ent.meta.normalize();
-
-  ent.ry.add(
-    ent.name,
-    ent.icon,
-    ent.nick,
-    ent.reid,
-    ent.text,
-    ent.meta,
+  // entry
+  nd.root.classList.add("screen_name-" + tweet.user.screen_name);
+  nd.root.classList.add("id-" + tweet.id_str);
+  if (tweet.user.protected) nd.root.classList.add("protected");
+  if (tweet.user.verified) nd.root.classList.add("verified");
+  if (isRT) nd.root.classList.add("retweet");
+  if (/[RQ]T:?\s*@\w+/.test(tweet.text)) nd.root.classList.add("quote");
+  nd.root.add(
+    nd.name,
+    nd.icon,
+    nd.nick,
+    nd.reid,
+    nd.text,
+    nd.meta.add(nd.date, nd.src, nd.geo, nd.rter),
     V.panel.makeTwAct(tweet_org, my)
   );
 
-  return ent.ry;
+  // in reply to *
+  if (tweet.in_reply_to_status_id_str) {
+    nd.reid.sa("href", U.ROOT + tweet.in_reply_to_screen_name +
+      "/status/" + tweet.in_reply_to_status_id_str);
+    nd.reid.add(D.ct("in reply to " + tweet.in_reply_to_screen_name));
+  } else if (isDM) {
+    nd.reid.sa("href", U.ROOT + tweet.recipient_screen_name);
+    nd.reid.add(D.ct("d " + tweet.recipient_screen_name));
+  }
+
+  // created_at
+  nd.date.sa("href", isDM ?
+    U.ROOT + U.getURL().path + U.Q + "count=1&max_id=" + tweet.id_str:
+    "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
+  );
+
+  // source
+  if (tweet.source) {
+    var src = tweet.source.match(/<a href="([^"]*)"[^>]*>([^<]*)<\/a>/);
+    if (src) {
+      nd.src.sa("href", src[1]).add(D.ct(T.decodeHTML(src[2])));
+    } else {
+      nd.src.add(D.ct(T.decodeHTML(tweet.source)));
+    }
+  }
+
+  // geo location
+  if (tweet.place && tweet.place.name && tweet.place.country) {
+    nd.geo.add(D.ct(tweet.place.name));
+    nd.geo.sa("href", "https://maps.google.com/?q=" +
+      (tweet.geo && tweet.geo.coordinates || tweet.place.full_name));
+  }
+
+  // RT by
+  if (isRT) {
+    nd.rter.sa("href", U.ROOT + tweet_org.user.screen_name).
+      add(D.ct(tweet_org.user.screen_name));
+  }
+
+  return nd.root;
 };
 
 // users search cursor
