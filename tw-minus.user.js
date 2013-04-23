@@ -3110,118 +3110,124 @@ V.panel.makeReqDecider = function(user) {
 };
 
 // Action buttons panel for fav, reply, retweet
-V.panel.makeTwAct = function(t, my) {
-  var rt = t.retweeted_status;
-  var isDM = "sender" in t;
-  var isRT = !!rt;
-  var isMyTweet = !isDM && !isRT && t.user.id_str === my.id_str;
-  var isMyRT = isRT && t.user.id_str === my.id_str;
-  var isRTtoMe = isRT && rt.user.id_str === my.id_str;
-  var isTweetRTedByMe = "current_user_retweet" in t;
-  var isRTRTedByMeToo = isRT && isTweetRTedByMe && false;
-  if (isDM) t.user = t.sender;
+V.panel.makeTwAct = function(tweet_org, my) {
+  var tweet = JSON.parse(JSON.stringify(tweet_org));
+
+  // JSON type
+  var tweet_type = API.getType(tweet);
+  var isDM = tweet_type === "dmsg",
+      isRT = tweet_type === "rt",
+      isTW = tweet_type === "tweet";
+
+  // override props in JSON
+  if (isDM) tweet.user = tweet.sender;
+  else if (isRT) tweet = tweet.retweeted_status;
+
+  // more JSON type (supply)
+  var isMyTweet = isTW && tweet.user.id_str === my.id_str;
+  var isMyRT = isRT && tweet_org.user.id_str === my.id_str;
+  var isRTtoMe = isRT && tweet.user.id_str === my.id_str;
+  var isTweetRTedByMe = "current_user_retweet" in tweet_org;
+
+  // buttons nodes
   var ab = {
     node: D.ce("div"),
     fav: new V.Button("Fav", "Unfav"),
-    rep: D.ce("button"),
+    rep: D.ce("button").sa("class", "reply").add(D.ct("Reply")),
     del: new V.Button("Delete"),
     rt: new V.Button("RT", "UnRT")
   };
-  /*ab.node.add(
-    D.ct(isRT ? "This is a RT by " + t.user.screen_name + ". " :
+  if (isTW || isRT) ab.node.add(ab.fav.node);
+  ab.node.add(ab.rep);
+  if (isDM || isMyTweet || isRTtoMe) ab.node.add(ab.del.node);
+  else ab.node.add(ab.rt.node);
+
+  // init
+  if (tweet.favorited) ab.fav.turn(true);
+  if (isMyRT || isTweetRTedByMe) ab.rt.turn(true);
+
+  // test
+  ab.node.add(
+    D.ct(isRT ? "This is a RT by " + tweet_org.user.screen_name + ". ":
                 "This is a Tweet. "),
     D.ct(
-      isMyRT ? "So, by you." :
-      isRTtoMe ? "It's RT to YOU" :
-      isTweetRTedByMe ? "You RTed it." :
-      isRTRTedByMeToo ? "You RTed it too." :""
+      isMyRT ? "So, by you.":
+      isRTtoMe ? "It's RT to YOU":
+      isTweetRTedByMe ? "You RTed it.":
+      ""
     )
   );/**/
-  (rt || t).favorited && ab.fav.turn(true);
-  function onFav() { ab.fav.turn(true); }
-  function onUnfav() { ab.fav.turn(false); }
+
+  // add event listeners
+
+  // [Fav] btn
   ab.fav.node.addEventListener("click", function() {
-    ab.fav.on ? API.unfav((rt || t).id_str, onUnfav) :
-                API.fav((rt || t).id_str, onFav);
+    ab.fav.on ?
+      API.unfav(tweet.id_str, function() { ab.fav.turn(false); }):
+      API.fav(tweet.id_str, function() { ab.fav.turn(true); });
   });
-  if (!isDM) ab.node.add(ab.fav.node);
-  ab.rep.className = "reply";
-  ab.rep.add(D.ct("Reply"));
-  if (isDM) {
-    ab.rep.addEventListener("click", function() {
-      // main
-      var status = D.q("#status");
-      status.value = "d " + t.user.screen_name + " " + status.value;
-      // outline
-      var ce = document.createEvent("Event");
-      ce.initEvent("input", true, false);
-      status.dispatchEvent(ce);
-      status.focus();
-    });
-  } else {
-    ab.rep.addEventListener("click", function(ev) {
-      var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
-      var repname = D.q("#in_reply_to_screen_name");
-      var tgt = ev.ctrlKey ? t: rt || t;
-      // main
-      if (repid.value !== tgt.id_str) {
-        status.value = "@" + tgt.user.screen_name + " " + status.value;
-        repid.value = tgt.id_str;
-        repname.value = tgt.user.screen_name;
-      } else {
-        repid.value = "";
-        repname.value = "";
-      }
-      // outline
-      var ce = document.createEvent("Event");
-      ce.initEvent("input", true, false);
-      status.dispatchEvent(ce);
-      status.focus();
-    });
-  }
-  ab.node.add(ab.rep);
-  (isMyRT || isTweetRTedByMe) && onRT();
-  function onRT() { ab.rt.turn(true); }
-  function onUnRT() { ab.rt.turn(false); }
+
+  // [Reply] btn
+  ab.rep.addEventListener("click", isDM ? function() {
+    // main
+    var status = D.q("#status");
+    status.value = "d " + tweet.user.screen_name + " " + status.value;
+    // outline
+    var ce = document.createEvent("Event");
+    ce.initEvent("input", true, false);
+    status.dispatchEvent(ce);
+    status.focus();
+  }: function(ev) {
+    var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
+    var repname = D.q("#in_reply_to_screen_name");
+    var tgt = ev.ctrlKey ? tweet_org: tweet;
+    // main
+    if (repid.value !== tgt.id_str) {
+      status.value = "@" + tgt.user.screen_name + " " + status.value;
+      repid.value = tgt.id_str;
+      repname.value = tgt.user.screen_name;
+    } else {
+      repid.value = "";
+      repname.value = "";
+    }
+    // outline
+    var ce = document.createEvent("Event");
+    ce.initEvent("input", true, false);
+    status.dispatchEvent(ce);
+    status.focus();
+  });
+
+  // [RT] btn
   ab.rt.node.addEventListener("click", function() {
-    if (isMyRT) {
-      // undo RT (button on my RT)
-      API.untweet(t.id_str, function() {
-        ab.rt.turn(false);
-        D.rm(ab.node.parentNode);
-      });
-    } else if (isTweetRTedByMe) {
-      // undo RT (button on owner tweet or others' RT)
-      API.untweet(t.current_user_retweet.id_str, function() {
+    // undo RT (button on my RT)
+    if (isMyRT) API.untweet(tweet_org.id_str, function() {
+      ab.rt.turn(false);
+      D.rm(ab.node.parentNode);
+    });
+    // undo RT (button on owner tweet or others' RT)
+    else if (isTweetRTedByMe) API.untweet(
+      tweet_org.current_user_retweet.id_str,
+      function() {
         isTweetRTedByMe = false;
         ab.rt.turn(false);
-      });
-    } else {
-      // do RT
-      API.retweet((rt || t).id_str, function(xhr) {
-        var data = JSON.parse(xhr.responseText);
-        t.current_user_retweet = data;
-        isTweetRTedByMe = true;
-        ab.rt.turn(true);
-      });
-    }
+      }
+    );
+    // do RT
+    else API.retweet(tweet.id_str, function(xhr) {
+      var data = JSON.parse(xhr.responseText);
+      tweet_org.current_user_retweet = data;
+      isTweetRTedByMe = true;
+      ab.rt.turn(true);
+    });
   });
-  if (isDM) {
-    // Delete button for DM
-    ab.del.node.addEventListener("click", function() {
-      API.deleteMessage(t.id_str, function() { D.rm(ab.node.parentNode); });
-    });
-    ab.node.add(ab.del.node);
-  } else if (isMyTweet || isRTtoMe) {
-    // Delete button for my tweets
-    ab.del.node.addEventListener("click", function() {
-      API.untweet((rt || t).id_str, function() { D.rm(ab.node.parentNode); });
-    });
-    ab.node.add(ab.del.node);
-  } else {
-    // Show RT buttons on tweets without my tweets
-    ab.node.add(ab.rt.node);
-  }
+
+  // [Delete] btn
+  ab.del.node.addEventListener("click", isDM ? function() {
+    API.deleteMessage(tweet.id_str, function() { D.rm(ab.node.parentNode); });
+  }: (isMyTweet || isRTtoMe) ? function() {
+    API.untweet(tweet.id_str, function() { D.rm(ab.node.parentNode); });
+  }: undefined);
+
   return ab.node;
 };
 
