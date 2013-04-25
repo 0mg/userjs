@@ -3868,7 +3868,7 @@ V.outline.showSubTitle = function(hash) {
   hash.forEach(function(name, i, hash) {
     var dir = D.ce("a");
     dir.href = U.ROOT + hash.slice(0, i + 1).join("/");
-    dir.add(D.ct(name));
+    dir.add(D.ct(decodeURI(name)));
     i && sub.add(D.ct("/"));
     sub.add(dir);
   });
