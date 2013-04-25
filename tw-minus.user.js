@@ -1928,6 +1928,11 @@ V.main.showPage.on3 = function(hash, q, my) {
   } else if (hash[0] === "search" && hash[1] === "users") {
     it.showUsers(API.urls.search.users()() + "?q=" + hash[2] + "&" + q, my, 4);
 
+  } else if (hash[0] === "settings" && hash[1] === "api") switch (hash[2]) {
+  case "status":
+    X.get(API.urls.account.rate_limit_status(1.1)(), it.showAPIStatus);
+    break;
+
   } else switch (hash[2]) {
   case "tweets": case "timeline":
     if (hash[1] === "following") {
@@ -2335,6 +2340,12 @@ V.main.testAPI = function(my) {
     nd.dst
   );
   nd.side.add(nd.header);
+};
+
+// <html>API rate_limit_status</html>
+V.main.showAPIStatus = function(xhr) {
+  var data = JSON.parse(xhr.responseText);
+  D.q("#main").add(O.htmlify(data));
 };
 
 // Settings view to updating user profile
