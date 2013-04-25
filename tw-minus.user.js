@@ -1868,8 +1868,7 @@ V.main.showPage.on2 = function(hash, q, my) {
   case "api": it.testAPI(my); break;
 
   } else if (hash[0] === "search") {
-    it.showTL(API.urls.search.tweets()() + "?" + q +
-      "&q=" + hash[1] + "&rpp=20&include_entities=true", my);
+    it.showTL(API.urls.search.tweets()() + "?q=" + hash[1] + "&" + q, my);
 
   } else switch (hash[1]) {
   case "status": case "statuses":
@@ -1927,8 +1926,7 @@ V.main.showPage.on3 = function(hash, q, my) {
     break;
 
   } else if (hash[0] === "search" && hash[1] === "users") {
-    it.showUsers(API.urls.search.users()() + "?" + q +
-      "&q=" + hash[2] + "&include_entities=true", my, 4);
+    it.showUsers(API.urls.search.users()() + "?q=" + hash[2] + "&" + q, my, 4);
 
   } else switch (hash[2]) {
   case "tweets": case "timeline":
