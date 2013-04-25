@@ -1472,6 +1472,8 @@ V.init.CSS = '\
   dd {\
     margin: 0 0 1em 1em;\
   }\
+  table { border-collapse: collapse; font-size: inherit; }\
+  td, th { padding: .5ex; border: 1px solid; text-align: left; }\
   a {\
     text-decoration: none;\
   }\
@@ -1592,6 +1594,9 @@ V.init.CSS = '\
   .xhr-state.loading { position:absolute; background: gray; color: white; }\
   .xhr-state.done.success { background: white; color: gray; }\
   .xhr-state.done.failed { background: red; color: white; }\
+  #api-status { background: #fdfdfd; }\
+  #api-status * { border-color: #ccc; }\
+  #api-status :not(.active) * { opacity: .3; }\
   #status_profile,\
   #subaction a,\
   .list,\
@@ -2345,7 +2350,35 @@ V.main.testAPI = function(my) {
 // <html>API rate_limit_status</html>
 V.main.showAPIStatus = function(xhr) {
   var data = JSON.parse(xhr.responseText);
-  D.q("#main").add(O.htmlify(data));
+  var nd = {
+    root: D.ce("table").sa("id", "api-status").add(D.ce("tr").add(
+      D.ce("th").add(D.ct("API")),
+      D.ce("th").add(D.ct("rest")),
+      D.ce("th").add(D.ct("init")),
+      D.ce("th").add(D.ct("reset"))
+    ))
+  };
+  (function f(d) {
+    Object.keys(d).forEach(function(key, i) {
+      var p = d[key];
+      if (typeof p === "object" && p !== null) {
+        if (key.indexOf("/") === 0) {
+          var rem = p["remaining"], lim = p["limit"], res = p["reset"];
+          var tr = D.ce("tr").add(
+            D.ce("th").add(D.ct(key)),
+            D.ce("td").add(D.ct(rem)),
+            D.ce("td").add(D.ct(lim)),
+            D.ce("td").add(D.ct(
+              new Date(res * 1000).toLocaleTimeString()
+            ))
+          );
+          if (rem !== lim) tr.classList.add("active");
+          nd.root.add(tr);
+        } else f(p);
+      }
+    });
+  })(data);
+  D.q("#main").add(nd.root);
 };
 
 // Settings view to updating user profile
