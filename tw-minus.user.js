@@ -1934,7 +1934,8 @@ V.main.showPage.on3 = function(hash, q, my) {
 
   } else if (hash[0] === "settings" && hash[1] === "api") switch (hash[2]) {
   case "status":
-    X.get(API.urls.account.rate_limit_status(1.1)(), it.showAPIStatus);
+    X.get(API.urls.account.rate_limit_status(1.1)(),
+      it.showAPIStatus, V.misc.showXHRError);
     break;
 
   } else switch (hash[2]) {
