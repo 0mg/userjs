@@ -901,7 +901,6 @@ API.urls.init = function() {
       1.1: "/1.1/friends/ids"
     }),
     lookup: uv({
-      1: "/1/users/lookup",
       1.1: "/1.1/users/lookup"
     }),
     incoming: uv({
@@ -922,7 +921,6 @@ API.urls.init = function() {
       1: "/1/friendships/cancel"
     }),
     friendship: uv({
-      1: "/1/friendships/show",
       1.1: "/1.1/friendships/show"
     }),
     follow: uv({
@@ -935,7 +933,6 @@ API.urls.init = function() {
       1.1: "/1.1/friendships/update"
     }),
     show: uv({
-      1: "/1/users/show",
       1.1: "/1.1/users/show"
     })
   };
@@ -963,7 +960,6 @@ API.urls.init = function() {
       1.1: "/1.1/search/tweets"
     }),
     users: uv({
-      1: "/1/users/search",
       1.1: "/1.1/users/search"
     })
   };
@@ -989,7 +985,6 @@ API.urls.init = function() {
       1.1: "/1.1/lists/show"
     }),
     tweets: uv({
-      1: "/1/lists/statuses",
       1.1: "/1.1/lists/statuses"
     }),
     create: uv({
@@ -1010,7 +1005,6 @@ API.urls.init = function() {
   };
   urls.lists.users = {
     members: uv({
-      1: "/1/lists/members",
       1.1: "/1.1/lists/members"
     }),
     add: uv({
@@ -1020,7 +1014,6 @@ API.urls.init = function() {
       1.1: "/1/lists/members/destroy_all"
     }),
     subscribers: uv({
-      1: "/1/lists/subscribers",
       1.1: "/1.1/lists/subscribers"
     })
   };
@@ -1034,7 +1027,6 @@ API.urls.init = function() {
       1.1: "/1.1/statuses/mentions_timeline"
     }),
     user: uv({
-      1: "/1/statuses/user_timeline",
       1.1: "/1.1/statuses/user_timeline"
     })
   };
@@ -1052,7 +1044,6 @@ API.urls.init = function() {
   };
   urls.tweet = {
     get: uv({
-      1: function(id) { return "/1/statuses/show/" + id; },
       1.1: function(id) { return "/1.1/statuses/show/" + id; }
     }),
     post: uv({
