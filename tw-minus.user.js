@@ -948,6 +948,9 @@ API.urls.init = function() {
       1: "/1/direct_messages/sent",
       1.1: "/1.1/direct_messages/sent"
     }),
+    show: uv({
+      1.1: "/1.1/direct_messages/show"
+    }),
     create: uv({
       1.1: "/1.1/direct_messages/new"
     }),
@@ -1874,6 +1877,11 @@ V.main.showPage.on2 = function(hash, q, my) {
 
   } else if (hash[0] === "search") {
     it.showTL(API.urls.search.tweets()() + "?q=" + hash[1] + "&" + q, my);
+
+  } else if (hash[0] === "direct_messages") switch (hash[1]) {
+  default:
+    it.showTL(API.urls.d.show()() + "?id=" + hash[1] +
+      "&" + q + "&include_entities=true", my);
 
   } else switch (hash[1]) {
   case "status": case "statuses":
@@ -2980,7 +2988,7 @@ V.main.newTweet = function(tweet_org, my) {
 
   // created_at
   nd.date.sa("href", isDM ?
-    U.ROOT + U.getURL().path + U.Q + "count=1&max_id=" + tweet.id_str:
+    U.ROOT + "direct_messages/" + tweet.id_str:
     "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
   );
 
