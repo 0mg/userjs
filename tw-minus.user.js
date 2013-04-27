@@ -2278,6 +2278,10 @@ V.main.testAPI = function(my) {
     dst: D.ce("div"),
     header: D.ce("div")
   };
+  var state = LS.state.load();
+  nd.head.url.value = state["head_q"] || "";
+  nd.get.url.value = state["get_q"] || "";
+  nd.post.url.value = state["post_q"] || "";
   function printErase() { D.empty(nd.header); D.empty(nd.dst); }
   function printData(xhr) {
     printHead(xhr);
@@ -2299,10 +2303,12 @@ V.main.testAPI = function(my) {
     nd.dst.add(datanode);
   }
   nd.head.send.addEventListener("click", function() {
+    LS.state.save("head_q", nd.head.url.value);
     printErase();
     X.head(nd.head.url.value, printData, printData);
   });
   nd.get.send.addEventListener("click", function() {
+    LS.state.save("get_q", nd.get.url.value);
     printErase();
     X.get(nd.get.url.value, printData, printData);
   });
@@ -2310,6 +2316,7 @@ V.main.testAPI = function(my) {
     var str = nd.post.url.value.split("?");
     var url = str[0];
     var q = str.slice(1).join("?");
+    LS.state.save("post_q", nd.post.url.value);
     printErase();
     X.post(url, q, printData, printData, true);
   });
