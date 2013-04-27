@@ -961,7 +961,22 @@ API.urls.init = function() {
     }),
     users: uv({
       1.1: "/1.1/users/search"
-    })
+    }),
+    saved: {
+      list: uv({
+        1: "/1/saved_searches",
+        1.1: "/1.1/saved_searches/list"
+      }),
+      show: uv({
+        1.1: function(id) { return "/1.1/saved_searches/show/" + id; }
+      }),
+      create: uv({
+        1.1: "/1.1/saved_searches/create"
+      }),
+      destroy: uv({
+        1.1: function(id) { return "/1.1/saved_searches/destroy/" + id; }
+      }),
+    }
   };
   urls.lists = {
     all: uv({
