@@ -1989,6 +1989,7 @@ V.main.showSettings = function(my) {
   var root = U.ROOT + "settings/";
   var nd = {
     api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
+    aps: D.ce("a").sa("href", root + "api/status").add(D.ct("api/status")),
     aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
     pro: D.ce("a").sa("href", root + "profile").add(D.ct("profile")),
     dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
@@ -1997,6 +1998,7 @@ V.main.showSettings = function(my) {
   };
   D.q("#main").add(
     D.ce("li").add(nd.api),
+    D.ce("li").add(nd.aps),
     D.ce("li").add(nd.aco),
     D.ce("li").add(nd.pro),
     D.ce("li").add(nd.dez),
