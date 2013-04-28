@@ -23,7 +23,9 @@ LS.STRUCT = {
   "credentials": {},
   "credentials_modified": 0,
   "mylists": [],
-  "mylists_modified": 0
+  "mylists_modified": 0,
+  "saved_searches": [],
+  "saved_searches_modified": 0
 };
 LS.reset = function() {
   localStorage[LS.NS] = JSON.stringify(LS.STRUCT);
@@ -1131,6 +1133,7 @@ API.getType = function getType(data) {
     if ("retweeted" in data) return "tweet";
     if (data.sender) return "dmsg";
   }
+  if ("query" in data) return "svs";
   if (data.errors) return "error";
   return "unknown object";
 };
@@ -1204,6 +1207,11 @@ API.cc.reuseData = function(method, url, q) {
     break;
   }
   if (me) API.cc.onGotMe(me);
+  // update cache: saved_searches
+  if (dataType === "svs array") {
+    LS.save("saved_searches", data);
+    LS.save("saved_searches_modified", Date.now());
+  }
 };
 // ongot JSON my list
 API.cc.onGotMyList = function(data, del) {
@@ -1226,6 +1234,13 @@ API.cc.onGotMe = function(data) {
   LS.save("credentials_modified", Date.now());
   D.empty(D.q("#globalbar")).add(V.panel.newGlobalBar(data));
   V.panel.updTweetBox(data);
+};
+API.cc.getSvs = function() {
+  var ls = LS.load();
+  var data = ls["saved_searches"];
+  var time = ls["saved_searches_modified"];
+  var interval = 1000 * 60 * 15;
+  return Date.now() - time < interval ? data: null;
 };
 API.cc.getMyLists = function() {
   var ls = LS.load();
@@ -1883,6 +1898,7 @@ V.main.showPage.on2 = function(hash, q, my) {
 
   } else if (hash[0] === "search") {
     it.showTL(API.urls.search.tweets()() + "?q=" + hash[1] + "&" + q, my);
+    V.outline.showSearchPanel(decodeURIComponent(hash[1]));
 
   } else if (hash[0] === "direct_messages") switch (hash[1]) {
   default:
@@ -4134,6 +4150,83 @@ V.outline.rendProfileOutline = function(user) {
     D.ce("dt").add(D.ct("Since")),
     D.ce("dd").add(D.ct(new Date(user.created_at).toLocaleString()))
   ));
+};
+
+V.outline.showSearchPanel = function(query) {
+  var nd = {
+    search: D.ce("input").sa("list", "saved_searches"),
+    go: D.ce("button").add(D.ct("Search")),
+    save: D.ce("button").add(D.ct("Save")),
+    list: D.ce("datalist").sa("id", "saved_searches"),
+    del: D.ce("button").add(D.ct("Delete"))
+  };
+  nd.search.value = query || "";
+
+  // vars/functions
+  var sslist = [];
+  var newSSNode = function(item) {
+    return D.ce("option").sa("class", "search_item").
+      sa("title", item.id_str).
+      sa("value", item.query).add(D.ct(item.query));
+  };
+  var updSSNodes = function() {
+    var items = sslist.map(newSSNode).reverse();
+    if (items.length) D.add.apply(D.empty(nd.list), items);
+  };
+
+  // GET saved_searches
+  var onScs = function(xhr) {
+    var data = JSON.parse(xhr.responseText);
+    sslist = data;
+    updSSNodes();
+  };
+  var ls_svs = API.cc.getSvs();
+  if (ls_svs) {
+    onScs({responseText:JSON.stringify(ls_svs)});
+  } else {
+    X.get(API.urls.search.saved.list()(), onScs, null);
+  }
+
+  // add event listeners
+
+  // [Save]
+  nd.save.addEventListener("click", function() {
+    X.post(API.urls.search.saved.create()(), "query=" + nd.search.value,
+      function(xhr) {
+        var data = JSON.parse(xhr.responseText);
+        sslist.push(data);
+        LS.save("saved_searches", sslist);
+        updSSNodes();
+      });
+  });
+
+  // [Delete]
+  nd.del.addEventListener("click", function() {
+    return sslist.some(function(item, i) {
+      var istr = nd.search.value;
+      if (istr === item.query) {
+        return X.post(API.urls.search.saved.destroy()(item.id_str), "",
+          function() {
+            sslist.splice(i, 1);
+            LS.save("saved_searches", sslist);
+            updSSNodes();
+          });
+      }
+    });
+  });
+
+  // [Search]
+  nd.go.addEventListener("click", function() {
+    location.href = U.ROOT + "search/" + encodeURIComponent(nd.search.value);
+  });
+
+  // render
+  D.q("#side").add(
+    D.ce("dl").add(
+      D.ce("dt").add(D.ct("search")),
+      D.ce("dd").add(nd.search, nd.list, nd.go, nd.save, nd.del)
+    )
+  );
 };
 
 // main
