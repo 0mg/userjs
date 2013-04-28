@@ -4219,6 +4219,13 @@ V.outline.showSearchPanel = function(query) {
   nd.go.addEventListener("click", function() {
     location.href = U.ROOT + "search/" + encodeURIComponent(nd.search.value);
   });
+  nd.search.addEventListener("keypress", function(e) {
+    if (e.keyCode === 13) {
+      var ce = document.createEvent("Event");
+      ce.initEvent("click", true, false);
+      nd.go.dispatchEvent(ce);
+    }
+  });
 
   // render
   D.q("#side").add(
