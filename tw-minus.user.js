@@ -357,6 +357,12 @@ D.rm = function(e) { return e && e.parentNode.removeChild(e); };
 D.empty = function(e) {
   while (e.hasChildNodes()) e.removeChild(e.lastChild); return e;
 };
+D.ev = function(e, s) {
+  var v = document.createEvent("Event");
+  v.initEvent(s, true, true);
+  e.dispatchEvent(v);
+  return e;
+};
 D.HTML_ENTITIES = {
   nbsp: 160, iexcl: 161, cent: 162, pound: 163, curren: 164, yen: 165,
   brvbar: 166, sect: 167, uml: 168, copy: 169, ordf: 170, laquo: 171, not: 172,
@@ -2275,11 +2281,7 @@ V.main.settingAccount = function(my) {
   }
   unameBtn.addEventListener("click", function() { checkUname(uname.value); });
   uname.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ev = document.createEvent("Event");
-      ev.initEvent("click", true, false);
-      unameBtn.dispatchEvent(ev);
-    }
+    if (e.keyCode === 13) D.ev(unameBtn, "click");
   });
   autoBtn.addEventListener("click", function(e) {
     xhrpool.length ? autoFinish(): autoStart();
@@ -2354,25 +2356,13 @@ V.main.testAPI = function(my) {
     X.post(url, q, printData, printData, true);
   });
   nd.head.url.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ev = document.createEvent("Event");
-      ev.initEvent("click", true, false);
-      nd.head.send.dispatchEvent(ev);
-    }
+    if (e.keyCode === 13) D.ev(nd.head.send, "click");
   });
   nd.get.url.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ev = document.createEvent("Event");
-      ev.initEvent("click", true, false);
-      nd.get.send.dispatchEvent(ev);
-    }
+    if (e.keyCode === 13) D.ev(nd.get.send, "click");
   });
   nd.post.url.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ev = document.createEvent("Event");
-      ev.initEvent("click", true, false);
-      nd.post.send.dispatchEvent(ev);
-    }
+    if (e.keyCode === 13) D.ev(nd.post.send, "click");
   });
 
   nd.main.add(
@@ -3254,8 +3244,7 @@ V.panel.makeTwAct = function(tweet_org, my) {
     var status = D.q("#status");
     status.value = "d " + tweet.sender.screen_name + " " + status.value;
     // outline
-    var ce = document.createEvent("Event"); ce.initEvent("input", true, false);
-    status.dispatchEvent(ce); status.focus();
+    D.ev(status, "input").focus();
   }: function(ev) {
     var status = D.q("#status"), repid = D.q("#in_reply_to_status_id");
     var repname = D.q("#in_reply_to_screen_name");
@@ -3270,8 +3259,7 @@ V.panel.makeTwAct = function(tweet_org, my) {
       repname.value = "";
     }
     // outline
-    var ce = document.createEvent("Event"); ce.initEvent("input", true, false);
-    status.dispatchEvent(ce); status.focus();
+    D.ev(status, "input").focus();
   });
 
   // [RT] btn
@@ -4220,11 +4208,7 @@ V.outline.showSearchPanel = function(query) {
     location.href = U.ROOT + "search/" + encodeURIComponent(nd.search.value);
   });
   nd.search.addEventListener("keypress", function(e) {
-    if (e.keyCode === 13) {
-      var ce = document.createEvent("Event");
-      ce.initEvent("click", true, false);
-      nd.go.dispatchEvent(ce);
-    }
+    if (e.keyCode === 13) D.ev(nd.go, "click");
   });
 
   // render
