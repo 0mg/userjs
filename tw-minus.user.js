@@ -1520,6 +1520,7 @@ V.init.CSS = '\
     margin-right: 2ex;\
   }\
   #subtitle {\
+    font-size: 3ex;\
     padding: 1ex;\
     border-width: 0 0 1px 0;\
     border-style: solid;\
@@ -1772,7 +1773,7 @@ V.init.structPage = function(my) {
       D.ce("ol").sa("id", "status_log")
     ),
     D.ce("section").sa("id", "content").sa("class", "user-style-bar").add(
-      D.ce("h2").sa("id", "subtitle").sa("class", "user-style-bar"),
+      D.ce("h1").sa("id", "subtitle").sa("class", "user-style-bar"),
       D.ce("div").sa("id", "subaction").add(
         D.ce("div").sa("id", "subaction-inner-1"),
         D.ce("div").sa("id", "subaction-inner-2")
