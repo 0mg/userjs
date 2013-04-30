@@ -1514,6 +1514,7 @@ V.init.CSS = '\
   #globalbar {\
     border-width: 0 0 1px 0;\
     border-style: solid;\
+    font-size: small;\
   }\
   #globalbar li {\
     display: inline-block;\
