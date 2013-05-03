@@ -2669,7 +2669,7 @@ V.main.rendUsers = function(data, my, mode) {
       screen_name: D.ce("a").sa("href", U.ROOT + user.screen_name).
         sa("class", "screen_name").add(D.ct(user.screen_name)),
       icon: D.ce("img").sa("class", "user-icon").
-        sa("src", user.profile_image_url).sa("alt", user.screen_name),
+        sa("src", user.profile_image_url_https).sa("alt", user.screen_name),
       name: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(user.name))),
       description: D.ce("p").sa("class", "description").
         add(D.tweetize(user.description)),
@@ -2862,7 +2862,7 @@ V.main.rendLists.one = function(list) {
     full_name: D.ce("a").add(D.ct(list.full_name.substring(1))).
       sa("href", U.ROOT + list.full_name.substring(1)).
       sa("class", "full_name"),
-    icon: D.ce("img").sa("src", list.user.profile_image_url).
+    icon: D.ce("img").sa("src", list.user.profile_image_url_https).
       sa("alt", list.user.screen_name).
       sa("class", "user-icon"),
     name: D.ce("span").add(D.ct(list.name)).
@@ -2967,7 +2967,7 @@ V.main.newTweet = function(tweet_org, my) {
     icon: D.ce("img").
       sa("class", "user-icon").
       sa("alt", tweet.user.screen_name).
-      sa("src", tweet.user.profile_image_url),
+      sa("src", tweet.user.profile_image_url_https),
     reid: D.ce("a").
       sa("class", "in_reply_to"),
     text: D.ce("p").
@@ -3684,7 +3684,7 @@ V.panel.updTweetBox = function(my) {
   var nd = V.panel.tweetbox;
   nd.usname.textContent = my.screen_name;
   nd.usname.sa("href", U.ROOT + my.screen_name);
-  nd.uicon.sa("src", my.profile_image_url || "data:");
+  nd.uicon.sa("src", my.profile_image_url_https || "data:");
   nd.uicon.sa("alt", my.screen_name);
   nd.uname.textContent = T.decodeHTML(my.name);
 };
@@ -4082,9 +4082,9 @@ V.outline.rendProfileOutline = function(user) {
   var p = {
     box: D.ce("dl").sa("class", "user-profile"),
     icon: D.ce("img").sa("class", "user-icon").sa("alt", user.screen_name).
-      sa("src", user.profile_image_url.replace("_normal.", "_bigger.")),
+      sa("src", user.profile_image_url_https.replace("_normal.", "_bigger.")),
     icorg: D.ce("a").
-      sa("href", user.profile_image_url.replace("_normal.", ".")),
+      sa("href", user.profile_image_url_https.replace("_normal.", ".")),
     tweets: D.ce("a").add(D.ct("Tweets")).
       sa("href", baseurl + "/status"),
     favorites: D.ce("a").add(D.ct("Favorites")).
