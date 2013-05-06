@@ -3460,7 +3460,7 @@ V.panel.showFollowPanel = function(user) {
   ab.dm.node.addEventListener("click", function() {
     var status = D.q("#status");
     status.value = "d " + user.screen_name + " " + status.value;
-    status.focus();
+    D.ev(status, "input").focus();
   });
   ab.node.add(
     ab.follow.node,
