@@ -3107,12 +3107,6 @@ V.misc.expandUrls = function(parent, expurls) {
     expand(data);
   };
   var expand = function(data) {
-    for (var raw_url in data) {
-      var exp_url = data[raw_url];
-      if (exp_url) {
-        data[raw_url] = exp_url.replace(/\/(?=$|\?)/, "");
-      }
-    }
     [].forEach.call(anchors, function(a, i) {
       var exp_url = data[a.href];
       if (exp_url) {
