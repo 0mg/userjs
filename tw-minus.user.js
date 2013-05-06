@@ -1738,12 +1738,11 @@ V.init.CSS = '\
     width: 73px;\
     height: 73px;\
   }\
-  .toggle.null::before {\
+  [role=button][aria-pressed=mixed]::before {\
     content: "\\ff1f";\
     font-weight: bold;\
   }\
-  .tweet.reply_target .reply::before,\
-  .toggle.true::before {\
+  [role=button][aria-pressed=true]::before {\
     content: "\\2714";\
   }\
 '.replace(/\s+/g, " ");
@@ -3132,23 +3131,19 @@ V.Button = function(labelDefault, labelOn) {
   this.name = name;
   this.labelDefault = labelDefault;
   this.labelOn = labelOn !== undefined ? labelOn: labelDefault;
-  this.node = D.ce("button").add(D.ct(labelDefault)).sa("class", "toggle");
+  this.node = D.ce("button").add(D.ct(labelDefault)).
+    sa("role", "button").sa("aria-pressed", false);
 };
 V.Button.prototype = {
   on: false,
   turn: function(flag) {
-    if (flag !== null) {
-      flag = !!flag;
+    if (typeof flag === "boolean") {
       this.on = flag;
-      this.node.classList.remove(String(null));
-      this.node.classList.remove(String(!flag));
-      this.node.classList.add(String(flag));
+      this.node.sa("aria-pressed", flag);
       this.node.textContent = flag ? this.labelOn: this.labelDefault;
     } else {
-      this.on = null;
-      this.node.classList.remove(String(true));
-      this.node.classList.remove(String(false));
-      this.node.classList.add(String(null));
+      this.on = undefined;
+      this.node.sa("aria-pressed", "mixed");
       this.node.textContent = this.labelDefault;
     }
     return this;
@@ -3200,12 +3195,13 @@ V.panel.makeTwAct = function(tweet_org, my) {
   var ab = {
     node: D.ce("div"),
     fav: new V.Button("Fav", "Unfav"),
-    rep: D.ce("button").sa("class", "reply").add(D.ct("Reply")),
+    rep: new V.Button("Reply"),
     del: new V.Button("Delete"),
     rt: new V.Button("RT", "UnRT")
   };
+  ab.rep.node.sa("class", "reply");
   if (isTW || isRT) ab.node.add(ab.fav.node);
-  ab.node.add(ab.rep);
+  ab.node.add(ab.rep.node);
   if (isDM || isMyTweet || isRTtoMe) ab.node.add(ab.del.node);
   else ab.node.add(ab.rt.node);
 
@@ -3235,7 +3231,7 @@ V.panel.makeTwAct = function(tweet_org, my) {
   });
 
   // [Reply] btn
-  ab.rep.addEventListener("click", isDM ? function() {
+  ab.rep.node.addEventListener("click", isDM ? function() {
     // main
     var status = D.q("#status");
     status.value = "d " + tweet.sender.screen_name + " " + status.value;
@@ -3323,7 +3319,6 @@ V.panel.showFollowPanel = function(user) {
     ab.block.turn(ship.blocking || ship.marked_spam);
     ab.spam.turn(ship.marked_spam);
     ab.want_rt.turn(ship.want_retweets);
-    ab.dm.turn(user.followed_by);
     // visibility
     if ((!user.protected || user.following) && !ship.blocking) {
       ab.follow.show().enable();
@@ -3478,10 +3473,10 @@ V.panel.showFollowPanel = function(user) {
     update(xhr);
   };
   var onErr = function() {
-    ab.block.turn(null);
-    ab.spam.turn(null);
-    ab.want_rt.turn(null);
-    ab.dm.turn(null).show().enable();
+    ab.block.turn(undefined);
+    ab.spam.turn(undefined);
+    ab.want_rt.turn(undefined);
+    ab.dm.turn(undefined).show().enable();
   };
   X.get(API.urls.users.friendship()() + "?target_id=" + user.id_str,
         onScs, onErr);
@@ -3530,7 +3525,7 @@ V.panel.lifeListButtons = function(lists, user, my) {
     });
   };
   var onErr = function() {
-    for (var i in list_btns) list_btns[i].turn(null);
+    for (var i in list_btns) list_btns[i].turn(undefined);
   };
   D.q("#subaction-inner-2").add(al.node);
   X.get(API.urls.lists.listed()() + "?filter_to_owned_lists=true&" +
@@ -3705,19 +3700,23 @@ V.panel.newTweetBox = function(my) {
   V.panel.tweetbox = nd;
   V.panel.updTweetBox(my);
   var switchReplyTarget = function() {
-    var uid = nd.id.value, uname = nd.to_uname.value;
+    var tid = nd.id.value, uname = nd.to_uname.value;
     // reset
-    [].forEach.call(D.qs(".reply_target"), function(e) {
-      e.classList.remove("reply_target");
+    [].forEach.call(D.qs(".reply_target"), function(reptgt) {
+      reptgt.classList.remove("reply_target");
+      reptgt.q(".reply").sa("aria-pressed", false);
     });
     nd.replink.classList.remove("replying");
     // update reply target
-    var reptgt = D.q(".tweet.id-" + uid);
-    if (reptgt) reptgt.classList.add("reply_target");
+    var reptgt = D.q(".tweet.id-" + tid);
+    if (reptgt) {
+      reptgt.classList.add("reply_target");
+      reptgt.q(".reply").sa("aria-pressed", true);
+    }
     // update replink
-    if (uid && nd.status.value.match("@" + uname + "\\b")) {
+    if (tid && nd.status.value.match("@" + uname + "\\b")) {
       nd.replink.textContent = "in reply to " + uname;
-      nd.replink.sa("href", U.ROOT + uname + "/status/" + uid);
+      nd.replink.sa("href", U.ROOT + uname + "/status/" + tid);
       nd.replink.classList.add("replying");
       return true;
     }
