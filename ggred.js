@@ -5,5 +5,8 @@
 // @include https://www.google.co.jp/url?*
 // ==/UserScript==
 location.replace(
-  decodeURIComponent(location.search.match(/[?&](?:url|q)=([^&]+)/)[1])
+  decodeURIComponent(
+    (location.search.match(/[?&]url=([^&]+)/) ||
+      location.search.match(/[?&]q=([^&]+)/))[1]
+  )
 );
