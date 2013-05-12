@@ -1516,9 +1516,25 @@ V.init.CSS = '\
     border-style: solid;\
     font-size: small;\
   }\
-  #globalbar li {\
+  #globalbar > li {\
     display: inline-block;\
     margin-right: 2ex;\
+  }\
+  #globalbar li > ul {\
+    display: none;\
+  }\
+  #globalbar li:hover > ul {\
+    display: block;\
+    position: absolute;\
+    padding: 1ex;\
+    border: 1px solid;\
+    background: hsla(0,0%,100%,.95);\
+    color: hsla(0,0%,80%,.95);\
+    list-style: none;\
+    z-index: 1;\
+  }\
+  #globalbar li li+li {\
+    border-top: 1px solid;\
   }\
   #subtitle {\
     font-size: 3ex;\
@@ -1823,7 +1839,7 @@ V.main.showPage.on1 = function(hash, q, my) {
     it.showLoginUI(q);
     break;
   case "settings":
-    it.showSettings(my);
+    D.q("#main").add(it.newSettings(my));
     break;
   case "lists":
     it.showLists(API.urls.lists.all()() + "?" + q +
@@ -2008,18 +2024,18 @@ V.main.showPage.on3 = function(hash, q, my) {
 };
 
 // Render view of list of settings
-V.main.showSettings = function(my) {
+V.main.newSettings = function(my) {
   var root = U.ROOT + "settings/";
   var nd = {
-    api: D.ce("a").sa("href", root + "api").add(D.ct("api")),
-    aps: D.ce("a").sa("href", root + "api/status").add(D.ct("api/status")),
-    aco: D.ce("a").sa("href", root + "account").add(D.ct("account")),
-    pro: D.ce("a").sa("href", root + "profile").add(D.ct("profile")),
-    dez: D.ce("a").sa("href", root + "design").add(D.ct("design")),
-    fw: D.ce("a").sa("href", root + "follow").add(D.ct("follow")),
-    opt: D.ce("a").sa("href", root + "options").add(D.ct("options"))
+    api: D.ce("a").sa("href", root + "api").add(D.ct("API")),
+    aps: D.ce("a").sa("href", root + "api/status").add(D.ct("API Status")),
+    aco: D.ce("a").sa("href", root + "account").add(D.ct("Account")),
+    pro: D.ce("a").sa("href", root + "profile").add(D.ct("Profile")),
+    dez: D.ce("a").sa("href", root + "design").add(D.ct("Design")),
+    fw: D.ce("a").sa("href", root + "follow").add(D.ct("Follow")),
+    opt: D.ce("a").sa("href", root + "options").add(D.ct("Options"))
   };
-  D.q("#main").add(
+  return D.ce("ul").add(
     D.ce("li").add(nd.api),
     D.ce("li").add(nd.aps),
     D.ce("li").add(nd.aco),
@@ -3565,6 +3581,7 @@ V.panel.newGlobalBar = function(my) {
     follow_req_in: D.ce("a"),
     follow_req_out: D.ce("a"),
     lists: D.ce("a"),
+    listown: D.ce("a"),
     listsub: D.ce("a"),
     listed: D.ce("a"),
     blocking: D.ce("a"),
@@ -3612,13 +3629,16 @@ V.panel.newGlobalBar = function(my) {
   g.followers.add(D.ct("Followers:"), g.fwers_len);
 
   g.follow_req_in.href = U.ROOT + "followers/requests";
-  g.follow_req_in.add(D.ct("req"));
+  g.follow_req_in.add(D.ct("requests in"));
 
   g.follow_req_out.href = U.ROOT + "following/requests";
-  g.follow_req_out.add(D.ct("req"));
+  g.follow_req_out.add(D.ct("requests out"));
 
   g.lists.href = U.ROOT + "lists";
   g.lists.add(D.ct("Lists"));
+
+  g.listown.href = U.ROOT + "lists/ownerships";
+  g.listown.add(D.ct("Ownerships"));
 
   g.listsub.href = U.ROOT + "lists/subscriptions";
   g.listsub.add(D.ct("Subscriptions"));
@@ -3655,13 +3675,21 @@ V.panel.newGlobalBar = function(my) {
     D.ce("li").add(g.home),
     D.ce("li").add(g.profile),
     D.ce("li").add(g.replies),
-    D.ce("li").add(g.inbox, D.ct("/"), g.sent),
+    D.ce("li").add(g.inbox, D.ce("ul").add(D.ce("li").add(g.sent))),
     D.ce("li").add(g.favorites),
-    D.ce("li").add(g.following, D.ct("/"), g.follow_req_out),
-    D.ce("li").add(g.followers, D.ct("/"), g.follow_req_in),
-    D.ce("li").add(g.lists, D.ct("/"), g.listsub, D.ct("/"), g.listed),
+    D.ce("li").add(g.following,
+      D.ce("ul").add(D.ce("li").add(g.follow_req_out))),
+    D.ce("li").add(g.followers,
+      D.ce("ul").add(D.ce("li").add(g.follow_req_in))),
+    D.ce("li").add(g.lists,
+      D.ce("ul").add(
+        D.ce("li").add(g.listown),
+        D.ce("li").add(g.listsub)
+      )
+    ),
+    D.ce("li").add(g.listed),
     D.ce("li").add(g.blocking),
-    D.ce("li").add(g.settings),
+    D.ce("li").add(g.settings, V.main.newSettings(my)),
     D.ce("li").add(g.api),
     D.ce("li").add(g.logout)
   );
