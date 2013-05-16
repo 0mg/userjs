@@ -1637,7 +1637,7 @@ V.init.CSS = '\
   a.expanded_url {\
     text-decoration: underline;\
   }\
-  #xhr-statuses { position: fixed; top: 0; left: 0; }\
+  #xhr-statuses { position: fixed; top: 0; left: 0; z-index: 1; }\
   .xhr-state { font-size:xx-small; }\
   .xhr-state.loading { position:absolute; background: gray; color: white; }\
   .xhr-state.done.success { background: white; color: gray; }\
