@@ -3116,6 +3116,7 @@ V.misc.showXHRError = function(xhr, to) {
 
 // Scripts after render page
 V.misc.expandUrls = function(parent, expurls) {
+  return;
   var onScs = function(xhr) {
     var data = JSON.parse(xhr.responseText);
     LS.state.save("expanded_urls", data);
