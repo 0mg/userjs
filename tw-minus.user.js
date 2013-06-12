@@ -3091,7 +3091,7 @@ V.misc.onXHREnd = function(success, xhr, method, url, q) {
   s.classList.remove("loading");
   s.classList.add("done");
   if (success) {
-    s.hidden = method !== "POST";
+    if (method !== "POST") s.style.display = "none";
     s.classList.add("success");
     s.textContent = "Success!";
   } else {
