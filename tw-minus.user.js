@@ -856,7 +856,6 @@ API.urls.init = function() {
       1.1: "/1.1/blocks/list"
     }),
     ids: uv({
-      1: "/1/blocks/blocking_ids",
       1.1: "/1.1/blocks/ids"
     }),
     add: uv({
@@ -871,11 +870,9 @@ API.urls.init = function() {
   };
   urls.account = {
     rate_limit_status: uv({
-      1: "/1/account/rate_limit_status",
       1.1: "/1.1/application/rate_limit_status"
     }),
     verify_credentials: uv({
-      1: "/1/account/verify_credentials",
       1.1: "/1.1/account/verify_credentials"
     }),
     update_profile: uv({
@@ -901,22 +898,18 @@ API.urls.init = function() {
   };
   urls.users = {
     followers_ids: uv({
-      1: "/1/followers/ids",
       1.1: "/1.1/followers/ids"
     }),
     friends_ids: uv({
-      1: "/1/friends/ids",
       1.1: "/1.1/friends/ids"
     }),
     lookup: uv({
       1.1: "/1.1/users/lookup"
     }),
     incoming: uv({
-      1: "/1/friendships/incoming",
       1.1: "/1.1/friendships/incoming"
     }),
     outgoing: uv({
-      1: "/1/friendships/outgoing",
       1.1: "/1.1/friendships/outgoing"
     }),
     deny: uv({
@@ -946,11 +939,9 @@ API.urls.init = function() {
   };
   urls.d = {
     inbox: uv({
-      1: "/1/direct_messages",
       1.1: "/1.1/direct_messages"
     }),
     sent: uv({
-      1: "/1/direct_messages/sent",
       1.1: "/1.1/direct_messages/sent"
     }),
     show: uv({
@@ -972,7 +963,6 @@ API.urls.init = function() {
     }),
     saved: {
       list: uv({
-        1: "/1/saved_searches",
         1.1: "/1.1/saved_searches/list"
       }),
       show: uv({
@@ -988,23 +978,18 @@ API.urls.init = function() {
   };
   urls.lists = {
     all: uv({
-      1: "/1/lists/all",
       1.1: "/1.1/lists/list"
     }),
     list: uv({
-      1: "/1/lists",
       1.1: "/1.1/lists/ownerships"
     }),
     subscriptions: uv({
-      1: "/1/lists/subscriptions",
       1.1: "/1.1/lists/subscriptions"
     }),
     listed: uv({
-      1: "/1/lists/memberships",
       1.1: "/1.1/lists/memberships"
     }),
     show: uv({
-      1: "/1/lists/show",
       1.1: "/1.1/lists/show"
     }),
     tweets: uv({
@@ -1042,11 +1027,9 @@ API.urls.init = function() {
   };
   urls.timeline = {
     home: uv({
-      1: "/1/statuses/home_timeline",
       1.1: "/1.1/statuses/home_timeline"
     }),
     mentions: uv({
-      1: "/1/statuses/mentions",
       1.1: "/1.1/statuses/mentions_timeline"
     }),
     user: uv({
@@ -1055,7 +1038,6 @@ API.urls.init = function() {
   };
   urls.favorites = {
     list: uv({
-      1: "/1/favorites",
       1.1: "/1.1/favorites/list"
     }),
     add: uv({
