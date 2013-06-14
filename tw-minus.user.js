@@ -1829,16 +1829,13 @@ V.main.showPage.on1 = function(hash, q, my) {
     V.panel.showListPanel(my);
     break;
   case "inbox":
-    it.showTL(API.urls.d.inbox()() + "?" + q +
-                "&include_entities=true", my);
+    it.showTL(API.urls.d.inbox()() + "?" + q, my);
     break;
   case "sent":
-    it.showTL(API.urls.d.sent()() + "?" + q +
-                "&include_entities=true", my);
+    it.showTL(API.urls.d.sent()() + "?" + q, my);
     break;
   case "favorites":
-    it.showTL(API.urls.favorites.list()() + "?" + q +
-                "&include_entities=true", my);
+    it.showTL(API.urls.favorites.list()() + "?" + q, my);
     break;
   case "following":
     it.showUsersByIds(API.urls.users.friends_ids()() + "?" + q +
@@ -1849,21 +1846,18 @@ V.main.showPage.on1 = function(hash, q, my) {
       "&stringify_ids=true", my);
     break;
   case "mentions":
-    it.showTL(API.urls.timeline.mentions()() + "?" + q +
-                "&include_entities=true", my);
+    it.showTL(API.urls.timeline.mentions()() + "?" + q, my);
     break;
   case "blocking":
     it.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
       "&stringify_ids=true", my);
     break;
   case "":
-    it.showTL(API.urls.timeline.home()() + "?" + q +
-                "&include_entities=true", my);
+    it.showTL(API.urls.timeline.home()() + "?" + q, my);
     break;
   default:
     it.showTL(API.urls.timeline.user()() + "?" + q +
-                "&include_entities=true&include_rts=true" +
-                "&screen_name=" + hash[0], my);
+      "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my);
   }
 };
@@ -1907,18 +1901,16 @@ V.main.showPage.on2 = function(hash, q, my) {
 
   } else if (hash[0] === "direct_messages") switch (hash[1]) {
   default:
-    it.showTL(API.urls.d.show()() + "?id=" + hash[1] +
-      "&" + q + "&include_entities=true", my);
+    it.showTL(API.urls.d.show()() + "?id=" + hash[1] + "&" + q, my);
 
   } else switch (hash[1]) {
   case "status": case "statuses":
     it.showTL(API.urls.timeline.user()() + "?" + q +
-      "&include_entities=true&include_rts=true" +
       "&screen_name=" + hash[0], my);
     break;
   case "favorites":
     it.showTL(API.urls.favorites.list()() + "?" + q +
-      "&include_entities=true&screen_name=" + hash[0], my);
+      "&screen_name=" + hash[0], my);
     V.outline.showProfileOutline(hash[0], my, 3);
     break;
   case "following":
@@ -1938,14 +1930,12 @@ V.main.showPage.on2 = function(hash, q, my) {
     break;
   default:
     if (hash[0] === "status" || hash[0] === "statuses") {
-      it.showTL(API.urls.tweet.get()(hash[1]) + "?" + q +
-        "&include_entities=true", my);
+      it.showTL(API.urls.tweet.get()(hash[1]) + "?" + q, my);
     } else {
       it.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
         "&slug=" + hash[1] +
-        "&include_rts=false" +
-        "&include_entities=true", my);
+        "&include_rts=false", my);
       V.outline.showListOutline(hash, my);
     }
   }
@@ -1970,7 +1960,7 @@ V.main.showPage.on3 = function(hash, q, my) {
 
   } else if (hash[0] === "settings" && hash[1] === "api") switch (hash[2]) {
   case "status":
-    X.get(API.urls.account.rate_limit_status(1.1)(),
+    X.get(API.urls.account.rate_limit_status()(),
       it.showAPIStatus, V.misc.showXHRError);
     break;
 
@@ -1983,7 +1973,7 @@ V.main.showPage.on3 = function(hash, q, my) {
     } else {
       it.showTL(API.urls.lists.tweets()() + "?" + q +
         "&owner_screen_name=" + hash[0] +
-        "&slug=" + hash[1] + "&include_entities=true", my);
+        "&slug=" + hash[1], my);
     }
     break;
   case "members":
@@ -1998,8 +1988,7 @@ V.main.showPage.on3 = function(hash, q, my) {
     break;
   default:
     if (hash[1] === "status" || hash[1] === "statuses") {
-      it.showTL(API.urls.tweet.get()(hash[2]) + "?" + q +
-        "&include_entities=true", my);
+      it.showTL(API.urls.tweet.get()(hash[2]) + "?" + q, my);
       V.outline.showProfileOutline(hash[0], my, 1);
     }
   }
