@@ -1019,7 +1019,7 @@ API.urls.init = function() {
       1.1: "/1.1/lists/members/create_all"
     }),
     remove: uv({
-      1.1: "/1/lists/members/destroy_all"
+      1.1: "/1.1/lists/members/destroy_all"
     }),
     subscribers: uv({
       1.1: "/1.1/lists/subscribers"
