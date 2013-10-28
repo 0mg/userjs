@@ -1305,7 +1305,7 @@ API.tweet = function(status, id, onScs, onErr) {
 
 API.tweetMedia = function(media, status, id, onScs, onErr) {
   var url = API.urls.tweet.upload()();
-  var q = { "media_data[]": media };
+  var q = { "media[]": media };
   if (status !== undefined) q.status = status;
   if (id !== undefined) q.in_reply_to_status_id = id;
   X.post(url, X.formData(q), onScs, onErr);
@@ -3680,6 +3680,7 @@ V.panel.updTweetBox = function(my) {
 };
 V.panel.tweetbox = null;
 V.panel.newTweetBox = function(my) {
+  var media_blob = null;
   var media_b64 = "";
   var nd = {
     box: D.cf(),
@@ -3743,7 +3744,7 @@ V.panel.newTweetBox = function(my) {
   nd.update.addEventListener("click", function() {
     var d_ma = nd.status.value.match(/^d\s+(\w+)\s?([\S\s]*)/);
     if (nd.usemedia.checked && media_b64) {
-      API.tweetMedia(media_b64, nd.status.value, nd.id.value, onTweet);
+      API.tweetMedia(media_blob, nd.status.value, nd.id.value, onTweet);
     } else if (d_ma) {
       API.d(d_ma[2], d_ma[1], onTweet);
     } else {
@@ -3754,6 +3755,7 @@ V.panel.newTweetBox = function(my) {
   nd.media.addEventListener("change", function() {
     var file = nd.media.files[0], fr = new FileReader;
     fr.addEventListener("load", function() {
+      media_blob = file;
       media_b64 = btoa(fr.result);
       D.empty(nd.imgvw).add(
         D.ce("img").sa("class", "media_image").sa("alt", file.name).
