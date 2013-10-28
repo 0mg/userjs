@@ -686,7 +686,8 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
   switch (oauthPhase) {
   case "get_request_token":
     oauth_token_secret = "";
-    oadata["oauth_callback"] = U.ROOT + "login";
+    oadata["oauth_callback"] =
+      "https://api.twitter.com" + U.ROOT + "login";
     break;
   case "get_access_token":
     oauth_token = lsdata["request_token"];
