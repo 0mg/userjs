@@ -3559,7 +3559,6 @@ V.panel.newGlobalBar = function(my) {
     listed: D.ce("a"),
     blocking: D.ce("a"),
     settings: D.ce("a"),
-    api: D.ce("button"),
     logout: D.ce("button"),
 
     tweets_len: D.ce("span").sa("class", "statuses_count"),
@@ -3625,14 +3624,6 @@ V.panel.newGlobalBar = function(my) {
   g.settings.href = U.ROOT + "settings";
   g.settings.add(D.ct("Settings"));
 
-  g.api.add(D.ct("API rest"));
-  g.api.addEventListener("click", function() {
-    X.get(API.urls.account.rate_limit_status()(), function(xhr) {
-      var data = JSON.parse(xhr.responseText);
-      alert(O.stringify(data));
-    });
-  });
-
   g.logout.add(D.ct("logout"));
   g.logout.addEventListener("click", function() {
     var lsdata = LS.load();
@@ -3663,7 +3654,6 @@ V.panel.newGlobalBar = function(my) {
     D.ce("li").add(g.listed),
     D.ce("li").add(g.blocking),
     D.ce("li").add(g.settings, V.main.newSettings(my)),
-    D.ce("li").add(g.api),
     D.ce("li").add(g.logout)
   );
   return g.bar;
