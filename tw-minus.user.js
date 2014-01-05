@@ -1857,9 +1857,15 @@ V.main.showPage.on1 = function(hash, q, my) {
     it.showTL(API.urls.timeline.home()() + "?" + q, my);
     break;
   default:
-    it.showTL(API.urls.timeline.user()() + "?" + q +
-      "&screen_name=" + hash[0], my);
-    V.outline.showProfileOutline(hash[0], my);
+    if (hash[0].slice(-1) !== "@") {
+      it.showTL(API.urls.timeline.user()() + "?" + q +
+        "&screen_name=" + hash[0], my);
+      V.outline.showProfileOutline(hash[0], my);
+    } else {
+      it.showTL(API.urls.timeline.user()() + "?" + q +
+        "&user_id=" + hash[0].slice(0, -1), my);
+      V.outline.showProfileOutline(hash[0], my);
+    }
   }
 };
 
@@ -4058,7 +4064,13 @@ V.outline.showProfileOutline = function(screen_name, my, mode) {
     D.q("#side").add(hack);
     V.misc.showXHRError(xhr, D.q("#side"));
   };
-  X.get(API.urls.users.show()() + "?screen_name=" + screen_name, onScs, onErr);
+  if (screen_name.slice(-1) !== "@") {
+    X.get(API.urls.users.show()() + "?screen_name=" + screen_name,
+      onScs, onErr);
+  } else {
+    X.get(API.urls.users.show()() + "?user_id=" + screen_name.slice(0, -1),
+      onScs, onErr);
+  }
 };
 
 // Render outline of User Profile
