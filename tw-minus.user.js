@@ -2496,13 +2496,18 @@ V.main.settingFollow = function(my) {
   };
   var node = {
     main: D.q("#main"),
+    side: D.q("#side"),
     mirrorDebug: D.ce("textarea"),
     mirrorAna: D.ce("button").add(D.ct("Analize")),
     mirrorBtn: D.ce("button").add(D.ct("Mirror")),
     followCnt: D.ce("span").add(D.ct("0")),
     unfollowCnt: D.ce("span").add(D.ct("0")),
     followTotal: D.ce("span").add(D.ct("?")),
-    unfollowTotal: D.ce("span").add(D.ct("?"))
+    unfollowTotal: D.ce("span").add(D.ct("?")),
+    links: {
+      follow: D.ce("ul"),
+      unfollow: D.ce("ul")
+    }
   };
   node.mirrorAna.addEventListener("click", function() { mirrorAnalize(); });
   node.mirrorBtn.addEventListener("click", function() {
@@ -2520,6 +2525,12 @@ V.main.settingFollow = function(my) {
     ),
     node.mirrorDebug
   );
+  node.side.add(
+    D.ce("h3").add(D.ct("follow")),
+    node.links.follow,
+    D.ce("h3").add(D.ct("unfollow")),
+    node.links.unfollow
+  );
   function mirrorAnalize() {
     list.follow = [], list.unfollow = [];
     if (!ids.following || !ids.followers) return alert("not readied");
@@ -2535,6 +2546,16 @@ V.main.settingFollow = function(my) {
     });
     node.followTotal.textContent = list.follow.length;
     node.unfollowTotal.textContent = list.unfollow.length;
+    D.empty(node.links.follow);
+    D.empty(node.links.unfollow);
+    D.add.apply(node.links.follow, list.follow.map(function(id) {
+      return D.ce("li").add(
+        D.ce("a").sa("href", U.ROOT + id + "@").add(D.ct(id)));
+    }));
+    D.add.apply(node.links.unfollow, list.unfollow.map(function(id) {
+      return D.ce("li").add(
+        D.ce("a").sa("href", U.ROOT + id + "@").add(D.ct(id)));
+    }));
   }
   function mirror() {
     if (!list.follow || !list.unfollow) return;
