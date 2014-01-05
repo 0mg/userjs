@@ -2498,7 +2498,7 @@ V.main.settingFollow = function(my) {
     main: D.q("#main"),
     side: D.q("#side"),
     mirrorDebug: D.ce("textarea"),
-    mirrorAna: D.ce("button").add(D.ct("Analize")),
+    mirrorAna: D.ce("button").add(D.ct("Analyze")),
     mirrorBtn: D.ce("button").add(D.ct("Mirror")),
     followCnt: D.ce("span").add(D.ct("0")),
     unfollowCnt: D.ce("span").add(D.ct("0")),
@@ -2509,9 +2509,9 @@ V.main.settingFollow = function(my) {
       unfollow: D.ce("ul")
     }
   };
-  node.mirrorAna.addEventListener("click", function() { mirrorAnalize(); });
+  node.mirrorAna.addEventListener("click", function() { mirrorAnalyze(); });
   node.mirrorBtn.addEventListener("click", function() {
-    if (confirm("sure?")) mirrorAnalize(), mirror();
+    if (confirm("sure?")) mirrorAnalyze(), mirror();
   });
   node.main.add(
     D.ce("h3").add(D.ct("Mirroring")),
@@ -2531,7 +2531,7 @@ V.main.settingFollow = function(my) {
     D.ce("h3").add(D.ct("unfollow")),
     node.links.unfollow
   );
-  function mirrorAnalize() {
+  function mirrorAnalyze() {
     list.follow = [], list.unfollow = [];
     if (!ids.following || !ids.followers) return alert("not readied");
     ids.followers.forEach(function(follower_id) {
