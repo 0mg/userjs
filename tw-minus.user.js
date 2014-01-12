@@ -257,7 +257,8 @@ P.oauth.sha = function(sha_text, sha_key) {
   return btoa(P.hmac(P.sha1)(sha_key, sha_text));
 };
 P.oauth.enc = function enc(s) {
-  return String(s).replace(/[\S\s]/g, function(c) {
+  var chr = /[\ud800-\udbff][\udc00-\udfff]|[\S\s]/g;
+  return String(s).replace(chr, function(c) {
     var e = {
       "!": "%21",
       "'": "%27",
