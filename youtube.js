@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name add YouTube URLs to playlist
-// @include http://www.youtube.com/playlist?*action_edit=1*
+// @include https://www.youtube.com/playlist?*action_edit=1*
 // @exclude 
 // ==/UserScript==
 
@@ -38,7 +38,7 @@ addEventListener("DOMContentLoaded", function() {
   }, false);
   el2.textContent = "add all";
 
-  var eldst = document.querySelector("#add-playlist-video-dialog");
+  var eldst = document.querySelector(".playlist-actions-container");
   eldst.appendChild(el);
   eldst.appendChild(el2);
 }, false);
