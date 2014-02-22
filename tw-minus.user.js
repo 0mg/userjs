@@ -3753,7 +3753,7 @@ V.panel.newTweetBox = function(my) {
   // add event listeners
   nd.status.addEventListener("input", function() {
     var replying = switchReplyTarget();
-    var red = /^d\s+\w+/;
+    var red = /^d\s+\w+\s*/;
     var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
     nd.update.textContent =
       replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
