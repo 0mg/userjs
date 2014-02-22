@@ -1590,6 +1590,7 @@ V.init.CSS = '\
   #status_log {\
     width: 100%;\
     max-width: 500px;\
+    word-wrap: break-word;\
   }\
   #status_log .tweet {\
     border: none;\
