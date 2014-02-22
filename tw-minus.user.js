@@ -3758,7 +3758,8 @@ V.panel.newTweetBox = function(my) {
     nd.update.textContent =
       replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
     nd.update.disabled = nd.status.value.replace(red, "").
-      replace(reurl, "$1http://t.co/1234567").length > 140;
+      replace(reurl, "$1http://t.co/1234567").
+      replace(/[\ud800-\udbff][\udc00-\udfff]/g, "c").length > 140;
   });
   nd.update.addEventListener("click", function() {
     var d_ma = nd.status.value.match(/^d\s+(\w+)\s?([\S\s]*)/);
