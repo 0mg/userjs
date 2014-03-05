@@ -440,7 +440,8 @@ D.tweetize.TWRE = {
   hashTag: /^#\w*[a-zA-Z_]\w*/,
   crlf: /^(?:\r\n|\r|\n)/,
   entity: /^&#/,
-  text: /^[^hjdao@#\r\n&]+/
+  bigchar: /^(?:[\ud800-\udbff][\udc00-\udfff])+/,
+  text: /^[^hjdao@#\r\n&\ud800-\udfff]+/
 };
 D.tweetize.all = function callee(ctx, entities, fragment, i) {
   if (!ctx) return fragment.normalize(), fragment;
@@ -474,7 +475,7 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
 };
 D.tweetize.one = function(ctx, fragment) {
   var TWRE = D.tweetize.TWRE;
-  var str, url, hash, uname;
+  var str, url, hash, uname, bigchar;
   if (str = TWRE.text.exec(ctx)) {
     str = str[0]; fragment.add(D.ct(str));
 
@@ -493,6 +494,10 @@ D.tweetize.one = function(ctx, fragment) {
   } else if (str = TWRE.mention.exec(ctx)) {
     str = str[0]; uname = str.substring(1);
     fragment.add(D.tweetize.mention(uname));
+
+  } else if (str = TWRE.bigchar.exec(ctx)) {
+    str = str[0]; bigchar = str;
+    fragment.add(D.ce("span").sa("class", "bigchar").add(D.ct(bigchar)));
 
   /*} else if (str = TWRE.url.exec(ctx)) {
     str = str[0]; url = str;
