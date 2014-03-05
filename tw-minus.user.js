@@ -4129,7 +4129,9 @@ V.outline.rendProfileOutline = function(user) {
   D.q("#side").add(p.box.add(
     D.ce("dt").add(D.ct("Screen Name")),
     D.ce("dd").add(D.ct(user.screen_name)),
-    D.ce("dt").add(D.ct("Icon")),
+    D.ce("dt").add(user.profile_banner_url ? D.ce("a").
+      sa("href", user.profile_banner_url + "/web").add(D.ct("Icon")) :
+      D.ct("Icon")),
     D.ce("dd").add(p.icorg.add(p.icon)),
     D.ce("dt").add(D.ct("Name")),
     D.ce("dd").add(D.ct(T.decodeHTML(user.name))),
