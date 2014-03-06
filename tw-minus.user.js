@@ -413,55 +413,47 @@ D.tweetize = function(innerText, entities) {
   if (entities) {
     entities = {
       // clone or []
-      urls: entities.urls ? entities.urls.slice() : [],
-      hashtags: entities.hashtags ? entities.hashtags.slice() : [],
-      user_mentions:
-        entities.user_mentions ? entities.user_mentions.slice() : [],
-      media: entities.media ? entities.media.slice() : []
+      urls: [].concat(entities.urls || []),
+      hashtags: [].concat(entities.hashtags || []),
+      user_mentions: [].concat(entities.user_mentions || []),
+      media: [].concat(entities.media || [])
     };
     D.tweetize.all(ctx, entities, fragment, 0);
-  } else {
-    while ((str = D.tweetize.one(ctx, fragment)).length) {
-      ctx = ctx.substring(str.length);
-    }
-    fragment.normalize();
+  } else while (ctx.length) {
+    str = D.tweetize.one(ctx, fragment);
+    ctx = ctx.substring(str.length);
   }
-  var nodes = fragment.childNodes;
-  for (var i = 0; i < nodes.length; ++i) {
-    var nd = nodes[i];
-    if (nd.nodeType === 3) nd.nodeValue = T.decodeHTML(nd.nodeValue);
-  }
+  fragment.normalize();
   return fragment;
 };
 D.tweetize.TWRE = {
-  httpurl: /^https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
-  url: /^(?:javascript|data|about|opera):[-\w.!~*'()%@:$,;&=+/?#\[\]]+/,
+  httpurl: /^https?:\/\/\S+/,
+  url: /^(?:javascript|data|about|opera):\S+/,
   mention: /^@\w+(?:\/[a-zA-Z](?:-?[a-zA-Z0-9])*)?/,
   hashTag: /^#\w*[a-zA-Z_]\w*/,
   crlf: /^(?:\r\n|\r|\n)/,
-  entity: /^&#/,
+  entity: /^&(?:[a-zA-Z]+|#\d+|#x[\da-fA-F]+);/,
   bigchar: /^(?:[\ud800-\udbff][\udc00-\udfff])+/,
   text: /^[^hjdao@#\r\n&\ud800-\udfff]+/
 };
 D.tweetize.all = function callee(ctx, entities, fragment, i) {
-  if (!ctx) return fragment.normalize(), fragment;
-  var str, url, hash, username;
+  if (!ctx) return fragment;
+  var str, url;
   var eUrl = entities.urls[0], eHsh = entities.hashtags[0];
   var eMns = entities.user_mentions[0], eMed = entities.media[0];
   if (eUrl && eUrl.indices[0] === i) {
-    str = ctx.substring(0, eUrl.indices[1] - i); url = str;
-    fragment.add(D.tweetize.url(url, eUrl.expanded_url));
+    str = ctx.substring(0, eUrl.indices[1] - i);
+    fragment.add(D.tweetize.url(str, eUrl.expanded_url));
     entities.urls.shift();
 
   } else if (eHsh && eHsh.indices[0] === i) {
-    str = ctx.substring(0, eHsh.indices[1] - i); hash = str;
-    fragment.add(D.tweetize.hashtag(hash));
+    str = ctx.substring(0, eHsh.indices[1] - i);
+    fragment.add(D.tweetize.hashtag(str));
     entities.hashtags.shift();
 
   } else if (eMns && eMns.indices[0] === i) {
     str = ctx.substring(0, eMns.indices[1] - i);
-    username = str.substring(1);
-    fragment.add(D.tweetize.mention(username));
+    fragment.add(D.tweetize.mention(str));
     entities.user_mentions.shift();
 
   } else if (eMed && eMed.indices[0] === i) {
@@ -483,21 +475,21 @@ D.tweetize.one = function(ctx, fragment) {
     str = str[0]; fragment.add(D.ce("br"));
 
   } else if (str = TWRE.entity.exec(ctx)) {
-    str = str[0]; fragment.add(D.ct(str));
+    str = str[0]; fragment.add(D.ct(T.decodeHTML(str)));
 
   } else if (str = TWRE.httpurl.exec(ctx)) {
-    str = str[0]; url = str; fragment.add(D.tweetize.url(url));
+    str = str[0]; fragment.add(D.tweetize.url(str));
 
   } else if (str = TWRE.hashTag.exec(ctx)) {
-    str = str[0]; hash = str; fragment.add(D.tweetize.hashtag(hash));
+    str = str[0]; fragment.add(D.tweetize.hashtag(str));
 
   } else if (str = TWRE.mention.exec(ctx)) {
-    str = str[0]; uname = str.substring(1);
-    fragment.add(D.tweetize.mention(uname));
+    str = str[0]; fragment.add(D.tweetize.mention(str));
 
   } else if (str = TWRE.bigchar.exec(ctx)) {
-    str = str[0]; bigchar = str;
-    fragment.add(D.ce("span").sa("class", "bigchar").add(D.ct(bigchar)));
+    str = str[0]; fragment.add(
+      D.ce("span").sa("class", "bigchar").add(D.ct(str))
+    );
 
   /*} else if (str = TWRE.url.exec(ctx)) {
     str = str[0]; url = str;
@@ -525,7 +517,8 @@ D.tweetize.hashtag = function(hash) {
     U.ROOT + "search/" + P.oauth.enc(hash)
   ).add(D.ct(hash));
 };
-D.tweetize.mention = function(username) {
+D.tweetize.mention = function(mention) {
+  var username = mention.substring(1);
   return D.cf().add(
     D.ct("@"), D.ce("a").sa("href", U.ROOT + username).add(D.ct(username))
   );
