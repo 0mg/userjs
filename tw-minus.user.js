@@ -487,6 +487,7 @@ D.tweetize.one = function(ctx, fragment) {
     str = str[0]; fragment.add(D.tweetize.mention(str));
 
   } else if (str = TWRE.supchar.exec(ctx)) {
+    //str = str[0]; fragment.add(D.tweetize.emoji(str)); return str;
     str = str[0]; fragment.add(
       D.ce("span").sa("class", "supchar").add(D.ct(str))
     );
@@ -522,6 +523,23 @@ D.tweetize.mention = function(mention) {
   return D.cf().add(
     D.ct("@"), D.ce("a").sa("href", U.ROOT + username).add(D.ct(username))
   );
+};
+D.tweetize.emoji = function(str) {
+  var df = D.cf();
+  var chars = str.match(/[\ud800-\udbff][\udc00-\udfff]/g);
+  chars.forEach(function(chr) {
+    var dir = "https://abs.twimg.com/emoji/v1/72x72/";
+    var name = T.supchar.decode(chr).toString(16);
+    var ext = ".png";
+    var img = D.ce("img").sa("src", dir + name + ext).
+      sa("alt", chr).sa("class", "emoji");
+    img.addEventListener("error", function() {
+      var alt = D.ce("span").sa("class", "supchar").add(D.ct(chr));
+      img.parentNode.replaceChild(alt, img);
+    });
+    df.add(img);
+  });
+  return df;
 };
 
 // Object Functions
@@ -663,6 +681,27 @@ T.decrement = function decrement(s) {
     if (n < 0 && i > 0) { s[i] = 9; } else { s[i] = n; break; }
   }
   return s.join("");
+};
+T.supchar = {};
+T.supchar.is = function(c) {
+  return /^[\ud800-\udbff][\udc00-\udfff]$/.test(c);
+};
+T.supchar.encode = function(unicode) {
+  if (unicode < 0x10000) return [unicode];
+  var hi = (unicode - 0x10000) / 0x400 + 0xd800;
+  var lo = (unicode - 0x10000) % 0x400 + 0xdc00;
+  return [hi, lo];
+};
+T.supchar.decode = function(c) {
+  if (T.supchar.is(c)) {
+    var hi = c.charCodeAt(0);
+    var lo = c.charCodeAt(1);
+    return 0x10000 + ((hi - 0xd800) * 0x400) + (lo - 0xdc00);
+  } else if (c.length === 1) {
+    return c.charCodeAt(0);
+  } else {
+    throw Error("invalid string");
+  }
 };
 
 // XHR Functions
@@ -1743,6 +1782,9 @@ V.init.CSS = '\
   }\
   [role=button][aria-pressed=true]::before {\
     content: "\\2714";\
+  }\
+  img.emoji {\
+    width: 1em;\
   }\
 '.replace(/\s+/g, " ");
 
