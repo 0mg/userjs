@@ -890,6 +890,14 @@ API.urls.init = function() {
       0: "/i/resolve"
     })
   };
+  urls.mutes = {
+    mute: uv({
+      1.1: "/1.1/mutes/users/create"
+    }),
+    unmute: uv({
+      1.1: "/1.1/mutes/users/destroy"
+    })
+  };
   urls.blocking = {
     list: uv({
       1.1: "/1.1/blocks/list"
@@ -1428,6 +1436,14 @@ API.unblock = function(uname, onScs, onErr) {
 API.spam = function(uname, onScs, onErr) {
   X.post(API.urls.blocking.spam()(),
          "screen_name=" + uname, onScs, onErr);
+};
+
+API.mute = function(uname, onScs, onErr) {
+  X.post(API.urls.mutes.mute()(), "screen_name=" + uname, onScs, onErr);
+};
+
+API.unmute = function(uname, onScs, onErr) {
+  X.post(API.urls.mutes.unmute()(), "screen_name=" + uname, onScs, onErr);
 };
 
 API.followList = function(uname, slug, onScs, onErr) {
@@ -3354,7 +3370,8 @@ V.panel.showFollowPanel = function(user) {
     blocking: false,
     followed_by: false,
     marked_spam: false,
-    want_retweets: false
+    want_retweets: false,
+    muting: false
   };
   var ab = {
     node: D.cf(),
@@ -3363,7 +3380,8 @@ V.panel.showFollowPanel = function(user) {
     spam: new V.Button("Spam", "Unspam"),
     req_follow: new V.Button("ReqFollow", "UnreqFollow"),
     dm: new V.Button("D"),
-    want_rt: new V.Button("WantRT", "UnwantRT")
+    want_rt: new V.Button("WantRT", "UnwantRT"),
+    mute: new V.Button("Mute", "Unmute")
   };
   var update = function(xhr) {
     /*if (xhr && xhr.status === 200) {
@@ -3377,6 +3395,7 @@ V.panel.showFollowPanel = function(user) {
     ab.block.turn(ship.blocking || ship.marked_spam);
     ab.spam.turn(ship.marked_spam);
     ab.want_rt.turn(ship.want_retweets);
+    ab.mute.turn(ship.muting);
     // visibility
     if ((!user.protected || user.following) && !ship.blocking) {
       ab.follow.show().enable();
@@ -3403,6 +3422,7 @@ V.panel.showFollowPanel = function(user) {
     followed_by
     marked_spam
     want_retweets
+    muting
   */
   var onFollow = function(xhr) {
     user.following = true;
@@ -3411,6 +3431,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     ship.marked_spam = false;
     ship.want_retweets = true;
+    //ship.muting;
     update(xhr);
   };
   var onUnfollow = function(xhr) {
@@ -3420,6 +3441,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     //ship.marked_spam;
     ship.want_retweets = false;
+    //ship.muting;
     update(xhr);
   };
   var onReq = function(xhr) {
@@ -3429,6 +3451,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     ship.marked_spam = false;
     //ship.want_retweets;
+    //ship.muting;
     update(xhr);
   };
   var onUnreq = function(xhr) {
@@ -3438,6 +3461,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     //ship.marked_spam;
     //ship.want_retweets;
+    //ship.muting;
     update(xhr);
   };
   var onBlock = function(xhr) {
@@ -3447,6 +3471,7 @@ V.panel.showFollowPanel = function(user) {
     ship.followed_by = false;
     ship.marked_spam = true;
     ship.want_retweets = false;
+    //ship.muting;
     update(xhr);
   };
   var onUnblock = function(xhr) {
@@ -3456,6 +3481,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     ship.marked_spam = false;
     //ship.want_retweets;
+    //ship.muting;
     update(xhr);
   };
   var onSpam = function(xhr) {
@@ -3465,6 +3491,7 @@ V.panel.showFollowPanel = function(user) {
     ship.followed_by = false;
     ship.marked_spam = true;
     ship.want_retweets = false;
+    //ship.muting;
     update(xhr);
   };
   var onWantRT = function(xhr) {
@@ -3474,6 +3501,7 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     //ship.marked_spam;
     ship.want_retweets = true;
+    //ship.muting;
     update(xhr);
   };
   var onUnwantRT = function(xhr) {
@@ -3483,6 +3511,27 @@ V.panel.showFollowPanel = function(user) {
     //ship.followed_by;
     //ship.marked_spam;
     ship.want_retweets = false;
+    //ship.muting;
+    update(xhr);
+  };
+  var onMute = function(xhr) {
+    //user.following;
+    //user.follow_request_sent;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    //ship.want_retweets;
+    ship.muting = true;
+    update(xhr);
+  };
+  var onUnmute = function(xhr) {
+    //user.following;
+    //user.follow_request_sent;
+    //ship.blocking;
+    //ship.followed_by;
+    //ship.marked_spam;
+    //ship.want_retweets;
+    ship.muting = false;
     update(xhr);
   };
   ab.follow.node.addEventListener("click", function() {
@@ -3515,12 +3564,18 @@ V.panel.showFollowPanel = function(user) {
     status.value = "d " + user.screen_name + " " + status.value;
     D.ev(status, "input").focus();
   });
+  ab.mute.node.addEventListener("click", function() {
+    ab.mute.on ?
+      API.unmute(user.screen_name, onUnmute, update):
+      API.mute(user.screen_name, onMute, update);
+  });
   ab.node.add(
     ab.follow.node,
     ab.req_follow.node,
     ab.block.node,
     ab.spam.node,
     ab.want_rt.node,
+    ab.mute.node,
     ab.dm.node
   );
   update(null);
