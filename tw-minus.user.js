@@ -1885,6 +1885,9 @@ V.main.showPage.on1 = function(hash, q, my) {
   case "settings":
     D.q("#main").add(it.newSettings(my));
     break;
+  case "users":
+    D.q("#main").add(it.newUsers(my));
+    break;
   case "lists":
     it.showLists(API.urls.lists.all()() + "?" + q +
       "&reverse=true&cursor=-1", my);
