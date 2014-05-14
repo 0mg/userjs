@@ -3955,12 +3955,14 @@ V.panel.showUserManager = function(my) {
         API[isAdd ? "follow" : "unfollow"](target, null); break;
       case "followers":
         API[isAdd ? "unblock" : "block"](target, null); break;
-      case "blocking":
-        API[isAdd ? "block" : "unblock"](target, null); break;
       }
       break;
     case 1:
       switch (dir) {
+      case "users/muting":
+        API[isAdd ? "mute" : "unmute"](target, null); break;
+      case "users/blocking":
+        API[isAdd ? "block" : "unblock"](target, null); break;
       case "following/requests":
         API[isAdd ? "requestFollow" : "unrequestFollow"](target, null);
         break;
