@@ -1910,10 +1910,6 @@ V.main.showPage.on1 = function(hash, q, my) {
   case "mentions":
     it.showTL(API.urls.timeline.mentions()() + "?" + q, my);
     break;
-  case "blocking":
-    it.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
-      "&stringify_ids=true", my);
-    break;
   case "":
     it.showTL(API.urls.timeline.home()() + "?" + q, my);
     break;
@@ -1974,6 +1970,10 @@ V.main.showPage.on2 = function(hash, q, my) {
   } else if (hash[0] === "users") switch (hash[1]) {
   case "muting":
     it.showUsersByIds(API.urls.mutes.ids()() + "?" + q +
+      "&stringify_ids=true", my);
+    break;
+  case "blocking":
+    it.showUsersByIds(API.urls.blocking.ids()() + "?" + q +
       "&stringify_ids=true", my);
     break;
 
@@ -2088,6 +2088,19 @@ V.main.newSettings = function(my) {
     D.ce("li").add(nd.dez),
     D.ce("li").add(nd.fw),
     D.ce("li").add(nd.opt)
+  );
+};
+
+// Render view of list of users
+V.main.newUsers = function(my) {
+  var root = U.ROOT + "users/";
+  var nd = {
+    blo: D.ce("a").sa("href", root + "blocking").add(D.ct("Blocking")),
+    mut: D.ce("a").sa("href", root + "muting").add(D.ct("Muting"))
+  };
+  return D.ce("ul").add(
+    D.ce("li").add(nd.blo),
+    D.ce("li").add(nd.mut)
   );
 };
 
@@ -3690,7 +3703,7 @@ V.panel.newGlobalBar = function(my) {
     listown: D.ce("a"),
     listsub: D.ce("a"),
     listed: D.ce("a"),
-    blocking: D.ce("a"),
+    users: D.ce("a"),
     settings: D.ce("a"),
     logout: D.ce("button"),
 
@@ -3751,8 +3764,8 @@ V.panel.newGlobalBar = function(my) {
   g.listed.href = U.ROOT + "lists/memberships";
   g.listed.add(D.ct("Listed:"), g.listed_len);
 
-  g.blocking.href = U.ROOT + "blocking";
-  g.blocking.add(D.ct("Blocking"));
+  g.users.href = U.ROOT + "users";
+  g.users.add(D.ct("Users"));
 
   g.settings.href = U.ROOT + "settings";
   g.settings.add(D.ct("Settings"));
@@ -3785,7 +3798,7 @@ V.panel.newGlobalBar = function(my) {
       )
     ),
     D.ce("li").add(g.listed),
-    D.ce("li").add(g.blocking),
+    D.ce("li").add(g.users, V.main.newUsers(my)),
     D.ce("li").add(g.settings, V.main.newSettings(my)),
     D.ce("li").add(g.logout)
   );
