@@ -896,6 +896,9 @@ API.urls.init = function() {
     }),
     unmute: uv({
       1.1: "/1.1/mutes/users/destroy"
+    }),
+    ids: uv({
+      1.1: "/1.1/mutes/users/ids"
     })
   };
   urls.blocking = {
@@ -1967,6 +1970,12 @@ V.main.showPage.on2 = function(hash, q, my) {
   } else if (hash[0] === "direct_messages") switch (hash[1]) {
   default:
     it.showTL(API.urls.d.show()() + "?id=" + hash[1] + "&" + q, my);
+
+  } else if (hash[0] === "users") switch (hash[1]) {
+  case "muting":
+    it.showUsersByIds(API.urls.mutes.ids()() + "?" + q +
+      "&stringify_ids=true", my);
+    break;
 
   } else switch (hash[1]) {
   case "status": case "statuses":
