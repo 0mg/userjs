@@ -560,6 +560,7 @@ O.stringify = function stringify(arg) {
 };
 O.htmlify = function htmlify(arg) {
   if (arg === null || typeof arg !== "object") {
+    if (typeof arg === "string") return D.ct('"' + arg + '"');
     return D.ct(arg);
   }
   var list = D.ce("dl");
