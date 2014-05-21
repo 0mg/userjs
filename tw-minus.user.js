@@ -2770,13 +2770,13 @@ V.main.rendUsers = function(data, my, mode) {
         sa("src", user.profile_image_url_https).sa("alt", user.screen_name),
       name: D.ce("span").sa("class", "name").add(D.ct(T.decodeHTML(user.name))),
       description: D.ce("p").sa("class", "description").
-        add(D.tweetize(user.description)),
+        add(D.tweetize(user.description, user.entities.description)),
       created_at: D.ce("a").sa("class", "created_at").
         add(D.ct(T.gapTime(new Date(user.created_at))))
     };
     if (user.protected) lu.root.classList.add("protected");
     if (user.verified) lu.root.classList.add("verified");
-    if (user.url) lu.created_at.href = user.url;
+    if (user.url) lu.created_at.href = user.entities.url.urls[0].expanded_url;
     users_list.add(lu.root.add(
       lu.screen_name, lu.icon, lu.name, lu.description,
       D.ce("span").sa("class", "meta").add(lu.created_at),
