@@ -8,5 +8,6 @@ location.replace(
   decodeURIComponent(
     (location.search.match(/[?&]url=([^&]+)/) ||
       location.search.match(/[?&]q=([^&]+)/))[1]
-  )
+  ),
+  history.replaceState("", "", "/")
 );
