@@ -1827,23 +1827,20 @@ V.init.CSS = '\
 '.replace(/\s+/g, " ");
 
 // Clear all node and set new one
-V.init.initNode = function() {
+V.init.initNode = function(my) {
   D.add.call(D.empty(document),
     document.implementation.createDocumentType("html", "", ""),
     D.ce("html").add(
-      D.ce("head").add(
-        D.ce("meta").sa("charset", "utf-8"),
-        D.ce("style").add(D.ct(V.init.CSS)),
-        D.ce("style").sa("id", "custom-css"),
-        D.ce("title").add(D.ct("tw-"))
-      ),
+      D.ce("head"),
       D.ce("body")
     )
   );
-};
-
-// Set DOM struct of tw-
-V.init.structPage = function(my) {
+  D.q("head").add(
+    D.ce("meta").sa("charset", "utf-8"),
+    D.ce("style").add(D.ct(V.init.CSS)),
+    D.ce("style").sa("id", "custom-css"),
+    D.ce("title").add(D.ct("tw-"))
+  );
   D.q("body").add(
     D.ce("ul").sa("id", "xhr-statuses"),
     D.ce("header").sa("id", "header").sa("class", "user-style-bar").add(
@@ -4397,8 +4394,7 @@ V.outline.showSearchPanel = function(query) {
   var ls = LS.load();
   var my = ls["credentials"];
   var editDOM = function() {
-    V.init.initNode();
-    V.init.structPage(my);
+    V.init.initNode(my);
     V.main.showPage(my);
   };
   API.urls.init();
