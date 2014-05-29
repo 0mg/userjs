@@ -25,7 +25,9 @@ LS.STRUCT = {
   "mylists": [],
   "mylists_modified": 0,
   "saved_searches": [],
-  "saved_searches_modified": 0
+  "saved_searches_modified": 0,
+  "configuration": {},
+  "configuration_modified": 0
 };
 LS.reset = function() {
   localStorage[LS.NS] = JSON.stringify(LS.STRUCT);
@@ -1115,6 +1117,11 @@ API.urls.init = function() {
       1.1: function(id) { return "/1.1/statuses/destroy/" + id; }
     })
   };
+  urls.help = {
+    configuration: uv({
+      1.1: "/1.1/help/configuration"
+    })
+  };
   API.urls.init = null;
   return urls;
 };
@@ -1213,6 +1220,10 @@ API.cc.reuseData = function(method, url, q) {
     return;
   case API.urls.account.verify_credentials()():
     return API.cc.onGotMe(data);
+  case API.urls.help.configuration()():
+    LS.save("configuration", data);
+    LS.save("configuration_modified", Date.now());
+    return;
   }
   // update cache: my list, my credentials
   switch (dataType.split(" ")[0]) {
@@ -1292,6 +1303,13 @@ API.cc.getCredentials = function() {
   var ls = LS.load();
   var data = ls["credentials"];
   var time = ls["credentials_modified"];
+  var interval = 1000 * 60 * 15;
+  return Date.now() - time < interval ? data: null;
+};
+API.cc.getConfiguration = function() {
+  var ls = LS.load();
+  var data = ls["configuration"];
+  var time = ls["configuration_modified"];
   var interval = 1000 * 60 * 15;
   return Date.now() - time < interval ? data: null;
 };
@@ -3875,11 +3893,16 @@ V.panel.newTweetBox = function(my) {
   nd.status.addEventListener("input", function() {
     var replying = switchReplyTarget();
     var red = /^d\s+\w+\s*/;
-    var reurl = /(^|\s)https?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
+    var reurl = /\bhttps?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
     nd.update.textContent =
       replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
     nd.update.disabled = nd.status.value.replace(red, "").
-      replace(reurl, "$1http://t.co/1234567").
+      replace(reurl, function(url) {
+        var data = LS.load()["configuration"];
+        var key = /^https/.test(url) ?
+          "short_url_length_https" : "short_url_length";
+        return Array(1 + data[key]).join("c"); //t.co
+      }).
       replace(/[\ud800-\udbff][\udc00-\udfff]/g, "c").length > 140;
   });
   nd.update.addEventListener("click", function() {
@@ -4383,5 +4406,8 @@ V.outline.showSearchPanel = function(query) {
   else addEventListener("load", function() { editDOM(); });
   if (!API.cc.getCredentials()) {
     X.get(API.urls.account.verify_credentials()(), null, null);
+  }
+  if (!API.cc.getConfiguration()) {
+    X.get(API.urls.help.configuration()(), null, null);
   }
 })();
