@@ -410,7 +410,7 @@ D.HTML_ENTITIES = {
   permil: 8240, lsaquo: 8249, rsaquo: 8250, euro: 8364
 };
 // eg. 'http://t.co' to '<a href="http://t.co">http://t.co</a>'
-D.tweetize = function(innerText, entities) {
+D.tweetize = function(innerText, entities, exties) {
   var str, ctx = innerText || "", fragment = D.cf();
   if (entities) {
     entities = {
@@ -418,7 +418,7 @@ D.tweetize = function(innerText, entities) {
       urls: [].concat(entities.urls || []),
       hashtags: [].concat(entities.hashtags || []),
       user_mentions: [].concat(entities.user_mentions || []),
-      media: [].concat(entities.media || [])
+      media: [].concat(exties ? exties.media : entities.media || [])
     };
     D.tweetize.all(ctx, entities, fragment, 0);
   } else while (ctx.length) {
@@ -459,10 +459,14 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
     entities.user_mentions.shift();
 
   } else if (eMed && eMed.indices[0] === i) {
+    var list = fragment.q(".twimgs") || D.ce("ul").sa("class", "twimgs");
     str = ctx.substring(0, eMed.indices[1] - i);
     url = eMed.media_url_https + ":large";
-    fragment.add(D.ce("a").sa("href", url).add(D.ct(url)));
+    list.add(D.ce("li").add(D.ce("a").sa("href", url).
+      add(D.ct(url.match(/[^/]+$/)))));
+    fragment.add(list);
     entities.media.shift();
+    if (entities.media.length) str = "";
 
   } else str = D.tweetize.one(ctx, fragment);
   return callee(ctx.substring(str.length), entities, fragment, i + str.length);
@@ -1814,6 +1818,9 @@ V.init.CSS = '\
     width: 73px;\
     height: 73px;\
   }\
+  .twimgs li {\
+    list-style: inside;\
+  }\
   [role=button][aria-pressed=mixed]::before {\
     content: "\\ff1f";\
     font-weight: bold;\
@@ -3085,7 +3092,7 @@ V.main.newTweet = function(tweet_org, my) {
       sa("class", "in_reply_to"),
     text: D.ce("p").
       sa("class", "text").
-      add(D.tweetize(tweet.text, tweet.entities)),
+      add(D.tweetize(tweet.text, tweet.entities, tweet.extended_entities)),
     meta: D.ce("div").
       sa("class", "meta"),
     date: D.ce("a").
