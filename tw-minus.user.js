@@ -459,14 +459,15 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
     entities.user_mentions.shift();
 
   } else if (eMed && eMed.indices[0] === i) {
-    var list = fragment.q(".twimgs") || D.ce("ul").sa("class", "twimgs");
     str = ctx.substring(0, eMed.indices[1] - i);
-    url = eMed.media_url_https + ":large";
-    list.add(D.ce("li").add(D.ce("a").sa("href", url).
-      add(D.ct(url.match(/[^/]+$/)))));
+    var list = D.ce("ul").sa("class", "twimgs");
+    do {
+      url = eMed.media_url_https + ":large";
+      list.add(D.ce("li").add(D.ce("a").sa("href", url).
+        add(D.ct(url.match(/[^/]+$/)))));
+      entities.media.shift();
+    } while (eMed = entities.media[0]);
     fragment.add(list);
-    entities.media.shift();
-    if (entities.media.length) str = "";
 
   } else str = D.tweetize.one(ctx, fragment);
   return callee(ctx.substring(str.length), entities, fragment, i + str.length);
