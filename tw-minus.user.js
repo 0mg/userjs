@@ -2559,8 +2559,7 @@ V.main.settingProfile = function(my) {
     var file = nd.icon.files[0]; if (!file) return;
     var fr = new FileReader;
     fr.addEventListener("load", function() {
-      var icon = btoa(fr.result);
-      API.uploadIcon(icon, onScs);
+      API.uploadIcon(file, onScs);
     });
     fr.readAsBinaryString(file);
   });
