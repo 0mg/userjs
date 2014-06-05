@@ -3877,7 +3877,8 @@ V.panel.newTweetBox = function(my) {
     imgvw: D.ce("ul").sa("id", "status_media_preview"),
     usemedia: D.ce("input").sa("id", "status_media_use").
       sa("type", "checkbox").sa("disabled", "disabled"),
-    media: D.ce("input").sa("id", "status_media").sa("type", "file")
+    media: D.ce("input").sa("id", "status_media").sa("type", "file").
+      sa("multiple", LS.load().configuration.max_media_per_upload > 1)
   };
   V.panel.tweetbox = nd;
   V.panel.updTweetBox(my);
