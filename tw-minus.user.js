@@ -2221,7 +2221,7 @@ V.main.customizeDesign = function(my) {
   var color = JSON.parse(JSON.stringify(my));
 
   // opened image file
-  var imgfile = { b64: null, dataURL: null };
+  var imgfile = { file: null, dataURL: null };
 
   // form nodes
   var fm = {
@@ -2288,8 +2288,8 @@ V.main.customizeDesign = function(my) {
     var file = fm.bg.file.files[0];
     var fr = new FileReader;
     fr.addEventListener("load", function() {
-      imgfile.b64 = btoa(fr.result);
-      imgfile.dataURL = "data:" + file.type + ";base64," + imgfile.b64;
+      imgfile.file = file;
+      imgfile.dataURL = "data:" + file.type + ";base64," + btoa(fr.result);
       color.profile_background_image_url = imgfile.dataURL;
       fm.bg.new.checked = true;
       fm.bg.new.disabled = false;
@@ -2309,7 +2309,7 @@ V.main.customizeDesign = function(my) {
   });
   fm.bg.update.addEventListener("click", function() {
     API.updateProfileBgImage(
-      color.profile_use_background_image ? imgfile.b64: undefined,
+      color.profile_use_background_image ? imgfile.file : undefined,
       color.profile_use_background_image,
       color.profile_background_tile, null
     );
