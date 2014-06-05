@@ -765,7 +765,13 @@ X.getOAuthHeader = function(method, url, q, oauthPhase) {
 // multipart/form-data
 X.formData = function(qrys) {
   var fd = new FormData;
-  for (var i in qrys) fd.append(i, qrys[i]);
+  for (var i in qrys) {
+    var qry = qrys[i];
+    if (qry instanceof FileList) [].forEach.call(qry, function(blob) {
+      fd.append(i, blob);
+    });
+    else fd.append(i, qry);
+  }
   return fd;
 };
 
@@ -1656,8 +1662,20 @@ V.init.CSS = '\
   #status_media_preview.use_media {\
     display: block;\
   }\
-  #status_media_preview .media_image {\
-    width: 100%;\
+  #status_media_preview::after {\
+    content: "";\
+    display: block;\
+    clear: both;\
+  }\
+  #status_media_preview li {\
+    float: left;\
+    display: block;\
+    margin: 0 9px 9px 0;\
+    box-shadow: 1px 1px 3px #999;\
+  }\
+  #status_media_preview li .media_image {\
+    width: 48px;\
+    height: 48px;\
   }\
   #status_media {\
     max-width: 50%;\
@@ -3844,8 +3862,7 @@ V.panel.updTweetBox = function(my) {
 };
 V.panel.tweetbox = null;
 V.panel.newTweetBox = function(my) {
-  var media_blob = null;
-  var media_b64 = "";
+  var media_files = null;
   var nd = {
     box: D.cf(),
     profile: D.ce("div").sa("id", "status_profile"),
@@ -3858,7 +3875,7 @@ V.panel.newTweetBox = function(my) {
     update: D.ce("button").sa("id", "status_update").add(D.ct("Tweet")),
     replink: D.ce("a").sa("id", "reply_target_link").
       sa("class", "in_reply_to"),
-    imgvw: D.ce("div").sa("id", "status_media_preview"),
+    imgvw: D.ce("ul").sa("id", "status_media_preview"),
     usemedia: D.ce("input").sa("id", "status_media_use").
       sa("type", "checkbox").sa("disabled", "disabled"),
     media: D.ce("input").sa("id", "status_media").sa("type", "file")
@@ -3913,8 +3930,8 @@ V.panel.newTweetBox = function(my) {
   });
   nd.update.addEventListener("click", function() {
     var d_ma = nd.status.value.match(/^d\s+(\w+)\s?([\S\s]*)/);
-    if (nd.usemedia.checked && media_b64) {
-      API.tweetMedia(media_blob, nd.status.value, nd.id.value, onTweet);
+    if (nd.usemedia.checked) {
+      API.tweetMedia(media_files, nd.status.value, nd.id.value, onTweet);
     } else if (d_ma) {
       API.d(d_ma[2], d_ma[1], onTweet);
     } else {
@@ -3923,19 +3940,24 @@ V.panel.newTweetBox = function(my) {
   });
   nd.usemedia.addEventListener("change", onCheck);
   nd.media.addEventListener("change", function() {
-    var file = nd.media.files[0], fr = new FileReader;
-    fr.addEventListener("load", function() {
-      media_blob = file;
-      media_b64 = btoa(fr.result);
-      D.empty(nd.imgvw).add(
-        D.ce("img").sa("class", "media_image").sa("alt", file.name).
-          sa("src", "data:" + file.type + ";base64," + media_b64)
-      );
-      nd.usemedia.disabled = false;
-      nd.usemedia.checked = true;
-      onCheck();
+    D.empty(nd.imgvw);
+    [].forEach.call(nd.media.files, function(file) {
+      var fr = new FileReader;
+      fr.addEventListener("load", function() {
+        media_files = nd.media.files;
+        var url = "data:" + file.type + ";base64," + btoa(fr.result);
+        nd.imgvw.add(D.ce("li").add(
+          D.ce("a").sa("href", url).add(
+            D.ce("img").sa("class", "media_image").
+              sa("alt", file.name).sa("src", url)
+          )
+        ));
+        nd.usemedia.disabled = false;
+        nd.usemedia.checked = true;
+        onCheck();
+      });
+      fr.readAsBinaryString(file);
     });
-    fr.readAsBinaryString(file);
   });
   nd.replink.addEventListener("click", function(v) {
     var e = D.q(".tweet.id-" + nd.id.value); if (!e) return;
