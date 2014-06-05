@@ -470,7 +470,8 @@ D.tweetize.all = function callee(ctx, entities, fragment, i) {
     fragment.add(list);
 
   } else str = D.tweetize.one(ctx, fragment);
-  return callee(ctx.substring(str.length), entities, fragment, i + str.length);
+  return callee(ctx.substring(str.length), entities, fragment,
+    i + str.match(/[\ud800-\udbff][\udc00-\udfff]|[\S\s]/g).length);
 };
 D.tweetize.one = function(ctx, fragment) {
   var TWRE = D.tweetize.TWRE;
