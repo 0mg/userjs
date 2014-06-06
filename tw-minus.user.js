@@ -1674,6 +1674,7 @@ V.init.CSS = '\
     box-shadow: 1px 1px 3px #999;\
   }\
   #status_media_preview li .media_image {\
+    display: block;\
     width: 48px;\
     height: 48px;\
   }\
