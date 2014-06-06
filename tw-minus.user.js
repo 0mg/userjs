@@ -1725,8 +1725,8 @@ V.init.CSS = '\
   #xhr-statuses { position: fixed; top: 0; left: 0; z-index: 1; }\
   .xhr-state { font-size:xx-small; }\
   .xhr-state.loading { position:absolute; background: gray; color: white; }\
-  .xhr-state.done.success { display: block; background: white; color: gray; }\
-  .xhr-state.done.failed { display: block; background: red; color: white; }\
+  .xhr-state.done.success { background: white; color: gray; }\
+  .xhr-state.done.failed { background: red; color: white; }\
   #api-status { background: #fdfdfd; }\
   #api-status * { border-color: #ccc; }\
   #api-status :not(.active) * { opacity: .3; }\
@@ -3216,7 +3216,7 @@ V.misc.onXHREnd = function(success, xhr, method, url, q) {
   s.classList.remove("loading");
   s.classList.add("done");
   if (success) {
-    if (method !== "POST") s.style.display = "none";
+    s.hidden = method !== "POST";
     s.classList.add("success");
     s.textContent = "Success!";
   } else {
