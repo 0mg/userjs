@@ -847,7 +847,7 @@ X.post = function post(url, q, f, b, c) {
   var xhr = new XMLHttpRequest;
   var method = "POST";
   xhr.open(method, url, true);
-  if (q.constructor === FormData) { // `q instanceof FormData` is error in GM
+  if (q instanceof FormData) {
     data = q, oaq = {}, ctype = null;
   } else if (typeof q === "object") {
     oaq = T.parseQuery(data = T.strQuery(q));
