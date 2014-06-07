@@ -4431,7 +4431,7 @@ V.outline.showSearchPanel = function(query) {
   };
   API.urls.init();
   if (document.readyState === "complete") editDOM();
-  else addEventListener("load", function() { editDOM(); });
+  else addEventListener("DOMContentLoaded", function() { editDOM(); });
   if (!API.cc.getCredentials()) {
     X.get(API.urls.account.verify_credentials()(), null, null);
   }
