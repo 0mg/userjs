@@ -3913,22 +3913,24 @@ V.panel.newTweetBox = function(my) {
     D.q("#status_log").ins(V.main.newTweet(data, my));
     D.empty(D.q("#status_section")).add(V.panel.newTweetBox(my));
   };
-  // add event listeners
-  nd.status.addEventListener("input", function() {
+  var onInput = function() {
     var replying = switchReplyTarget();
     var red = /^d\s+\w+\s*/;
     var reurl = /\bhttps?:\/\/[-\w.!~*'()%@:$,;&=+/?#\[\]]+/g;
+    var conf = LS.load()["configuration"];
     nd.update.textContent =
       replying ? "Reply": red.test(nd.status.value) ? "D": "Tweet";
     nd.update.disabled = nd.status.value.replace(red, "").
       replace(reurl, function(url) {
-        var data = LS.load()["configuration"];
         var key = /^https/.test(url) ?
           "short_url_length_https" : "short_url_length";
-        return Array(1 + data[key]).join("c"); //t.co
+        return Array(1 + conf[key]).join("c"); //t.co
       }).
-      replace(/[\ud800-\udbff][\udc00-\udfff]/g, "c").length > 140;
-  });
+      replace(/[\ud800-\udbff][\udc00-\udfff]/g, "c").length +
+      nd.usemedia.checked * conf.characters_reserved_per_media > 140;
+  };
+  // add event listeners
+  nd.status.addEventListener("input", onInput);
   nd.update.addEventListener("click", function() {
     var d_ma = nd.status.value.match(/^d\s+(\w+)\s?([\S\s]*)/);
     if (nd.usemedia.checked) {
@@ -3939,8 +3941,16 @@ V.panel.newTweetBox = function(my) {
       API.tweet(nd.status.value, nd.id.value, onTweet);
     }
   });
-  nd.usemedia.addEventListener("change", onCheck);
+  nd.usemedia.addEventListener("change", function() {
+    onCheck();
+    onInput();
+  });
   nd.media.addEventListener("change", function() {
+    if (nd.usemedia.disabled = !nd.media.files.length) {
+      nd.usemedia.checked = nd.media.files.length;
+      onCheck();
+    }
+    onInput();
     D.empty(nd.imgvw);
     [].forEach.call(nd.media.files, function(file) {
       var fr = new FileReader;
@@ -3953,9 +3963,6 @@ V.panel.newTweetBox = function(my) {
               sa("alt", file.name).sa("src", url)
           )
         ));
-        nd.usemedia.disabled = false;
-        nd.usemedia.checked = true;
-        onCheck();
       });
       fr.readAsBinaryString(file);
     });
