@@ -1750,6 +1750,13 @@ V.init.CSS = '\
   .tweet.focus {\
     background-color: #fc0;\
   }\
+  .tweet .text,\
+  .user-profile .description,\
+  .list-profile .description,\
+  .user .description,\
+  .list .description {\
+    white-space: pre-wrap;\
+  }\
   .user-profile.verified > dd:first-of-type::before,\
   .user.verified .name::before,\
   .tweet.verified .name::before {\
@@ -4231,7 +4238,7 @@ V.outline.showListProfile = function(list) {
     D.ce("dt").add(D.ct("Full Name")),
     D.ce("dd").add(D.tweetize(list.full_name)),
     D.ce("dt").add(D.ct("Description")),
-    D.ce("dd").add(D.tweetize(list.description)),
+    D.ce("dd").add(D.tweetize(list.description)).sa("class", "description"),
     D.ce("dt").add(li.members),
     D.ce("dd").add(D.ct(list.member_count)),
     D.ce("dt").add(li.followers),
@@ -4322,7 +4329,8 @@ V.outline.rendProfileOutline = function(user) {
     D.ce("dt").add(D.ct("Web")),
     D.ce("dd").add(D.tweetize(user.url, entities.url)),
     D.ce("dt").add(D.ct("Bio")),
-    D.ce("dd").add(D.tweetize(user.description, entities.description)),
+    D.ce("dd").add(D.tweetize(user.description, entities.description)).
+      sa("class", "description"),
     D.ce("dt").add(p.tweets),
     D.ce("dd").add(D.ct(user.statuses_count)),
     D.ce("dt").add(p.favorites),
