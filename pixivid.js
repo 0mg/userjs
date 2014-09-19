@@ -8,7 +8,7 @@
   var addUIDNode = function() {
     var KEY_URL = "http://www.pixiv.net/stacc/";
     var NODE_ID = "userjs-user-id-item";
-    var src = document.querySelector("ul.tabs a[href^='" + KEY_URL + "']");
+    var src = document.querySelector("a.tab-feed");
     var dst = document.querySelector(".user-relation");
     var uidnode = document.querySelector("#" + NODE_ID);
     if (!uidnode && src && dst) {
