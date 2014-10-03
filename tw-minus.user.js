@@ -712,6 +712,14 @@ T.supchar.decode = function(c) {
     throw Error("invalid string");
   }
 };
+T.userQryStr = function(user_name_or_id) {
+  var s = user_name_or_id;
+  if (s.slice(-1) === "@") {
+    return "user_id=" + s.slice(0, -1);
+  } else {
+    return "screen_name=" + s;
+  }
+};
 
 // XHR Functions
 X = {};
@@ -1968,15 +1976,9 @@ V.main.showPage.on1 = function(hash, q, my) {
     it.showTL(API.urls.timeline.home()() + "?" + q, my);
     break;
   default:
-    if (hash[0].slice(-1) !== "@") {
-      it.showTL(API.urls.timeline.user()() + "?" + q +
-        "&screen_name=" + hash[0], my);
-      V.outline.showProfileOutline(hash[0], my);
-    } else {
-      it.showTL(API.urls.timeline.user()() + "?" + q +
-        "&user_id=" + hash[0].slice(0, -1), my);
-      V.outline.showProfileOutline(hash[0], my);
-    }
+    it.showTL(API.urls.timeline.user()() + "?" + q +
+      "&" + T.userQryStr(hash[0]), my);
+    V.outline.showProfileOutline(hash[0], my);
   }
 };
 
