@@ -821,7 +821,7 @@ X.head = function head(url, f, b) {
   var xhr = new XMLHttpRequest;
   var method = "HEAD";
   xhr.open(method, url, true);
-  xhr.setRequestHeader("X-PHX", "true");
+  xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
   xhr.addEventListener("error", X.onerror.bind(xhr, method, url, "", f, b));
   xhr.addEventListener("loadstart", X.onloadstart.bind(xhr, method, url, ""));
@@ -836,7 +836,7 @@ X.get = function get(url, f, b) {
   var method = "GET";
   url = T.fixURL(url);
   xhr.open(method, url, true);
-  xhr.setRequestHeader("X-PHX", "true");
+  xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
   var auth = X.getOAuthHeader(method, url, {});
   xhr.setRequestHeader("Authorization", auth);
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, "", f, b));
@@ -865,7 +865,7 @@ X.post = function post(url, q, f, b, c) {
   }
   var auth = X.getOAuthHeader(method, url, oaq, url.oauthPhase);
   xhr.setRequestHeader("Authorization", auth);
-  //xhr.setRequestHeader("X-PHX", "true");
+  xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
   if (ctype) xhr.setRequestHeader("Content-Type", ctype);
   xhr.addEventListener("load", X.onload.bind(xhr, method, url, q, f, b));
   xhr.addEventListener("error", X.onerror.bind(xhr, method, url, q, f, b));
