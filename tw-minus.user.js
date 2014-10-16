@@ -55,6 +55,7 @@ LS.load = function() {
   if (!(LS.NS in localStorage)) return LS.reset();
   try {
     data = JSON.parse(text);
+    "" in data; // "",1,true are error
   } catch(e) {
     var msg = "localStorage['" + LS.NS + "'] is broken.\nreset?";
     if (prompt(msg, text)) return LS.reset();
