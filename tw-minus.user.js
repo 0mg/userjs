@@ -2285,7 +2285,8 @@ V.main.customizeDesign = function(my) {
   });
   fm.bg.cur.addEventListener("change", function(e) {
     if (e.target.checked) {
-      color.profile_background_image_url = my.profile_background_image_url;
+      color.profile_background_image_url =
+        my.profile_background_image_url_https;
       V.outline.changeDesign(color);
     }
   });
@@ -4164,7 +4165,7 @@ V.outline.changeDesign = function(user) {
   var color = {
     bg: rec.exec("#" + user.profile_background_color)[0],
     bgImg: user.profile_use_background_image ?
-      "url(" + user.profile_background_image_url + ")": "none",
+      "url(" + user.profile_background_image_url_https + ")": "none",
     bgImgRepeat: user.profile_background_tile ? "repeat": "no-repeat",
     side_fill: rec.exec("#" + user.profile_sidebar_fill_color)[0],
     side_border: rec.exec("#" + user.profile_sidebar_border_color)[0],
