@@ -2287,7 +2287,7 @@ V.main.customizeDesign = function(my) {
   fm.bg.cur.addEventListener("change", function(e) {
     if (e.target.checked) {
       color.profile_background_image_url =
-        my.profile_background_image_url_https;
+        my.profile_background_image_url;
       V.outline.changeDesign(color);
     }
   });
@@ -4163,10 +4163,12 @@ V.outline.showSubTitle = function(hash) {
 // Change CSS(text color, background-image) by user settings
 V.outline.changeDesign = function(user) {
   var rec = /^#[0-9a-f]{6}|/i;
+  var bgimg = /^data:[^]+/.exec(user.profile_background_image_url) ||
+    user.profile_background_image_url_https;
   var color = {
     bg: rec.exec("#" + user.profile_background_color)[0],
     bgImg: user.profile_use_background_image ?
-      "url(" + user.profile_background_image_url_https + ")": "none",
+      "url(" + bgimg + ")" : "none",
     bgImgRepeat: user.profile_background_tile ? "repeat": "no-repeat",
     side_fill: rec.exec("#" + user.profile_sidebar_fill_color)[0],
     side_border: rec.exec("#" + user.profile_sidebar_border_color)[0],
