@@ -1874,7 +1874,7 @@ V.init.CSS = '\
 V.init.initNode = function(my) {
   D.add.call(D.empty(document),
     document.implementation.createDocumentType("html", "", ""),
-    D.ce("html").add(
+    D.ce("html").sa("lang", "und").add(
       D.ce("head"),
       D.ce("body")
     )
