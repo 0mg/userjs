@@ -322,8 +322,9 @@ U = {};
 U.ROOT = "/robots.txt?-=/";
 U.Q = "&";
 U.getURL = function() {
+  var location_pathname = location.pathname.replace(/#/g, "%23");
   var pathall =
-    (location.pathname + location.search).substring(U.ROOT.length).split(U.Q);
+    (location_pathname + location.search).substring(U.ROOT.length).split(U.Q);
   var path = pathall[0];
   var query = T.parseQuery(pathall.slice(1).join("&"));
   return {
