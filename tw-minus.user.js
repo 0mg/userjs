@@ -3958,8 +3958,8 @@ V.panel.newTweetBox = function(my) {
     onInput();
   });
   nd.media.addEventListener("change", function() {
-    if (nd.usemedia.disabled = !nd.media.files.length) {
-      nd.usemedia.checked = nd.media.files.length;
+    if (!(nd.usemedia.disabled = !nd.media.files.length)) {
+      nd.usemedia.checked = !!nd.media.files.length;
       onCheck();
     }
     onInput();
