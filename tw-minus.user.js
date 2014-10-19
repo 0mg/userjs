@@ -2322,7 +2322,8 @@ V.main.customizeDesign = function(my) {
   });
   fm.bg.update.addEventListener("click", function() {
     API.updateProfileBgImage(
-      color.profile_use_background_image ? imgfile.file : undefined,
+      color.profile_use_background_image && fm.bg.new.checked ?
+        imgfile.file : undefined,
       color.profile_use_background_image,
       color.profile_background_tile, null
     );
