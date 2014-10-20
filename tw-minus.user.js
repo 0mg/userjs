@@ -2570,12 +2570,8 @@ V.main.settingProfile = function(my) {
       nd.name.value, nd.url.value, nd.loc.value, nd.desc.value, onScs);
   });
   nd.upload.addEventListener("click", function() {
-    var file = nd.icon.files[0]; if (!file) return;
-    var fr = new FileReader;
-    fr.addEventListener("load", function() {
-      API.uploadIcon(file, onScs);
-    });
-    fr.readAsBinaryString(file);
+    var file = nd.icon.files[0];
+    if (file) API.uploadIcon(file, onScs);
   });
   V.outline.changeDesign(my);
   V.outline.rendProfileOutline(my);
@@ -3960,6 +3956,7 @@ V.panel.newTweetBox = function(my) {
   });
   nd.media.addEventListener("change", function() {
     if (!(nd.usemedia.disabled = !nd.media.files.length)) {
+      media_files = nd.media.files;
       nd.usemedia.checked = !!nd.media.files.length;
       onCheck();
     }
@@ -3968,7 +3965,6 @@ V.panel.newTweetBox = function(my) {
     [].forEach.call(nd.media.files, function(file) {
       var fr = new FileReader;
       fr.addEventListener("load", function() {
-        media_files = nd.media.files;
         var url = "data:" + file.type + ";base64," + btoa(fr.result);
         nd.imgvw.add(D.ce("li").add(
           D.ce("a").sa("href", url).add(
