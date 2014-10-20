@@ -2239,10 +2239,7 @@ V.main.customizeDesign = function(my) {
   var fm = {
     form: D.ce("dl"),
     bg: {
-      cur: D.ce("input").sa("type", "radio").sa("name", "bgimgsel").
-        sa("checked", "checked"),
-      new: D.ce("input").sa("type", "radio").sa("name", "bgimgsel").
-        sa("disabled", "disabled"),
+      upnew: O.sa(D.ce("input").sa("type", "checkbox"), { disabled: true }),
       file: D.ce("input").sa("type", "file"),
       use: D.ce("input").sa("type", "checkbox"),
       tile: D.ce("input").sa("type", "checkbox"),
@@ -2284,30 +2281,22 @@ V.main.customizeDesign = function(my) {
     }
     V.outline.changeDesign(color);
   });
-  fm.bg.cur.addEventListener("change", function(e) {
-    if (e.target.checked) {
-      color.profile_background_image_url =
-        my.profile_background_image_url;
-      V.outline.changeDesign(color);
-    }
-  });
-  fm.bg.new.addEventListener("change", function(e) {
-    if (e.target.checked) {
-      color.profile_background_image_url = imgfile.dataURL;
-      V.outline.changeDesign(color);
-    }
+  fm.bg.upnew.addEventListener("change", function(e) {
+    color.profile_background_image_url = e.target.checked ?
+      imgfile.dataURL : my.profile_background_image_url;
+    V.outline.changeDesign(color);
   });
   fm.bg.file.addEventListener("change", function() {
     var file = fm.bg.file.files[0];
+    imgfile.file = file;
+    fm.bg.upnew.disabled = false;
+    fm.bg.upnew.checked = true;
+    fm.bg.use.checked = true;
     var fr = new FileReader;
     fr.addEventListener("load", function() {
-      imgfile.file = file;
       imgfile.dataURL = "data:" + file.type + ";base64," + btoa(fr.result);
       color.profile_background_image_url = imgfile.dataURL;
-      fm.bg.new.checked = true;
-      fm.bg.new.disabled = false;
       color.profile_use_background_image = true;
-      fm.bg.use.checked = true;
       V.outline.changeDesign(color);
     });
     fr.readAsBinaryString(file);
@@ -2322,7 +2311,7 @@ V.main.customizeDesign = function(my) {
   });
   fm.bg.update.addEventListener("click", function() {
     API.updateProfileBgImage(
-      color.profile_use_background_image && fm.bg.new.checked ?
+      color.profile_use_background_image && fm.bg.upnew.checked ?
         imgfile.file : undefined,
       color.profile_use_background_image,
       color.profile_background_tile, null
@@ -2341,8 +2330,9 @@ V.main.customizeDesign = function(my) {
   // render form nodes
   D.q("#main").ins(fm.form.add(
     D.ce("dt").add(D.ct("background image")),
-    D.ce("dd").add(D.ce("label").add(fm.bg.cur, D.ct("current"))),
-    D.ce("dd").add(D.ce("label").add(fm.bg.new, D.ct("upload"), fm.bg.file)),
+    D.ce("dd").add(
+      D.ce("label").add(fm.bg.upnew, D.ct("upload"), fm.bg.file)
+    ),
     D.ce("dd").add(
       D.ce("label").add(fm.bg.use, D.ct("use image"))
     ),
