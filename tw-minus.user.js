@@ -2624,7 +2624,7 @@ V.main.settingFollow = function(my) {
     side: D.q("#side"),
     mirrorDebug: D.ce("textarea"),
     mirrorAna: D.ce("button").add(D.ct("Analyze")),
-    mirrorBtn: D.ce("button").add(D.ct("Mirror")),
+    mirrorBtn: O.sa(D.ce("button").add(D.ct("Mirror")), { disabled: true }),
     followCnt: D.ce("span").add(D.ct("0")),
     unfollowCnt: D.ce("span").add(D.ct("0")),
     followTotal: D.ce("span").add(D.ct("?")),
