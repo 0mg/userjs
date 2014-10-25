@@ -4216,12 +4216,13 @@ V.outline.showListOutline = function(hash, my, mode) {
 
 // Render outline of list information
 V.outline.showListProfile = function(list) {
+  var url = list.user.screen_name + "/" + list.slug;
   var li = {
     st: D.ce("dl").sa("class", "list-profile"),
     members: D.ce("a").add(D.ct("Members")).
-      sa("href", U.ROOT + list.uri.substring(1) + "/members"),
+      sa("href", U.ROOT + url + "/members"),
     followers: D.ce("a").add(D.ct("Subscribers")).
-      sa("href", U.ROOT + list.uri.substring(1) + "/subscribers"),
+      sa("href", U.ROOT + url + "/subscribers"),
     owner: D.ce("a").add(D.ct(list.user.screen_name)).
       sa("href", U.ROOT + list.user.screen_name)
   };
