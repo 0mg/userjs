@@ -1659,6 +1659,7 @@ V.init.CSS = '\
     border: 0 !important;\
   }\
   #status {\
+    box-sizing: border-box;\
     width: 100%;\
     height: 7em;\
   }\
