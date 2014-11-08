@@ -1,9 +1,9 @@
 // ==UserScript==
-// @include http://www.nicovideo.jp/*
+// @include http://*.nicovideo.jp/*
 // ==/UserScript==
 
 //nofix header
 document.cookie = "nofix=1; " + document.cookie;
 
-//cath(error)
+//quiet error setInterval(1sec)
 document.hasFocus = function() {};
