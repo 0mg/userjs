@@ -1,6 +1,9 @@
 // ==UserScript==
 // @name pixiv ID
+// @description show pixiv ID in pixiv. pixiv にてユーザー ID を表示する
+// @version 1.0
 // @include http://www.pixiv.net/*
+// @namespace https://greasyfork.org/users/8032
 // ==/UserScript==
 
 ;(function() {
