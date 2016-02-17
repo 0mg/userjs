@@ -10,9 +10,9 @@ addEventListener("DOMContentLoaded", function() {
 // 画面ダブルクリックで次枠に移動
 // （お気に入り登録済みコミュニティの放送に限る）
 addEventListener("dblclick", function() {
-  var commuName = (
-    document.querySelector(".commu_name") ||
-    document.querySelector('.com span[itemprop="name"]') || {}).textContent;
+  var commuName =
+    (document.querySelector(".commu_name") || {}).title ||
+    (document.querySelector('.com span[itemprop="name"]') || {}).textContent;
   var xhr = new XMLHttpRequest;
   xhr.open("get", "http://live.nicovideo.jp/notifybox", true);
   xhr.addEventListener("load", function(e) {
