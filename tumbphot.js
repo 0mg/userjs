@@ -3,7 +3,7 @@
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
-  // link to itself
+  // add link(==location.href) to body
   if (parent !== self) {
     var a = document.createElement("a");
     a.href = location;
