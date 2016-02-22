@@ -9,7 +9,7 @@
       if (v.target instanceof HTMLInputElement ||
           v.target instanceof HTMLTextAreaElement) return;
       v.stopImmediatePropagation();
-      if (v.type === "keyup" && v.key === "k") {
+      if (v.type === "keyup" && v.keyCode === 75 && v.ctrlKey) {
         if (pressCount >= 1) {
           removeEventListener("keypress", callee, true);
           removeEventListener("keydown", callee, true);
