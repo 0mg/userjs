@@ -8,21 +8,15 @@ addEventListener("DOMContentLoaded", function() {
   scrollBy(10, 0);
 });
 // 画面ダブルクリックで次枠に移動
-// （お気に入り登録済みコミュニティの放送に限る）
 addEventListener("dblclick", function() {
-  var commuName =
-    (document.querySelector(".commu_name") || {}).title ||
-    (document.querySelector('.com span[itemprop="name"]') || {}).textContent;
   var xhr = new XMLHttpRequest;
-  xhr.open("get", "http://live.nicovideo.jp/notifybox", true);
-  xhr.addEventListener("load", function(e) {
-    var xhr = e.target;
-    if (xhr.status !== 200) return alert("通知ボックス取得失敗");
-    var re = RegExp('<a href="(.+)"[^<]+<.+title="' +
-      commuName.replace(/[\\^$*+?.()|:{},]/g, "\\$&") + '"');
-    var ma = xhr.responseText.match(re);
-    // 次枠がない場合
-    if (!ma) {
+  xhr.open("get", location.href, true);
+  xhr.addEventListener("load", function() {
+    var re = /<a href="([^"]+)" class="traceable-onair-title"/;
+    var ma = re.exec(xhr.responseText);
+    if (ma) {
+      location.assign(ma[1]);
+    } else {
       var notify = document.createElement("p");
       notify.style.position = "fixed";
       notify.style.zIndex = "9999";
@@ -36,10 +30,7 @@ addEventListener("dblclick", function() {
       setTimeout(function() {
         notify.parentNode.removeChild(notify);
       }, 1000);
-      return;
     }
-    // 次枠がある場合
-    if (ma[1]) location.href = ma[1];
   });
   xhr.send();
 });
