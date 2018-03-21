@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name localhost href '/' -> '/index.html'
 // @include file://localhost/*
+// @include file:///*
 // ==/UserScript==
 
 addEventListener("DOMContentLoaded", function() {
@@ -13,7 +14,7 @@ addEventListener("DOMContentLoaded", function() {
       href.nodeValue += "index.html";
     }
 
-    if (href.nodeValue[0] === "/") {
+    if (location.host === "localhost" && href.nodeValue[0] === "/") {
       href.nodeValue = location.href.substring(0, 19) + href.nodeValue;
     }
   }
