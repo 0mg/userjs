@@ -1,0 +1,77 @@
+{
+  "manifest_version": 2,
+  "name": "UserJS",
+  "version": "1.00",
+  "content_scripts": [
+    {
+      "js": ["localidx.js"],
+      "run_at": "document_start",
+      "matches": ["file:///*"]
+    },
+    {
+      "js": ["jump.js"],
+      "run_at": "document_start",
+      "matches": ["https://*/*", "http://*/*"]
+    },
+    {
+      "js": ["tw-minus.user.js"],
+      "run_at": "document_start",
+      "matches": ["https://api.twitter.com/robots.txt?-=/*"]
+    },
+    {
+      "js": ["referrer.js"],
+      "run_at": "document_start",
+      "matches": ["http://*/*", "https://*/*"]
+    },
+    {
+      "js": ["usercss.js"],
+      "run_at": "document_start",
+      "matches": ["http://*/*", "https://*/*"]
+    },
+    {
+      "js": ["twImgOrig.user.js"],
+      "run_at": "document_start",
+      "matches": ["https://twitter.com/*"]
+    },
+    {
+      "js": ["tumbphot.js"],
+      "run_at": "document_start",
+      "matches": ["http://*.tumblr.com/*/photoset_iframe/*", "http://*.tumblr.com/private/*"]
+    },
+    {
+      "js": ["nicovideo.js"],
+      "run_at": "document_start",
+      "matches": ["http://*.nicovideo.jp/*"]
+    },
+    {
+      "js": ["livenico.js"],
+      "run_at": "document_start",
+      "matches": ["http://live.nicovideo.jp/watch/lv*"]
+    },
+    {
+      "js": ["anagolf.js"],
+      "run_at": "document_start",
+      "matches": ["http://golf.shinh.org/*"]
+    },
+    {
+      "js": ["agSort.js"],
+      "run_at": "document_start",
+      "matches": ["http://golf.shinh.org/all.rb"]
+    },
+    {
+      "js": ["agStat.js"],
+      "run_at": "document_start",
+      "matches": ["http://golf.shinh.org/p.rb?*"]
+    },
+    {
+      "js": ["backurl.js"],
+      "run_at": "document_start",
+      "matches": ["http://*/*", "https://*/*"]
+    },
+    {
+      "js": ["urlcopy.js"],
+      "run_at": "document_start",
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}
