@@ -26,7 +26,8 @@
     {
       "js": ["referrer.js"],
       "run_at": "document_start",
-      "matches": ["http://*/*", "https://*/*"]
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": ["https://www.vector.co.jp/download/*"]
     },
     {
       "js": ["usercss.js"],
