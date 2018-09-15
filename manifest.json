@@ -4,6 +4,11 @@
   "version": "1.00",
   "content_scripts": [
     {
+      "js": ["htmledit.js"],
+      "run_at": "document_start",
+      "matches": ["http://*/*", "https://*/*"]
+    },
+    {
       "js": ["keyjack.js"],
       "run_at": "document_start",
       "matches": ["http://*/*", "https://*/*"]
