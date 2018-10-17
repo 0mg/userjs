@@ -4,6 +4,12 @@
   "version": "1.00",
   "content_scripts": [
     {
+      "js": ["ytchat.js"],
+      "run_at": "document_start",
+      "matches": ["https://www.youtube.com/*"],
+      "all_frames": true
+    },
+    {
       "js": ["htmledit.js"],
       "run_at": "document_start",
       "matches": ["http://*/*", "https://*/*"]
