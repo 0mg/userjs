@@ -50,6 +50,7 @@ else (function() {
     container.style.color = "white";
     container.style.fontSize = "x-large";
     container.style.textShadow = "1px 1px 1px black";
+    container.style.width = "0";
     video.appendChild(container);
     return true;
   }
