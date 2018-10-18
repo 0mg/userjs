@@ -4,8 +4,8 @@
 // ==/UserScript==
 
 if (location.href.startsWith("https://www.youtube.com/live_chat")) (function() {
+  if (parent === self) return;
   var obs = new MutationObserver(function(records) {
-    if (parent === self) return;
     [].forEach.call(records, function(item) {
       [].forEach.call(item.addedNodes, function(elem) {
         if (elem.nodeName === "#text") {
