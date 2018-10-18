@@ -73,8 +73,9 @@ else (function() {
       var json = JSON.parse(event.data);
       if (json.type === "chat-text") {
         var lim = 10;
-        if (container.textContent.split("\n").length > lim) {
-          container.textContent = container.textContent.split("\n").slice(-lim).join("\n");
+        var list = container.textContent.split("\n");
+        if (list.length > lim) {
+          container.textContent = list.slice(-lim).join("\n");
         }
         container.textContent += json.data + "\n";
       }
