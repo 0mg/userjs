@@ -61,12 +61,8 @@ else (function() {
     if (event.key === "7" && event.ctrlKey) {
       on = !on;
       notify("💭 " + on);
-      var ytchat = document.getElementById("chat");
       if (!on) {
         if (container) container.textContent = "";
-        if (ytchat) ytchat.style.display = "flex";
-      } else {
-        if (ytchat) ytchat.style.display = "none";
       }
     }
   });
