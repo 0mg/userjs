@@ -8,13 +8,19 @@ if (location.href.startsWith("https://www.youtube.com/live_chat")) (function() {
   var obs = new MutationObserver(function(records) {
     [].forEach.call(records, function(item) {
       [].forEach.call(item.addedNodes, function(elem) {
-        if (elem.nodeName === "#text") {
-          var msg = {
-            type: "chat-text",
-            data: elem.nodeValue
-          };
-          parent.postMessage(JSON.stringify(msg), "https://www.youtube.com");
+        if (elem.localName !== "yt-live-chat-text-message-renderer") return;
+        var body = elem.querySelector("#message");
+        var rawtext = "";
+        for (var i = 0; i < body.childNodes.length; i++) {
+          var current = body.childNodes[i];
+          if (current.nodeName === "#text") rawtext += current.nodeValue;
+          else if (current.nodeName === "IMG") rawtext += current.alt;
         }
+        var msg = {
+          type: "chat-text",
+          data: rawtext
+        };
+        parent.postMessage(JSON.stringify(msg), "https://www.youtube.com");
       });
     });
   });
