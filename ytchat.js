@@ -78,7 +78,7 @@ else (function() {
     var dst = document.querySelector(".ytp-right-controls");
     if (!dst) return false;
     else if (document.getElementById(ctrlbtn_id)) return true;
-    var imitee = dst.querySelector("button");
+    var imitee = dst.querySelectorAll("button")[1];
     if (!imitee) return false;
     var btn = imitee.cloneNode(true);
     btn.addEventListener("click", function() {
